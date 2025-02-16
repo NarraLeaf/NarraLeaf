@@ -1,0 +1,14 @@
+{
+  "name": "narraleaf",
+  "version": "0.0.1",
+  "description": "Create your visual novel with Electron and React",
+  "packageManager": "yarn@4.4.1",
+  "keywords": [
+    "react",
+    "electron",
+    "visual-novel",
+    "typescript",
+    "narraleaf",
+    "nvl"
+  ]
+}
