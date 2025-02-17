@@ -58,10 +58,17 @@ export class App {
         return Platform.getInfo(this.process);
     }
 
+    public getProcess(): NodeJS.Process {
+        if (!this.process) {
+            throw new Error("Cannot access process before running the app");
+        }
+        return this.process;
+    }
+
     private registerCommands(registry: CLIRegistry) {
         registry.forEach(({command, action}) => {
             program.addCommand(command.action((...args: any[]) => {
-                action.bind(command)(this, args);
+                return action.bind(command)(this, args);
             }));
         });
     }
