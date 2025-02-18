@@ -1,4 +1,4 @@
-import {ValuesOf} from "../types";
+import {ValuesOf} from "./types";
 import {spawn} from "child_process";
 
 export const PlatformSystem = {

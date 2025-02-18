@@ -1,6 +1,6 @@
 import {Command, program} from "commander";
-import {Platform, PlatformInfo} from "./utils/platform";
-import {Logger} from "./utils/logger";
+import {Platform, PlatformInfo} from "@/utils/platform";
+import {Logger} from "./logger";
 
 type AppConfig = {
     name: string;

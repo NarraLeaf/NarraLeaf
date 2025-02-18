@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import {Fs} from "./fs";
-import {PlatformInfo, PlatformSystem} from "./platform";
-import {App} from "../app";
-import {sliceString} from "./str";
+import {Fs} from "@/utils/fs";
+import {PlatformInfo, PlatformSystem} from "@/utils/platform";
+import {App} from "./app";
+import {sliceString} from "@/utils/str";
 import {input, confirm} from "./inquirer";
 
 type LoggerConfig = {

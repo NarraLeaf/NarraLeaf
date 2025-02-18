@@ -8,7 +8,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@core/*": ["./src/core/*"],
+    }
   },
-  "include": ["src"]
+  "include": ["src"],
 }
