@@ -3,7 +3,7 @@ import {Fs} from "./fs";
 import {PlatformInfo, PlatformSystem} from "./platform";
 import {App} from "../app";
 import {sliceString} from "./str";
-import {input} from "./inquirer";
+import {input, confirm} from "./inquirer";
 
 type LoggerConfig = {
     debug: boolean;
@@ -127,7 +127,7 @@ class LoadingTask {
 
     clearLine(str?: string) {
         const clearLine = '\r' + ' '.repeat(this.app.getProcess().stdout.columns);
-        if (str && str.length) this.app.getProcess().stdout.write(`${clearLine}\r${chalk.gray("╰─")} ${str}`);
+        if (str && str.length) this.app.getProcess().stdout.write(`${clearLine}\r${this.fallTask.getEndPrefix()} ${str}`);
         else this.app.getProcess().stdout.write(`${clearLine}\r`);
     }
 
@@ -159,8 +159,8 @@ class ProgressTask extends LoadingTask {
     static MaxLength = 120;
     static ProgressBarFrames = {
         0: {
-            active: "█",
-            inactive: " "
+            active: Logger.chalk.bgWhite(" "),
+            inactive: Logger.chalk.bgGray(" ")
         }
     }
 
@@ -198,14 +198,18 @@ class ProgressTask extends LoadingTask {
     tick() {
         if (this._tick === undefined) this._tick = 0;
         else this._tick++;
-        let output = `${this.fallTask.getPrefix()} ${this.getAnimation(this._tick)} ${this.getProgressBar()} (${this.currentTask}/${this.maxTask}) ${this.text}`
-        this.app.getProcess().stdout.write(`\r${output}`);
+
+        const output = [`${this.fallTask.getEndPrefix()} ${this.getAnimation(this._tick)} │`, `│ (${this.currentTask}/${this.maxTask}) ${this.text}`];
+        const prefixLength = output.reduce((acc, str) => acc + str.length, 0);
+
+        this.app.getProcess().stdout.write(`\r${output.join(this.getProgressBar(prefixLength))}`);
         return this;
     }
 
-    getProgressBar() {
-        let prefixLength = this.fallTask.getPrefix().length + 2;
-        let maxLength = (this.app.getProcess().stdout.columns - prefixLength) > ProgressTask.MaxLength ? ProgressTask.MaxLength : this.app.getProcess().stdout.columns;
+    getProgressBar(prefixLength: number) {
+        let maxLength = (this.app.getProcess().stdout.columns - prefixLength) > ProgressTask.MaxLength
+            ? ProgressTask.MaxLength
+            : this.app.getProcess().stdout.columns - prefixLength;
         let progress = Math.floor((this.currentTask / this.maxTask) * maxLength);
         return (this.getPFrame(true)).repeat(progress) + (this.getPFrame(false)).repeat(maxLength - progress);
     }
@@ -237,7 +241,7 @@ export class FallTask {
     }
 
     start(str: string) {
-        this.logger.raw(`${chalk.gray("╭─")} ${str}`);
+        this.logger.raw(`${this.getHeaderPrefix()} ${str}`);
         return this;
     }
 
@@ -309,7 +313,7 @@ export class FallTask {
 
     end(str: string) {
         this.resetPrefix();
-        this.logger.raw(`${chalk.gray("╰─")} ${str}`);
+        this.logger.raw(`${this.getEndPrefix()} ${str}`);
         return this;
     }
 
@@ -324,9 +328,25 @@ export class FallTask {
         return chalk.gray("│ ");
     }
 
+    getEndPrefix() {
+        return chalk.gray("╰─");
+    }
+
+    getHeaderPrefix() {
+        return chalk.gray("╭─");
+    }
+
     async input(prompt: string): Promise<string> {
         const answer = await input(prompt, {
-            prefix: chalk.gray("╰─")
+            prefix: this.getEndPrefix()
+        });
+        this.resetPrefix();
+        return answer;
+    }
+
+    async confirm(prompt: string): Promise<boolean> {
+        const answer = await confirm(prompt, {
+            prefix: this.getEndPrefix(),
         });
         this.resetPrefix();
         return answer;
