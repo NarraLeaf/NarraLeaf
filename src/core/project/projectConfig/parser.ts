@@ -11,9 +11,11 @@ const safe = jsoncLib.safe;
 export enum ProjectFileType {
     JSONC = "jsons",
     CJS = "cjs",
+    DIR = "dir",
+    FILE = "file",
 }
 
-export type ProjectStructureDefinition<Contains extends {
+export type DirStructureDefinition<Contains extends {
     [K in string]: string | z.infer<z.ZodType<any, any, any>>
 }> = {
     contains: {
@@ -25,17 +27,17 @@ export type ProjectStructureDefinition<Contains extends {
     };
 };
 
-export type InferProjectStructure<T extends ProjectStructureDefinition<any>> =
-    T extends ProjectStructureDefinition<infer Contains> ? {
+export type InferDirStructure<T extends DirStructureDefinition<any>> =
+    T extends DirStructureDefinition<infer Contains> ? {
         [K in keyof Contains]: Contains[K] extends string ? string : z.infer<Contains[K]>;
     } : never;
 
-export async function parseProjectStructure<T extends ProjectStructureDefinition<any>>(
+export async function parseDirStructure<T extends DirStructureDefinition<any>>(
     definition: T,
     root: string,
-): Promise<InferProjectStructure<T>> {
+): Promise<InferDirStructure<T>> {
     const projectFs = new ProjectFs(root);
-    const result = {} as InferProjectStructure<T>;
+    const result = {} as InferDirStructure<T>;
 
     for (const key in definition.contains) {
         const fileDef = definition.contains[key];
@@ -43,13 +45,13 @@ export async function parseProjectStructure<T extends ProjectStructureDefinition
         if (!fileResult.ok) {
             throw new Error(`Failed to parse project structure: ${fileResult.error}`);
         }
-        result[key as keyof InferProjectStructure<T>] = fileResult.data;
+        result[key as keyof InferDirStructure<T>] = fileResult.data;
     }
 
     return result;
 }
 
-async function handleFile<T extends ValuesOf<ProjectStructureDefinition<any>["contains"]>>(
+async function handleFile<T extends ValuesOf<DirStructureDefinition<any>["contains"]>>(
     fileDef: T,
     projectFs: ProjectFs
 ): Promise<FsResult<
@@ -88,6 +90,20 @@ async function handleFile<T extends ValuesOf<ProjectStructureDefinition<any>["co
         } catch (error) {
             return failed(`Configuration validation failed (path: ${Logger.chalk.blue(fileDef.path)}):\n` + zodErrorToString(error));
         }
+    } else if (fileDef.type === ProjectFileType.DIR) {
+        const result = await projectFs.tryAccessDir(fileDef.path);
+        if (!result.ok) {
+            return result;
+        }
+
+        return success(fileDef.validator ? fileDef.validator.parse(result.data) : result.data);
+    } else if (fileDef.type === ProjectFileType.FILE) {
+        const result = await projectFs.tryRead(fileDef.path);
+        if (!result.ok) {
+            return result;
+        }
+
+        return success(fileDef.validator ? fileDef.validator.parse(result.data) : result.data);
     }
 
     throw new Error("Unknown file type: " + fileDef.type);

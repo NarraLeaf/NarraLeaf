@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ProjectFileType, ProjectStructureDefinition} from "@core/project/projectConfig/parser";
+import {ProjectFileType, DirStructureDefinition} from "@core/project/projectConfig/parser";
 
 export type BaseProjectConfigZod = z.ZodObject<{
     renderer: z.ZodObject<{
@@ -22,7 +22,7 @@ export type BaseProjectConfig = {
     main: string;
 };
 
-export const BaseProjectStructure: ProjectStructureDefinition<{
+export const BaseProjectStructure: DirStructureDefinition<{
     "package": z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;

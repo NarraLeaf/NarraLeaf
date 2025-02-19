@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import {default as fsSync} from "fs";
 import path from "path";
+import {Logger} from "@/cli/logger";
 
 export type FsResult<T, OK extends true | false = true | false> = OK extends true ? { ok: true; data: T } : {
     ok: false;
@@ -34,6 +35,14 @@ export class Fs {
 
     public static appendSync(path: string, data: string, encoding: BufferEncoding = "utf-8"): FsResult<void> {
         return this.wrapSync(() => fsSync.appendFileSync(path, data, {encoding}));
+    }
+
+    public static isDirExists(path: string): Promise<FsResult<boolean>> {
+        return this.wrap(new Promise<boolean>((resolve) => {
+            fs.access(path)
+                .then(() => resolve(true))
+                .catch(() => resolve(false));
+        }));
     }
 
     private static errorToString(error: unknown): string {
@@ -87,25 +96,38 @@ export class ProjectFs {
         return Fs.read(this.resolve(path), encoding);
     }
 
+    /**
+     * Tries to read a file from the list of paths
+     *
+     * Returns the first path that exists
+     */
     public tryRead(paths: string | string[], encoding: BufferEncoding = "utf-8"): Promise<FsResult<string>> {
         if (typeof paths === "string") {
             return this.read(paths, encoding);
         }
-        return new Promise(async (resolve) => {
-            const tryRead = async (i: number) => {
-                if (i >= paths.length) {
-                    resolve({ok: false, error: "files are not found"});
-                    return;
-                }
-                const result = await this.read(paths[i], encoding);
-                if (result.ok) {
-                    resolve(result);
-                } else {
-                    await tryRead(i + 1);
-                }
-            };
-            await tryRead(0);
-        });
+        return this.retry(
+            paths,
+            (path) => this.read(path, encoding),
+            this.toRetryStack(paths)
+        );
+    }
+
+    /**
+     * Tries to access a file or a directory from the list of paths
+     *
+     * Returns the first path that exists
+     */
+    public tryAccessDir(pathsRaw: string | string[]): Promise<FsResult<string>> {
+        const paths = typeof pathsRaw === "string" ? [pathsRaw] : pathsRaw;
+        return this.retry(
+            paths,
+            (path) => this.isDirExists(path).then(result => result.ok ? { ok: true, data: path } : result),
+            this.toRetryStack(paths, "dirs are not found")
+        );
+    }
+
+    public isDirExists(path: string): Promise<FsResult<boolean>> {
+        return Fs.isDirExists(this.resolve(path));
     }
 
     public isFileExists(path: string): Promise<FsResult<boolean>> {
@@ -122,6 +144,24 @@ export class ProjectFs {
 
     public isRelative(p: string): boolean {
         return !path.isAbsolute(p);
+    }
+
+    private async retry<T>(
+        paths: string[],
+        action: (path: string) => Promise<FsResult<T>>,
+        errText: string = "files or dirs are not found"
+    ): Promise<FsResult<T>> {
+        for (let i = 0; i < paths.length; i++) {
+            const result = await action(paths[i]);
+            if (result.ok) {
+                return result;
+            }
+        }
+        return { ok: false, error: errText };
+    }
+
+    private toRetryStack(paths: string[], message: string = ""): string {
+        return message + " Tried: \n" + paths.map(p => `    ${Logger.chalk.blue(p)}`);
     }
 }
 

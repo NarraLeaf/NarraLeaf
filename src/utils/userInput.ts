@@ -42,6 +42,13 @@ export function success<T>(data: T): Result<T, true> {
     };
 }
 
+export function isFailed<T>(result: any): result is Result<T, false> {
+    return typeof result === "object"
+        && result !== null
+        && result.ok === false
+        && typeof result.error === "string";
+}
+
 export function toFileProtocol(p: string): string {
     return pathToFileURL(p).toString();
 }
