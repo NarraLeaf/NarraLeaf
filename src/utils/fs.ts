@@ -119,6 +119,10 @@ export class ProjectFs {
     public isProjectFile(p: string): boolean {
         return path.isAbsolute(p) ? p.startsWith(this.root) : !path.relative(this.root, p).startsWith("..");
     }
+
+    public isRelative(p: string): boolean {
+        return !path.isAbsolute(p);
+    }
 }
 
 

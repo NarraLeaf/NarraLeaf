@@ -10,7 +10,17 @@ export type BaseProjectConfigZod = z.ZodObject<{
     }>;
     main: z.ZodString | z.ZodUndefined;
 }>;
-export type BaseProjectConfig = z.infer<BaseProjectConfigZod>;
+export type BaseProjectUserConfig = z.infer<BaseProjectConfigZod>;
+
+export type BaseProjectConfig = {
+    renderer: {
+        baseDir: string;
+    };
+    story: {
+        entry: string;
+    };
+    main: string;
+};
 
 export const BaseProjectStructure: ProjectStructureDefinition<{
     "package": z.ZodObject<{
@@ -31,7 +41,6 @@ export const BaseProjectStructure: ProjectStructureDefinition<{
                 name: z.string().nonempty("Name is required when publishing your app"),
                 version: z.string().nonempty("Version is required when publishing your app"),
                 description: z.string().nonempty("Description is required when publishing your app"),
-                main: z.string().nonempty("Main file is required for your app"),
             })
         },
         "narraleaf.config": {

@@ -1,7 +1,8 @@
-import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
+import {BaseProjectUserConfig} from "@core/project/projectConfig/baseProject";
+import _ from "lodash";
 
 
-export const DefaultProjectConfig: BaseProjectConfig = {
+export const DefaultProjectConfig: BaseProjectUserConfig = {
     renderer: {
         baseDir: "renderer",
     },
@@ -10,3 +11,7 @@ export const DefaultProjectConfig: BaseProjectConfig = {
     },
     main: "main/index.js",
 };
+
+export function mergeConfig<T, U>(base: T, user: U): T & U {
+    return _.merge({}, base, user);
+}
