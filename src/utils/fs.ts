@@ -25,11 +25,11 @@ export class Fs {
         return this.wrap(fs.mkdir(path, {recursive: true}));
     }
 
-    public static isFileExists(path: string): Promise<FsResult<boolean>> {
-        return this.wrap(new Promise<boolean>((resolve) => {
+    public static isFileExists(path: string): Promise<FsResult<void>> {
+        return this.wrap(new Promise<void>((resolve, reject) => {
             fs.access(path)
-                .then(() => resolve(true))
-                .catch(() => resolve(false));
+                .then(() => resolve())
+                .catch((reason) => reject(reason));
         }));
     }
 
@@ -37,11 +37,11 @@ export class Fs {
         return this.wrapSync(() => fsSync.appendFileSync(path, data, {encoding}));
     }
 
-    public static isDirExists(path: string): Promise<FsResult<boolean>> {
-        return this.wrap(new Promise<boolean>((resolve) => {
+    public static isDirExists(path: string): Promise<FsResult<void>> {
+        return this.wrap(new Promise<void>((resolve, reject) => {
             fs.access(path)
-                .then(() => resolve(true))
-                .catch(() => resolve(false));
+                .then(() => resolve())
+                .catch(() => reject());
         }));
     }
 
@@ -140,11 +140,17 @@ export class ProjectFs {
         );
     }
 
-    public isDirExists(path: string): Promise<FsResult<boolean>> {
+    /**
+     * This method will fail if the file doesn't exist
+     */
+    public isDirExists(path: string): Promise<FsResult<void>> {
         return Fs.isDirExists(this.resolve(path));
     }
 
-    public isFileExists(path: string): Promise<FsResult<boolean>> {
+    /**
+     * This method will fail if the file doesn't exist
+     */
+    public isFileExists(path: string): Promise<FsResult<void>> {
         return Fs.isFileExists(this.resolve(path));
     }
 
@@ -175,7 +181,7 @@ export class ProjectFs {
     }
 
     private toRetryStack(paths: string[], message: string = ""): string {
-        return message + " Tried: \n" + paths.map(p => `    ${Logger.chalk.blue(p)}`);
+        return message + "\nFiles tried:" + paths.map(p => `\n    ${Logger.chalk.blue(p)}`);
     }
 }
 

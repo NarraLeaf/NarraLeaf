@@ -10,6 +10,9 @@ const commonOptions = {
     '@core': './src/core',
   },
   logLevel: 'info',
+  loader: {
+    ".ejs": "text",
+  }
 };
 
 Promise.all([
@@ -26,5 +29,8 @@ Promise.all([
       '@core': './src/core',
     },
     logLevel: 'info',
+    loader: {
+      ".ejs": "text",
+    }
   }),
 ]).catch(() => process.exit(1));

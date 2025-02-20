@@ -4,9 +4,16 @@ import {DefaultProjectConfig, mergeConfig} from "@core/project/projectConfig/def
 import {ProjectFs} from "@/utils/fs";
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
+import path from "path";
+import {buildRenderer} from "@core/build/renderer/build";
 
+export enum TempNamespace {
+    RendererBuild = "renderer-build",
+}
 
 export class Project {
+    public static readonly TempNamespace = TempNamespace;
+
     public structure: InferDirStructure<typeof BaseProjectStructure>;
     public config: BaseProjectConfig;
     public readonly root: string;
@@ -28,7 +35,17 @@ export class Project {
         const rendererRoot = this.fs.resolve(this.config.renderer.baseDir);
         const structure = await parseDirStructure(AppProjectRendererStructure, rendererRoot);
 
-        return new RendererProject(this, structure);
+        return new RendererProject(this, structure, rendererRoot);
+    }
+
+    public getTempDir(namespace?: TempNamespace): string {
+        return namespace
+            ? path.resolve(this.fs.resolve(this.config.temp), namespace)
+            : this.fs.resolve(this.config.temp);
+    }
+
+    public build(rendererProject: RendererProject): Promise<string> {
+        return buildRenderer({rendererProject});
     }
 
     private readPackage(): this {

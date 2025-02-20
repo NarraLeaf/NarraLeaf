@@ -1,3 +1,5 @@
+import path from "path";
+
 export function sliceString(str: string, n: number): string[] {
     return Array.from({ length: Math.ceil(str.length / n) }, (_, i) => str.slice(i * n, (i + 1) * n));
 }
@@ -9,4 +11,7 @@ export function errorToString(error: any): string {
     } else {
         return JSON.stringify(error);
     }
+}
+export function safeImportPath(p: string): string {
+    return path.normalize(p).replace(/\\/g, "/");
 }

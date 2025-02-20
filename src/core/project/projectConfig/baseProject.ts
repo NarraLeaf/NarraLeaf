@@ -9,6 +9,7 @@ export type BaseProjectConfigZod = z.ZodObject<{
         entry: z.ZodString | z.ZodUndefined;
     }>;
     main: z.ZodString | z.ZodUndefined;
+    temp: z.ZodString | z.ZodUndefined;
 }>;
 export type BaseProjectUserConfig = z.infer<BaseProjectConfigZod>;
 
@@ -20,6 +21,7 @@ export type BaseProjectConfig = {
         entry: string;
     };
     main: string;
+    temp: string;
 };
 
 export const BaseProjectStructure: DirStructureDefinition<{
@@ -55,6 +57,7 @@ export const BaseProjectStructure: DirStructureDefinition<{
                         entry: z.string(),
                     }).partial(),
                     main: z.string(),
+                    temp: z.string(),
                 }).partial(),
             }),
         }

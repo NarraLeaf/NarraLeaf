@@ -10,6 +10,7 @@ export const DefaultProjectConfig: BaseProjectUserConfig = {
         entry: "story/entry.js",
     },
     main: "main/index.js",
+    temp: ".narraleaf",
 };
 
 export function mergeConfig<T, U>(base: T, user: U): T & U {

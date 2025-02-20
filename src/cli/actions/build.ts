@@ -4,8 +4,6 @@ import {parseDirStructure} from "@core/project/projectConfig/parser";
 import {errorToString} from "@/utils/str";
 import {BaseProjectStructure} from "@core/project/projectConfig/baseProject";
 import {Project} from "@core/project/project";
-import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
-import {RendererProject} from "@core/project/renderer/rendererProject";
 
 type BuildOptions = {};
 
@@ -19,14 +17,13 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
 
         const project = new Project(app.resolvePath(path), projectStructure);
 
-        const rendererRoot = project.fs.resolve(project.config.renderer.baseDir);
-        console.log(rendererRoot); // debug
-
-        const rendererStructure = await parseDirStructure(AppProjectRendererStructure, rendererRoot);
-        console.log(rendererStructure); // debug
-
-        const rendererProject = new RendererProject(project, rendererStructure);
+        const rendererProject = await project.createRendererProject();
         console.log(rendererProject.structure.app); // debug
+        console.log(rendererProject.getAppEntry(), rendererProject.getPagesDir(), rendererProject.getPublicDir()); // debug
+
+        console.log("request temp dir", project.getTempDir(Project.TempNamespace.RendererBuild)); // debug
+
+        await project.build(rendererProject);
     } catch (e) {
         logger.error("Failed to build project:", errorToString(e));
     }

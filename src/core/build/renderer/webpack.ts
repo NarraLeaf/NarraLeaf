@@ -67,6 +67,16 @@ export class WebpackConfig {
             ...this.config.extend,
         };
     }
+
+    useModule(module: WebpackModule): this {
+        this.modules.push(module);
+        return this;
+    }
+
+    usePlugin(plugin: any): this {
+        this.plugins.push(plugin);
+        return this;
+    }
 }
 
 export abstract class WebpackModule {
