@@ -30,7 +30,8 @@
     "commander": "^13.1.0",
     "ejs": "^3.1.10",
     "jsonc": "^2.0.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "zod": "^3.24.2"
   },
   "peerDependencies": {
     "@babel/core": "^7.26.9",
@@ -41,7 +42,9 @@
     "@swc/core-win32-x64-msvc": "^1.10.18",
     "@swc/wasm": "^1.10.18",
     "babel-loader": "^9.2.1",
+    "css-loader": "*",
     "html-webpack-plugin": "^5.6.3",
+    "style-loader": "*",
     "uglify-js": "^3.19.3",
     "webpack": "^5.98.0"
   },
@@ -54,8 +57,10 @@
     "@types/lodash": "^4",
     "@types/node": "^22.13.4",
     "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
     "esbuild": "0.25.0",
     "html-webpack-plugin": "^5.6.3",
+    "style-loader": "^4.0.0",
     "typescript": "^5.3.0",
     "webpack": "^5.98.0"
   },
