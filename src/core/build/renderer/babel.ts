@@ -1,4 +1,4 @@
-import {WebpackModule} from "@core/build/renderer/webpack";
+import {WebpackModule} from "@core/build/webpack";
 
 export class Babel extends WebpackModule {
     public test: RegExp = /\.(js|jsx|ts|tsx)$/;

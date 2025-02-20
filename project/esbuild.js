@@ -1,58 +1,74 @@
 import esbuild from 'esbuild';
 
 const external = [
-  "commander",
-  "chalk",
-  "ejs",
-  "lodash",
-  "webpack",
-  "babel-loader",
   "@babel/core",
   "@babel/preset-env",
   "@babel/preset-react",
   "@babel/preset-typescript",
+  "@inquirer/prompts",
   "@swc/core",
   "@swc/core-win32-x64-msvc",
   "@swc/wasm",
-  "uglify-js",
+  "babel-loader",
+  "commander",
+  "chalk",
+  "ejs",
+  "electron",
+  "electron-builder",
+  "html-webpack-plugin",
   "jsonc",
-  "@inquirer/prompts",
-  "html-webpack-plugin"
+  "lodash",
+  "uglify-js",
+  "webpack",
 ];
 
-
-const commonOptions = {
-  entryPoints: ['src/index.ts'],
-  bundle: true,
-  platform: 'node',
-  sourcemap: true,
-  alias: {
-    '@': './src',
-    '@core': './src/core',
-  },
-  logLevel: 'info',
-  loader: {
-    ".ejs": "text",
-  },
-  external,
+const alias = {
+  '@': './src',
+  '@core': './src/core',
+  '@cli': './src/cli',
+  '@client': './src/client',
+  '@main': './src/main',
 };
 
 Promise.all([
-  esbuild.build({ ...commonOptions, format: 'esm', outfile: 'dist/index.mjs' }),
   esbuild.build({
-    entryPoints: ['src/cli.ts'],
+    alias,
     bundle: true,
-    platform: 'node',
+    entryPoints: ['src/index.ts'],
+    external,
     format: 'esm',
-    outfile: 'dist/cli.mjs',
-    alias: {
-      '@': './src',
-      '@core': './src/core',
-    },
-    logLevel: 'info',
     loader: {
       ".ejs": "text",
     },
+    logLevel: 'info',
+    outfile: 'dist/index.mjs',
+    platform: 'node',
+    sourcemap: true
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
+    entryPoints: ['src/cli.ts'],
     external,
+    format: 'esm',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/cli.mjs',
+    platform: 'node',
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
+    entryPoints: ['src/client.ts'],
+    external,
+    format: 'esm',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/client.mjs',
+    platform: 'node',
   }),
 ]).catch(() => process.exit(1));

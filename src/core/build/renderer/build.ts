@@ -3,7 +3,7 @@ import {Project} from "@core/project/project";
 import {Fs} from "@/utils/fs";
 import {createStructure} from "@core/build/renderer/prepare";
 import {BuildTempStructure, RendererAppEntryPoint, RendererHTMLEntryPoint} from "@core/build/renderer/tempSrc";
-import {WebpackConfig, WebpackMode} from "@core/build/renderer/webpack";
+import {WebpackConfig, WebpackMode} from "@core/build/webpack";
 import path from "path";
 import {Babel} from "@core/build/renderer/babel";
 import {StyleSheet} from "@core/build/renderer/stylesheet";

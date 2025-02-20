@@ -1,2 +1,1 @@
-
-console.log('Hello, index.ts!');
+export * from "@/main/electron/index";
