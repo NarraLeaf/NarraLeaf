@@ -98,7 +98,7 @@ async function handleFile<T extends ValuesOf<DirStructureDefinition<any>["contai
 
         return success(fileDef.validator ? fileDef.validator.parse(result.data) : result.data);
     } else if (fileDef.type === ProjectFileType.FILE) {
-        const result = await projectFs.tryRead(fileDef.path);
+        const result = await projectFs.tryAccessFile(fileDef.path);
         if (!result.ok) {
             return result;
         }

@@ -126,6 +126,20 @@ export class ProjectFs {
         );
     }
 
+    /**
+     * Tries to access a file from the list of paths
+     *
+     * Returns the first path that exists
+     */
+    public tryAccessFile(pathsRaw: string | string[]): Promise<FsResult<string>> {
+        const paths = typeof pathsRaw === "string" ? [pathsRaw] : pathsRaw;
+        return this.retry(
+            paths,
+            (path) => this.isFileExists(path).then(result => result.ok ? { ok: true, data: path } : result),
+            this.toRetryStack(paths, "files are not found")
+        );
+    }
+
     public isDirExists(path: string): Promise<FsResult<boolean>> {
         return Fs.isDirExists(this.resolve(path));
     }
@@ -135,7 +149,7 @@ export class ProjectFs {
     }
 
     public resolve(p: string): string {
-        return path.isAbsolute(p) ? p : path.join(this.root, p);
+        return path.isAbsolute(p) ? p : path.resolve(this.root, p);
     }
 
     public isProjectFile(p: string): boolean {
