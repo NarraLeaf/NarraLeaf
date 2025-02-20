@@ -45,6 +45,10 @@ export class Fs {
         }));
     }
 
+    public static copyDir(src: string, destDir: string): Promise<FsResult<void>> {
+        return this.wrap(fs.cp(src, destDir, {recursive: true}));
+    }
+
     private static errorToString(error: unknown): string {
         if (error instanceof Error) {
             return error.message;

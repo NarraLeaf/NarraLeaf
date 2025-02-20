@@ -12,18 +12,17 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
     logger.info("Building project at", path);
 
     try {
+        const time = Date.now();
         const projectStructure = await parseDirStructure(BaseProjectStructure, app.resolvePath(path));
-        console.log(projectStructure); // debug
-
         const project = new Project(app.resolvePath(path), projectStructure);
 
         const rendererProject = await project.createRendererProject();
-        console.log(rendererProject.structure.app); // debug
-        console.log(rendererProject.getAppEntry(), rendererProject.getPagesDir(), rendererProject.getPublicDir()); // debug
+        logger.info("request temp dir", project.getTempDir(Project.TempNamespace.RendererBuild));
 
-        console.log("request temp dir", project.getTempDir(Project.TempNamespace.RendererBuild)); // debug
-
+        logger.info("Building project...");
         await project.build(rendererProject, logger);
+
+        logger.info("Project built in", String(Date.now() - time), "ms");
     } catch (e) {
         logger.error("Failed to build project:", errorToString(e));
     }

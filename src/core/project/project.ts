@@ -5,12 +5,13 @@ import {ProjectFs} from "@/utils/fs";
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
 import path from "path";
-import {buildRenderer} from "@core/build/renderer/build";
+import {buildRenderer, RendererBuildResult} from "@core/build/renderer/build";
 import {Logger} from "@/cli/logger";
 
 export enum TempNamespace {
     RendererBuild = "renderer-build",
     RendererBuild_Dist = "renderer-build/dist",
+    MainBuild = "main-build",
 }
 
 export class Project {
@@ -46,7 +47,7 @@ export class Project {
             : this.fs.resolve(this.config.temp);
     }
 
-    public build(rendererProject: RendererProject, logger: Logger): Promise<string> {
+    public build(rendererProject: RendererProject, logger: Logger): Promise<RendererBuildResult> {
         return buildRenderer({rendererProject, logger});
     }
 
