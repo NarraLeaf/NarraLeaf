@@ -23,7 +23,7 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
 
         console.log("request temp dir", project.getTempDir(Project.TempNamespace.RendererBuild)); // debug
 
-        await project.build(rendererProject);
+        await project.build(rendererProject, logger);
     } catch (e) {
         logger.error("Failed to build project:", errorToString(e));
     }

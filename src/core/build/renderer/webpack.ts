@@ -14,7 +14,7 @@
  * - @babel/preset-react
  * - @babel/preset-typescript
  *
- * # CSS
+ * # StyleSheet
  * - style-loader
  * - css-loader
  */

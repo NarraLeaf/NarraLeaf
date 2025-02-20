@@ -2,14 +2,13 @@
   "name": "narraleaf",
   "version": "0.0.1",
   "description": "Create your visual novel with Electron and React",
-  "bin": "./dist/cli.js",
-  "main": "dist/index.cjs",
+  "bin": "./dist/cli.mjs",
+  "main": "dist/index.mjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     "types": "./dist/index.d.ts",
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.cjs"
+    "import": "./dist/index.mjs"
   },
   "scripts": {
     "build": "node project/esbuild.js && tsc --emitDeclarationOnly",
@@ -25,32 +24,40 @@
     "narraleaf",
     "nvl"
   ],
-  "devDependencies": {
-    "@types/babel__core": "^7",
-    "@types/babel__preset-env": "^7",
-    "@types/ejs": "^3",
-    "@types/lodash": "^4",
-    "@types/node": "^22.13.4",
-    "esbuild": "0.25.0",
-    "raw-loader": "^4.0.2",
-    "typescript": "^5.3.0"
-  },
   "dependencies": {
+    "@inquirer/prompts": "^7.3.2",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "ejs": "^3.1.10",
+    "jsonc": "^2.0.0",
+    "lodash": "^4.17.21"
+  },
+  "peerDependencies": {
     "@babel/core": "^7.26.9",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
-    "@inquirer/prompts": "^7.3.2",
+    "@swc/core": "^1.10.18",
+    "@swc/core-win32-x64-msvc": "^1.10.18",
+    "@swc/wasm": "^1.10.18",
     "babel-loader": "^9.2.1",
-    "chalk": "^5.4.1",
-    "commander": "^13.1.0",
-    "css-loader": "^7.1.2",
-    "ejs": "^3.1.10",
     "html-webpack-plugin": "^5.6.3",
-    "jsonc": "^2.0.0",
-    "lodash": "^4.17.21",
-    "style-loader": "^4.0.0",
-    "webpack": "^5.98.0",
-    "zod": "^3.24.2"
-  }
+    "uglify-js": "^3.19.3",
+    "webpack": "^5.98.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
+    "@types/ejs": "^3",
+    "@types/lodash": "^4",
+    "@types/node": "^22.13.4",
+    "babel-loader": "^9.2.1",
+    "esbuild": "0.25.0",
+    "html-webpack-plugin": "^5.6.3",
+    "typescript": "^5.3.0",
+    "webpack": "^5.98.0"
+  },
+  "type": "module"
 }
