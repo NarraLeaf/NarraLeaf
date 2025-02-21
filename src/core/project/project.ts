@@ -9,9 +9,9 @@ import {buildRenderer, RendererBuildResult} from "@core/build/renderer/build";
 import {Logger} from "@/cli/logger";
 
 export enum TempNamespace {
-    RendererBuild = "renderer-build",
-    RendererBuild_Dist = "renderer-build/dist",
-    MainBuild = "main-build",
+    RendererBuild = "app-build/renderer",
+    RendererBuild_Dist = "app-build/renderer/dist",
+    MainBuild = "app-build/main-build",
 }
 
 export class Project {

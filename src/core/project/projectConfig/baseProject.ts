@@ -3,13 +3,11 @@ import {ProjectFileType, DirStructureDefinition} from "@core/project/projectConf
 
 export type BaseProjectConfigZod = z.ZodObject<{
     renderer: z.ZodObject<{
-        baseDir: z.ZodString | z.ZodUndefined;
+        baseDir: z.ZodString;
     }>;
-    story: z.ZodObject<{
-        entry: z.ZodString | z.ZodUndefined;
-    }>;
-    main: z.ZodString | z.ZodUndefined;
-    temp: z.ZodString | z.ZodUndefined;
+    main: z.ZodString;
+    temp: z.ZodString;
+    dev: z.ZodBoolean;
 }>;
 export type BaseProjectUserConfig = z.infer<BaseProjectConfigZod>;
 
@@ -17,11 +15,9 @@ export type BaseProjectConfig = {
     renderer: {
         baseDir: string;
     };
-    story: {
-        entry: string;
-    };
     main: string;
     temp: string;
+    dev: boolean;
 };
 
 export const BaseProjectStructure: DirStructureDefinition<{
@@ -53,11 +49,9 @@ export const BaseProjectStructure: DirStructureDefinition<{
                     renderer: z.object({
                         baseDir: z.string(),
                     }).partial(),
-                    story: z.object({
-                        entry: z.string(),
-                    }).partial(),
                     main: z.string(),
                     temp: z.string(),
+                    dev: z.boolean(),
                 }).partial(),
             }),
         }

@@ -10,7 +10,7 @@ import {StyleSheet} from "@core/build/renderer/stylesheet";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import {Logger} from "@/cli/logger";
 import webpack from "webpack";
-import {OutputFileName, OutputHTMLFileName, OutputPublicDir} from "@core/build/constants";
+import {RendererOutputFileName, RendererOutputHTMLFileName, RendererOutputPublicDir} from "@core/build/constants";
 
 export type RendererBuildResult = {
     dir: string;
@@ -28,18 +28,19 @@ export async function buildRenderer(
     const publicDir = rendererProject.getPublicDir();
     const appEntry = path.resolve(buildDir, RendererAppEntryPoint.name);
     const htmlEntry = path.resolve(buildDir, RendererHTMLEntryPoint.name);
+    const packMode = rendererProject.project.config.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(buildDir);
     await createStructure(BuildTempStructure, rendererProject, buildDir);
 
     const webpackConfig = new WebpackConfig({
-        mode: WebpackMode.Development,
+        mode: packMode,
         entry: appEntry,
         outputDir: outputDir,
-        outputFilename: OutputFileName,
+        outputFilename: RendererOutputFileName,
         extensions: [".ts", ".tsx", ".js", ".jsx"],
     })
-        .useModule(new Babel())
+        .useModule(new Babel(true))
         .useModule(new StyleSheet())
         .usePlugin(new HtmlWebpackPlugin({
             template: htmlEntry,
@@ -58,11 +59,11 @@ export async function buildRenderer(
             }
         });
     });
-    await Fs.copyDir(publicDir, path.resolve(outputDir, OutputPublicDir));
+    await Fs.copyDir(publicDir, path.resolve(outputDir, RendererOutputPublicDir));
 
     return {
         dir: outputDir,
-        htmlEntry: path.resolve(outputDir, OutputHTMLFileName),
+        htmlEntry: path.resolve(outputDir, RendererOutputHTMLFileName),
     };
 }
 

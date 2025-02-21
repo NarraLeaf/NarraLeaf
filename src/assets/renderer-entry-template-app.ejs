@@ -1,6 +1,27 @@
 import React from "react";
 import {createRoot} from "react-dom/client";
-import {default as App} from "<%= appPath %>";
+import {default as App, story} from "<%= appPath %>";
+
+import {GameProviders, Player} from "narraleaf-react";
+
+const AppRoot = () => {
+return (
+<React.Fragment>
+    <GameProviders>
+        <Player
+                story={story}
+                onReady={({liveGame}) => {
+        liveGame.newGame();
+        }}
+        width="100%"
+        height="100%"
+        >
+        <App />
+        </Player>
+    </GameProviders>
+</React.Fragment>
+);
+}
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
-root.render(<App />);
+root.render(<AppRoot/>);
