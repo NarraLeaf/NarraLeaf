@@ -1,4 +1,4 @@
 
-console.log("Hello, Client.ts!");
+export * from "@/client/index";
 
 export {};

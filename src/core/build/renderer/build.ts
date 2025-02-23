@@ -44,7 +44,8 @@ export async function buildRenderer(
         .useModule(new StyleSheet())
         .usePlugin(new HtmlWebpackPlugin({
             template: htmlEntry,
-        }));
+        }))
+        .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration();
 
     await new Promise<void>((resolve, reject) => {

@@ -4,7 +4,7 @@ import {Fs} from "@/utils/fs";
 import {WebpackConfig, WebpackMode} from "@core/build/webpack";
 import {MainOutputFileName} from "@core/build/constants";
 import {Babel} from "@core/build/renderer/babel";
-import {webpack} from "webpack";
+import webpack from "webpack";
 import path from "path";
 
 
@@ -31,7 +31,8 @@ export async function buildMain(
         outputFilename: MainOutputFileName,
         extensions: [".ts", ".js"],
     })
-        .useModule(new Babel(false));
+        .useModule(new Babel(false))
+        .useNodeModule(project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration();
 
     await new Promise<void>((resolve, reject) => {

@@ -32,17 +32,20 @@ export type BaseWebpackConfig = {
     outputFilename: string;
     extensions: string[];
     extend?: Configuration;
+    useCache?: boolean;
 }
 
 export class WebpackConfig {
     public config: BaseWebpackConfig;
     public modules: WebpackModule[];
     public plugins: any[];
+    public node_modules: string[];
 
     constructor(config: BaseWebpackConfig) {
         this.config = config;
         this.modules = [];
         this.plugins = [];
+        this.node_modules = [];
     }
 
     public getConfiguration(): Configuration {
@@ -55,6 +58,7 @@ export class WebpackConfig {
             },
             resolve: {
                 extensions: this.config.extensions,
+                modules: this.node_modules,
             },
             module: {
                 rules: this.modules.map(module => ({
@@ -64,6 +68,9 @@ export class WebpackConfig {
                 }))
             },
             plugins: this.plugins,
+            cache: {
+                type: this.config.useCache ? "filesystem" : "memory"
+            },
             ...this.config.extend,
         };
     }
@@ -75,6 +82,11 @@ export class WebpackConfig {
 
     usePlugin(plugin: any): this {
         this.plugins.push(plugin);
+        return this;
+    }
+
+    useNodeModule(module: string): this {
+        this.node_modules.push(module);
         return this;
     }
 }

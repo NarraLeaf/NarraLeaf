@@ -1,25 +1,18 @@
-import esbuild from 'esbuild';
+// import esbuild from 'esbuild';
+const esbuild = require('esbuild');
 
 const external = [
-  "@babel/core",
-  "@babel/preset-env",
-  "@babel/preset-react",
-  "@babel/preset-typescript",
-  "@inquirer/prompts",
-  "@swc/core",
-  "@swc/core-win32-x64-msvc",
-  "@swc/wasm",
   "babel-loader",
   "commander",
-  "chalk",
-  "ejs",
   "electron",
   "electron-builder",
-  "html-webpack-plugin",
-  "jsonc",
-  "lodash",
-  "uglify-js",
   "webpack",
+  "chalk",
+  "html-webpack-plugin",
+  "narraleaf-react",
+  "react/jsx-runtime",
+  "react",
+  "react-dom",
 ];
 
 const alias = {
@@ -43,20 +36,22 @@ Promise.all([
     logLevel: 'info',
     outfile: 'dist/index.mjs',
     platform: 'node',
-    sourcemap: true
+    sourcemap: true,
+    target: 'node22'
   }),
   esbuild.build({
     alias,
     bundle: true,
     entryPoints: ['src/cli.ts'],
     external,
-    format: 'esm',
+    format: 'cjs',
     loader: {
       ".ejs": "text",
     },
     logLevel: 'info',
-    outfile: 'dist/cli.mjs',
+    outfile: 'dist/cli.cjs',
     platform: 'node',
+    target: 'node16'
   }),
   esbuild.build({
     alias,
@@ -69,6 +64,6 @@ Promise.all([
     },
     logLevel: 'info',
     outfile: 'dist/client.mjs',
-    platform: 'node',
+    platform: 'browser',
   }),
 ]).catch(() => process.exit(1));

@@ -1,27 +1,13 @@
 import React from "react";
 import {createRoot} from "react-dom/client";
+import {AppRoot} from "narraleaf/client";
+
 import {default as App, story} from "<%= appPath %>";
-
-import {GameProviders, Player} from "narraleaf-react";
-
-const AppRoot = () => {
-return (
-<React.Fragment>
-    <GameProviders>
-        <Player
-                story={story}
-                onReady={({liveGame}) => {
-        liveGame.newGame();
-        }}
-        width="100%"
-        height="100%"
-        >
-        <App />
-        </Player>
-    </GameProviders>
-</React.Fragment>
-);
-}
+import * as NarraLeafReact from "narraleaf-react";
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
-root.render(<AppRoot/>);
+root.render(
+    <AppRoot story={story} lib={NarraLeafReact}>
+        <App />
+    </AppRoot>
+);
