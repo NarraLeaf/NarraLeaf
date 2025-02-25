@@ -9,15 +9,20 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     },
     "./client": {
       "import": "./dist/client.mjs",
       "types": "./dist/client.d.ts"
+    },
+    "./main": {
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build": "node project/esbuild.js && tsc --emitDeclarationOnly",
+    "build": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias",
     "watch": "node project/esbuild.js --watch & tsc --emitDeclarationOnly --watch",
     "prepublishOnly": "yarn run build",
     "postinstall": "npx install-peerdeps --dev narraleaf"
@@ -62,6 +67,7 @@
     "@types/ejs": "^3.1.5",
     "@types/lodash": "^4.17.15",
     "@types/react": "^19.0.10",
+    "@types/webpack-node-externals": "^3",
     "babel-loader": "^9.2.1",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
@@ -71,8 +77,10 @@
     "html-webpack-plugin": "^5.6.3",
     "motion": "^11.15.0",
     "narraleaf-react": "^0.3.0",
+    "tsc-alias": "^1.8.10",
     "typescript": "^5.3.0",
-    "webpack": "^5.98.0"
+    "webpack": "^5.98.0",
+    "webpack-node-externals": "^3.0.0"
   },
   "files": [
     "dist"

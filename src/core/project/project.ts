@@ -10,8 +10,8 @@ import {Logger} from "@/cli/logger";
 import {buildMain, MainBuildResult} from "@core/build/main/build";
 
 export enum TempNamespace {
-    RendererBuild = "app-build/.cache/renderer",
-    RendererBuild_Dist = "app-build/renderer",
+    RendererBuild = "app-build/renderer",
+    RendererBuildCache = "app-build/.cache/renderer",
     MainBuild = "app-build/main",
 }
 

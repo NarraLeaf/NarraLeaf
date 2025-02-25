@@ -23,8 +23,8 @@ export async function buildRenderer(
         logger: Logger;
     }
 ): Promise<RendererBuildResult> {
-    const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
-    const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild_Dist);
+    const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildCache);
+    const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
     const publicDir = rendererProject.getPublicDir();
     const appEntry = path.resolve(buildDir, RendererAppEntryPoint.name);
     const htmlEntry = path.resolve(buildDir, RendererHTMLEntryPoint.name);

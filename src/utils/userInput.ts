@@ -59,3 +59,9 @@ export function zodErrorToString(error: any): string {
     )).join("\n");
 }
 
+export function safeExecuteFn<T>(fn: any) {
+    if (typeof fn === "function") {
+        return fn();
+    }
+}
+

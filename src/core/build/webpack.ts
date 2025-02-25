@@ -19,6 +19,7 @@
  * - css-loader
  */
 import {Configuration, RuleSetUse} from "webpack";
+import _ from "lodash";
 
 export enum WebpackMode {
     Development = "development",
@@ -49,7 +50,7 @@ export class WebpackConfig {
     }
 
     public getConfiguration(): Configuration {
-        return {
+        return _.merge({
             mode: this.config.mode,
             entry: this.config.entry,
             output: {
@@ -71,8 +72,7 @@ export class WebpackConfig {
             cache: {
                 type: this.config.useCache ? "filesystem" : "memory"
             },
-            ...this.config.extend,
-        };
+        }, this.config.extend);
     }
 
     useModule(module: WebpackModule): this {

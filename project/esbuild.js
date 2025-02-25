@@ -42,6 +42,21 @@ Promise.all([
   esbuild.build({
     alias,
     bundle: true,
+    entryPoints: ['src/index.ts'],
+    external,
+    format: 'cjs',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/index.cjs',
+    platform: 'node',
+    sourcemap: true,
+    target: 'node22'
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
     entryPoints: ['src/cli.ts'],
     external,
     format: 'cjs',

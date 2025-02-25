@@ -6,6 +6,8 @@ import {MainOutputFileName} from "@core/build/constants";
 import {Babel} from "@core/build/renderer/babel";
 import webpack from "webpack";
 import path from "path";
+import {Builtins} from "@core/build/main/biltins";
+import NodeExternals from "webpack-node-externals";
 
 
 export type MainBuildResult = {
@@ -30,6 +32,16 @@ export async function buildMain(
         outputDir: distDir,
         outputFilename: MainOutputFileName,
         extensions: [".ts", ".js"],
+        extend: {
+            resolve: {
+            },
+            externals: [
+                NodeExternals(),
+                ...Builtins,
+                "narraleaf",
+            ],
+            target: "electron-main"
+        }
     })
         .useModule(new Babel(false))
         .useNodeModule(project.fs.resolve("node_modules"));
