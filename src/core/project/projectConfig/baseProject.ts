@@ -8,6 +8,11 @@ export type BaseProjectConfigZod = z.ZodObject<{
     main: z.ZodString;
     temp: z.ZodString;
     dev: z.ZodBoolean;
+    build: z.ZodObject<{
+        appId: z.ZodString;
+        productName: z.ZodString;
+        dist: z.ZodString;
+    }>;
 }>;
 export type BaseProjectUserConfig = z.infer<BaseProjectConfigZod>;
 
@@ -18,6 +23,11 @@ export type BaseProjectConfig = {
     main: string;
     temp: string;
     dev: boolean;
+    build: {
+        appId: string;
+        productName: string;
+        dist: string;
+    };
 };
 
 export const BaseProjectStructure: DirStructureDefinition<{
@@ -52,6 +62,11 @@ export const BaseProjectStructure: DirStructureDefinition<{
                     main: z.string(),
                     temp: z.string(),
                     dev: z.boolean(),
+                    build: z.object({
+                        appId: z.string(),
+                        productName: z.string(),
+                        dist: z.string(),
+                    }).partial(),
                 }).partial(),
             }),
         }
