@@ -22,7 +22,7 @@ export async function buildMain(
     }
 ): Promise<MainBuildResult> {
     const distDir = project.getTempDir(Project.TempNamespace.MainBuild);
-    const packMode = project.config.dev ? WebpackMode.Development : WebpackMode.Production;
+    const packMode = project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(distDir);
 

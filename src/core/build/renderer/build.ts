@@ -28,7 +28,7 @@ export async function buildRenderer(
     const publicDir = rendererProject.getPublicDir();
     const appEntry = path.resolve(buildDir, RendererAppEntryPoint.name);
     const htmlEntry = path.resolve(buildDir, RendererHTMLEntryPoint.name);
-    const packMode = rendererProject.project.config.dev ? WebpackMode.Development : WebpackMode.Production;
+    const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(buildDir);
     await createStructure(BuildTempStructure, rendererProject, buildDir);

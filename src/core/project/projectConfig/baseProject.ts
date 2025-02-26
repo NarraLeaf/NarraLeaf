@@ -1,41 +1,29 @@
 import {z} from "zod";
 import {ProjectFileType, DirStructureDefinition} from "@core/project/projectConfig/parser";
+import {BuildTarget} from "@core/build/electron/target";
 
 export type BaseProjectConfigZod = z.ZodObject<{
+    build: z.ZodObject<{
+        appId: z.ZodString;
+        copyright: z.ZodString;
+        dev: z.ZodBoolean;
+        dist: z.ZodString;
+        productName: z.ZodString;
+        targets: z.ZodType<BuildTarget> | z.ZodArray<z.ZodType<BuildTarget>>;
+    }>;
+    main: z.ZodString;
     renderer: z.ZodObject<{
         baseDir: z.ZodString;
     }>;
-    main: z.ZodString;
     temp: z.ZodString;
-    dev: z.ZodBoolean;
-    build: z.ZodObject<{
-        appId: z.ZodString;
-        productName: z.ZodString;
-        dist: z.ZodString;
-    }>;
 }>;
-export type BaseProjectUserConfig = z.infer<BaseProjectConfigZod>;
-
-export type BaseProjectConfig = {
-    renderer: {
-        baseDir: string;
-    };
-    main: string;
-    temp: string;
-    dev: boolean;
-    build: {
-        appId: string;
-        productName: string;
-        dist: string;
-    };
-};
+export type BaseProjectConfig = z.infer<BaseProjectConfigZod>;
 
 export const BaseProjectStructure: DirStructureDefinition<{
     "package": z.ZodObject<{
         name: z.ZodString;
         version: z.ZodString;
         description: z.ZodString;
-        main: z.ZodString;
     }>;
     "narraleaf.config": z.ZodObject<{
         default: BaseProjectConfigZod;
@@ -56,17 +44,23 @@ export const BaseProjectStructure: DirStructureDefinition<{
             type: ProjectFileType.CJS,
             validator: z.object({
                 default: z.object({
+                    build: z.object({
+                        appId: z.string(),
+                        copyright: z.string(),
+                        dev: z.boolean(),
+                        dist: z.string(),
+                        productName: z.string(),
+                        targets: z.custom<BuildTarget | BuildTarget[]>((value) => {
+                            return Array.isArray(value)
+                                ? value.every((t) => BuildTarget.isTarget(t))
+                                : BuildTarget.isTarget(value);
+                        }, "Invalid target configuration"),
+                    }).partial(),
+                    main: z.string(),
                     renderer: z.object({
                         baseDir: z.string(),
                     }).partial(),
-                    main: z.string(),
                     temp: z.string(),
-                    dev: z.boolean(),
-                    build: z.object({
-                        appId: z.string(),
-                        productName: z.string(),
-                        dist: z.string(),
-                    }).partial(),
                 }).partial(),
             }),
         }

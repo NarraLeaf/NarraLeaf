@@ -1,6 +1,7 @@
 import {App} from "@/main/electron/app/app";
 import {BrowserWindow, WebPreferences} from "electron";
 import _ from "lodash";
+import {EventToken} from "narraleaf-react/dist/util/data";
 
 export interface WindowConfig {
     isolated: boolean;
@@ -37,7 +38,7 @@ export interface WindowConfig {
     height?: number;
 }
 
-export class Window {
+export class AppWindow {
     public static readonly DefaultConfig: WindowConfig = {
         isolated: true,
         waitUntilReady: true,
@@ -49,7 +50,7 @@ export class Window {
 
     constructor(app: App, config: Partial<WindowConfig>) {
         this.app = app;
-        this.config = _.defaultsDeep(config, Window.DefaultConfig);
+        this.config = _.defaultsDeep(config, AppWindow.DefaultConfig);
         this.win = new BrowserWindow({
             webPreferences: this.getWebPreference(),
             width: this.config.width,
@@ -66,6 +67,17 @@ export class Window {
     getWebPreference(): WebPreferences {
         return {
             contextIsolation: this.config.isolated,
+        };
+    }
+
+    onClosed(fn: () => void): EventToken {
+        this.win.on("closed", () => {
+            fn();
+        });
+        return {
+            cancel: () => {
+                this.win.removeListener("closed", fn);
+            }
         };
     }
 

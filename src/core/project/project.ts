@@ -1,4 +1,4 @@
-import {BaseProjectConfig, BaseProjectStructure} from "@core/project/projectConfig/baseProject";
+import {BaseProjectStructure, BaseProjectConfig} from "@core/project/projectConfig/baseProject";
 import {InferDirStructure, parseDirStructure} from "@core/project/projectConfig/parser";
 import {DefaultProjectConfig, mergeConfig} from "@core/project/projectConfig/defaults";
 import {ProjectFs} from "@/utils/fs";
@@ -8,6 +8,7 @@ import path from "path";
 import {buildRenderer, RendererBuildResult} from "@core/build/renderer/build";
 import {Logger} from "@/cli/logger";
 import {buildMain, MainBuildResult} from "@core/build/main/build";
+import {AppBuildResult, buildApp} from "@core/build/electron/pack";
 
 export enum TempNamespace {
     RendererBuild = "app-build/renderer",
@@ -48,12 +49,20 @@ export class Project {
             : this.fs.resolve(this.config.temp);
     }
 
+    public getRootDir(): string {
+        return this.root;
+    }
+
     public buildRenderer(rendererProject: RendererProject, logger: Logger): Promise<RendererBuildResult> {
         return buildRenderer({rendererProject, logger});
     }
 
     public buildMain(logger: Logger): Promise<MainBuildResult> {
         return buildMain({userEntry: this.config.main, logger, project: this});
+    }
+
+    public buildApp(logger: Logger): Promise<AppBuildResult> {
+        return buildApp(this, logger);
     }
 
     private readPackage(): this {

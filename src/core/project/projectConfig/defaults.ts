@@ -1,14 +1,21 @@
-import {BaseProjectUserConfig} from "@core/project/projectConfig/baseProject";
 import _ from "lodash";
+import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
 
 
-export const DefaultProjectConfig: BaseProjectUserConfig = {
+export const DefaultProjectConfig: BaseProjectConfig = {
+    build: {
+        appId: "com.example.app",
+        copyright: "",
+        dev: false,
+        dist: "dist",
+        productName: "Example App",
+        targets: [],
+    },
+    main: "main/index.js",
     renderer: {
         baseDir: "renderer",
     },
-    main: "main/index.js",
     temp: ".narraleaf",
-    dev: false,
 };
 
 export function mergeConfig<T, U>(base: T, user: U): T & U {

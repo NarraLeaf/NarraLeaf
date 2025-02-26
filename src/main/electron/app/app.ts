@@ -3,7 +3,7 @@ import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
 import {safeExecuteFn} from "@/utils/userInput";
 import {Platform, PlatformInfo} from "@/utils/platform";
-import {Window, WindowConfig} from "@/main/electron/app/window";
+import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
 import {RendererOutputHTMLFileName, Separator} from "@core/build/constants";
 import {CriticalMainProcessError} from "@/main/error/criticalError";
 import {TempNamespace} from "@core/project/project";
@@ -43,8 +43,8 @@ export class App {
         };
     }
 
-    createWindow(config: Partial<WindowConfig>): Window {
-        return new Window(this, config);
+    createWindow(config: Partial<WindowConfig>): AppWindow {
+        return new AppWindow(this, config);
     }
 
     getConfig() {
@@ -69,5 +69,9 @@ export class App {
             TempNamespace.MainBuild.split(Separator).filter(Boolean).length
         );
         return `${prefix}${TempNamespace.RendererBuild}${Separator}${RendererOutputHTMLFileName}`;
+    }
+
+    public terminate(): void {
+        this.electronApp.quit();
     }
 }
