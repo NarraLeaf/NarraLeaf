@@ -1,7 +1,7 @@
 import {Command} from "commander";
 import {App} from "../app";
-import {exec} from "@/utils/platform";
 import path from "path";
+import {exec} from "@/utils/utils";
 
 type InitOptions = {};
 

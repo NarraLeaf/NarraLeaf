@@ -1,9 +1,9 @@
 import chalk from "chalk";
-import {Fs} from "@/utils/fs";
-import {PlatformInfo, PlatformSystem} from "@/utils/platform";
 import {App} from "./app";
-import {sliceString} from "@/utils/str";
 import {input, confirm} from "./inquirer";
+import {Fs} from "@/utils/contaminated/fs";
+import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
+import {sliceString} from "@/utils/pure/string";
 
 type LoggerConfig = {
     debug: boolean;

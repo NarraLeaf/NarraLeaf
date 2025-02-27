@@ -19,7 +19,8 @@ export const ActionRegistry: CLIRegistry = [
     },
     {
         name: "build",
-        command: new Command("build"),
+        command: new Command("build")
+            .argument("[path]", "The path to the project directory", "."),
         action: build,
     },
 ];

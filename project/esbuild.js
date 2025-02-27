@@ -1,30 +1,84 @@
+// import esbuild from 'esbuild';
 const esbuild = require('esbuild');
 
-const commonOptions = {
-  entryPoints: ['src/index.ts'],
-  bundle: true,
-  platform: 'node',
-  sourcemap: true,
-  alias: {
-    '@': './src',
-    '@core': './src/core',
-  },
-  logLevel: 'info',
+const external = [
+  "babel-loader",
+  "commander",
+  "electron",
+  "electron-builder",
+  "webpack",
+  "chalk",
+  "html-webpack-plugin",
+  "narraleaf-react",
+  "react/jsx-runtime",
+  "react",
+  "react-dom",
+];
+
+const alias = {
+  '@': './src',
+  '@core': './src/core',
+  '@cli': './src/cli',
+  '@client': './src/client',
+  '@main': './src/main',
 };
 
 Promise.all([
-  esbuild.build({ ...commonOptions, format: 'cjs', outfile: 'dist/index.cjs' }),
-  esbuild.build({ ...commonOptions, format: 'esm', outfile: 'dist/index.mjs' }),
   esbuild.build({
-    entryPoints: ['src/cli.ts'],
+    alias,
     bundle: true,
-    platform: 'node',
-    format: 'cjs',
-    outfile: 'dist/cli.js',
-    alias: {
-      '@': './src',
-      '@core': './src/core',
+    entryPoints: ['src/index.ts'],
+    external,
+    format: 'esm',
+    loader: {
+      ".ejs": "text",
     },
     logLevel: 'info',
+    outfile: 'dist/index.mjs',
+    platform: 'node',
+    sourcemap: true,
+    target: 'node22'
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
+    entryPoints: ['src/index.ts'],
+    external,
+    format: 'cjs',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/index.cjs',
+    platform: 'node',
+    sourcemap: true,
+    target: 'node22'
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
+    entryPoints: ['src/cli.ts'],
+    external,
+    format: 'cjs',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/cli.cjs',
+    platform: 'node',
+    target: 'node16'
+  }),
+  esbuild.build({
+    alias,
+    bundle: true,
+    entryPoints: ['src/client.ts'],
+    external,
+    format: 'esm',
+    loader: {
+      ".ejs": "text",
+    },
+    logLevel: 'info',
+    outfile: 'dist/client.mjs',
+    platform: 'browser',
   }),
 ]).catch(() => process.exit(1));

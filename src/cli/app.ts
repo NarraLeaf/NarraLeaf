@@ -1,6 +1,7 @@
 import {Command, program} from "commander";
-import {Platform, PlatformInfo} from "@/utils/platform";
 import {Logger} from "./logger";
+import path from "path";
+import {Platform, PlatformInfo} from "@/utils/pure/os";
 
 type AppConfig = {
     name: string;
@@ -63,6 +64,13 @@ export class App {
             throw new Error("Cannot access process before running the app");
         }
         return this.process;
+    }
+
+    public resolvePath(p: string): string {
+        if (path.isAbsolute(p)) {
+            return p;
+        }
+        return path.resolve(this.getProcess().cwd(), p);
     }
 
     private registerCommands(registry: CLIRegistry) {
