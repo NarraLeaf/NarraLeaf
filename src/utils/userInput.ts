@@ -1,8 +1,8 @@
 import {Result} from "@/utils/types";
-import {errorToString} from "@/utils/str";
 import {pathToFileURL} from "node:url";
 import {z} from "zod";
 import {Logger} from "@/cli/logger";
+import {errorToString} from "@/utils/pure/string";
 
 export async function importCJS(module: string | string[]): Promise<Result<unknown>> {
     const tryImport = async (module: string) => {
@@ -57,11 +57,5 @@ export function zodErrorToString(error: any): string {
     return (error as z.ZodError).errors.map(e => (
         `${Logger.chalk.red("path:")} ${Logger.chalk.blue(e.path.join("."))}${Logger.chalk.red(", message: ")}${Logger.chalk.blue(e.message)}`
     )).join("\n");
-}
-
-export function safeExecuteFn<T>(fn: any) {
-    if (typeof fn === "function") {
-        return fn();
-    }
 }
 

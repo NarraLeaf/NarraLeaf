@@ -1,18 +1,18 @@
 import {app} from "electron";
 import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
-import {safeExecuteFn} from "@/utils/userInput";
-import {Platform, PlatformInfo} from "@/utils/platform";
 import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
-import {RendererOutputHTMLFileName, Separator} from "@core/build/constants";
+import {RendererOutputHTMLFileName} from "@core/build/constants";
 import {CriticalMainProcessError} from "@/main/error/criticalError";
-import {TempNamespace} from "@core/project/project";
+import {Platform, PlatformInfo, safeExecuteFn} from "@/utils/pure/os";
+import {TempNamespace} from "@core/constants/tempNamespace";
+import path from "path";
 
 type AppEvents = {
     "ready": [];
 };
 
-type AppEventToken = {
+export type AppEventToken = {
     cancel(): void;
 };
 
@@ -32,13 +32,14 @@ export class App {
     }
 
     onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
-        this.events.on<"ready">(App.Events.Ready, () => {
+        const handler = () => {
             safeExecuteFn(fn);
-        });
+        };
+        this.events.on<"ready">(App.Events.Ready, handler);
 
         return {
             cancel: () => {
-                this.events.off(App.Events.Ready, fn);
+                this.events.off(App.Events.Ready, handler);
             }
         };
     }
@@ -65,13 +66,19 @@ export class App {
     }
 
     public getEntryFile(): string {
-        const prefix = `..${Separator}`.repeat(
-            TempNamespace.MainBuild.split(Separator).filter(Boolean).length
-        );
-        return `${prefix}${TempNamespace.RendererBuild}${Separator}${RendererOutputHTMLFileName}`;
+        const appDir = this.electronApp.getAppPath();
+        return path.resolve(appDir, TempNamespace.RendererBuild, RendererOutputHTMLFileName);
     }
 
     public terminate(): void {
         this.electronApp.quit();
+    }
+
+    public async launchApp(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
+        const win = new AppWindow(this, config);
+        await win.loadFile(this.getEntryFile());
+        await win.show();
+
+        return win;
     }
 }

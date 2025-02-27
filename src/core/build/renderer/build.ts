@@ -1,6 +1,5 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {Project} from "@core/project/project";
-import {Fs} from "@/utils/fs";
 import {createStructure} from "@core/build/renderer/prepare";
 import {BuildTempStructure, RendererAppEntryPoint, RendererHTMLEntryPoint} from "@core/build/renderer/tempSrc";
 import {WebpackConfig, WebpackMode} from "@core/build/webpack";
@@ -8,9 +7,9 @@ import path from "path";
 import {Babel} from "@core/build/renderer/babel";
 import {StyleSheet} from "@core/build/renderer/stylesheet";
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import {Logger} from "@/cli/logger";
 import webpack from "webpack";
 import {RendererOutputFileName, RendererOutputHTMLFileName, RendererOutputPublicDir} from "@core/build/constants";
+import {Fs} from "@/utils/contaminated/fs";
 
 export type RendererBuildResult = {
     dir: string;
@@ -18,9 +17,8 @@ export type RendererBuildResult = {
 };
 
 export async function buildRenderer(
-    {rendererProject, logger}: {
+    {rendererProject}: {
         rendererProject: RendererProject;
-        logger: Logger;
     }
 ): Promise<RendererBuildResult> {
     const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildCache);
@@ -53,7 +51,7 @@ export async function buildRenderer(
             if (err) {
                 reject(err);
             } else if (stats) {
-                logger.raw(stats.toString({
+                console.log(stats.toString({
                     colors: true,
                 }));
                 resolve();

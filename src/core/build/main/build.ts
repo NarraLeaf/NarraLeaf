@@ -1,6 +1,4 @@
 import {Project} from "@core/project/project";
-import {Logger} from "@/cli/logger";
-import {Fs} from "@/utils/fs";
 import {WebpackConfig, WebpackMode} from "@core/build/webpack";
 import {MainOutputFileName} from "@core/build/constants";
 import {Babel} from "@core/build/renderer/babel";
@@ -8,6 +6,7 @@ import webpack from "webpack";
 import path from "path";
 import {Builtins} from "@core/build/main/biltins";
 import NodeExternals from "webpack-node-externals";
+import {Fs} from "@/utils/contaminated/fs";
 
 
 export type MainBuildResult = {
@@ -15,9 +14,8 @@ export type MainBuildResult = {
 };
 
 export async function buildMain(
-    {userEntry, logger, project}: {
+    {userEntry, project}: {
         userEntry: string;
-        logger: Logger;
         project: Project;
     }
 ): Promise<MainBuildResult> {
@@ -33,8 +31,7 @@ export async function buildMain(
         outputFilename: MainOutputFileName,
         extensions: [".ts", ".js"],
         extend: {
-            resolve: {
-            },
+            resolve: {},
             externals: [
                 NodeExternals(),
                 ...Builtins,
@@ -52,7 +49,7 @@ export async function buildMain(
             if (err) {
                 reject(err);
             } else if (stats) {
-                logger.raw(stats.toString({
+                console.log(stats.toString({
                     colors: true,
                 }));
                 resolve();

@@ -1,5 +1,10 @@
-import {ValuesOf} from "./types";
-import {spawn} from "child_process";
+import {ValuesOf} from "@/utils/types";
+
+export function safeExecuteFn<T>(fn: any) {
+    if (typeof fn === "function") {
+        return fn();
+    }
+}
 
 export const PlatformSystem = {
     aix: "aix",
@@ -14,7 +19,6 @@ export const PlatformSystem = {
     cygwin: "cygwin",
     netbsd: "netbsd"
 } as const;
-
 export type PlatformInfo = {
     system: ValuesOf<typeof PlatformSystem>;
     arch: NodeJS.Architecture;
@@ -40,23 +44,3 @@ export class Platform {
         };
     }
 }
-
-export function exec(args: string[], process: NodeJS.Process): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const child = spawn(args[0], args.slice(1), {
-            stdio: "inherit",
-            shell: true,
-            env: process.env,
-            cwd: process.cwd()
-        });
-
-        child.on("close", (code) => {
-            if (code !== 0) {
-                reject(new Error(`Process exited with code ${code}`));
-            } else {
-                resolve();
-            }
-        });
-    });
-}
-

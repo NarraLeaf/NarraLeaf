@@ -1,9 +1,9 @@
 import {Command} from "commander";
 import {App} from "../app";
 import {parseDirStructure} from "@core/project/projectConfig/parser";
-import {errorToStack, errorToString} from "@/utils/str";
 import {BaseProjectStructure} from "@core/project/projectConfig/baseProject";
 import {Project} from "@core/project/project";
+import {errorToStack, errorToString} from "@/utils/pure/string";
 
 type BuildOptions = {};
 
@@ -23,15 +23,15 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
         logger
             .info("Building project... This may take a while")
             .info("Building renderer (1/3)");
-        await project.buildRenderer(rendererProject, logger);
+        await project.buildRenderer(rendererProject);
 
         // Building Main
         logger.info("Building main (2/3)");
-        await project.buildMain(logger);
+        await project.buildMain();
 
         // Pack app
         logger.info("Packing app (3/3)");
-        await project.buildApp(logger);
+        await project.buildApp();
 
         logger.info("Project built in", String(Date.now() - time), "ms");
     } catch (e) {

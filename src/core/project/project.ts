@@ -1,20 +1,14 @@
-import {BaseProjectStructure, BaseProjectConfig} from "@core/project/projectConfig/baseProject";
+import {BaseProjectConfig, BaseProjectStructure} from "@core/project/projectConfig/baseProject";
 import {InferDirStructure, parseDirStructure} from "@core/project/projectConfig/parser";
 import {DefaultProjectConfig, mergeConfig} from "@core/project/projectConfig/defaults";
-import {ProjectFs} from "@/utils/fs";
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
 import path from "path";
 import {buildRenderer, RendererBuildResult} from "@core/build/renderer/build";
-import {Logger} from "@/cli/logger";
 import {buildMain, MainBuildResult} from "@core/build/main/build";
 import {AppBuildResult, buildApp} from "@core/build/electron/pack";
-
-export enum TempNamespace {
-    RendererBuild = "app-build/renderer",
-    RendererBuildCache = "app-build/.cache/renderer",
-    MainBuild = "app-build/main",
-}
+import {ProjectFs} from "@/utils/contaminated/fs";
+import {TempNamespace} from "@core/constants/tempNamespace";
 
 export class Project {
     public static readonly TempNamespace = TempNamespace;
@@ -53,16 +47,16 @@ export class Project {
         return this.root;
     }
 
-    public buildRenderer(rendererProject: RendererProject, logger: Logger): Promise<RendererBuildResult> {
-        return buildRenderer({rendererProject, logger});
+    public buildRenderer(rendererProject: RendererProject): Promise<RendererBuildResult> {
+        return buildRenderer({rendererProject});
     }
 
-    public buildMain(logger: Logger): Promise<MainBuildResult> {
-        return buildMain({userEntry: this.config.main, logger, project: this});
+    public buildMain(): Promise<MainBuildResult> {
+        return buildMain({userEntry: this.config.main, project: this});
     }
 
-    public buildApp(logger: Logger): Promise<AppBuildResult> {
-        return buildApp(this, logger);
+    public buildApp(): Promise<AppBuildResult> {
+        return buildApp(this);
     }
 
     private readPackage(): this {

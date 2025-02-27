@@ -1,7 +1,6 @@
-import {App} from "@/main/electron/app/app";
+import {App, AppEventToken} from "@/main/electron/app/app";
 import {BrowserWindow, WebPreferences} from "electron";
 import _ from "lodash";
-import {EventToken} from "narraleaf-react/dist/util/data";
 
 export interface WindowConfig {
     isolated: boolean;
@@ -36,6 +35,7 @@ export interface WindowConfig {
     backgroundColor: string;
     width?: number;
     height?: number;
+    devTools?: boolean;
 }
 
 export class AppWindow {
@@ -70,7 +70,7 @@ export class AppWindow {
         };
     }
 
-    onClosed(fn: () => void): EventToken {
+    onClosed(fn: () => void): AppEventToken {
         this.win.on("closed", () => {
             fn();
         });
@@ -79,6 +79,29 @@ export class AppWindow {
                 this.win.removeListener("closed", fn);
             }
         };
+    }
+
+    public getWebContents() {
+        return this.win.webContents;
+    }
+
+    public onKeyUp(key: KeyboardEvent["key"], fn: () => void): AppEventToken {
+        const handler = (event: Electron.Event, input: Electron.Input) => {
+            if (input.type === "keyUp" && input.key === key) {
+                fn();
+                event.preventDefault();
+            }
+        };
+        this.getWebContents().on("before-input-event", handler);
+        return {
+            cancel: () => {
+                this.getWebContents().removeListener("before-input-event", handler);
+            }
+        };
+    }
+
+    public toggleDevTools() {
+        this.win.webContents.toggleDevTools();
     }
 
     async show(): Promise<void> {

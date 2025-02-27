@@ -1,6 +1,6 @@
 import _ from "lodash";
 import {App} from "@/main/electron/app/app";
-import {PlatformInfo, PlatformSystem} from "@/utils/platform";
+import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;

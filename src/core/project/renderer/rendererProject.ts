@@ -1,7 +1,8 @@
 import {Project} from "@core/project/project";
 import {InferDirStructure} from "@core/project/projectConfig/parser";
 import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
-import {ProjectFs} from "@/utils/fs";
+
+import {ProjectFs} from "@/utils/contaminated/fs";
 
 
 export class RendererProject {

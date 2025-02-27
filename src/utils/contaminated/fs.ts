@@ -1,7 +1,7 @@
-import fs from "fs/promises";
-import {default as fsSync} from "fs";
 import path from "path";
 import {Logger} from "@/cli/logger";
+import fs from "fs/promises";
+import {default as fsSync} from "fs";
 
 export type FsResult<T, OK extends true | false = true | false> = OK extends true ? { ok: true; data: T } : {
     ok: false;
@@ -125,7 +125,7 @@ export class ProjectFs {
         const paths = typeof pathsRaw === "string" ? [pathsRaw] : pathsRaw;
         return this.retry(
             paths,
-            (path) => this.isDirExists(path).then(result => result.ok ? { ok: true, data: path } : result),
+            (path) => this.isDirExists(path).then(result => result.ok ? {ok: true, data: path} : result),
             this.toRetryStack(paths, "dirs are not found")
         );
     }
@@ -139,7 +139,7 @@ export class ProjectFs {
         const paths = typeof pathsRaw === "string" ? [pathsRaw] : pathsRaw;
         return this.retry(
             paths,
-            (path) => this.isFileExists(path).then(result => result.ok ? { ok: true, data: path } : result),
+            (path) => this.isFileExists(path).then(result => result.ok ? {ok: true, data: path} : result),
             this.toRetryStack(paths, "files are not found")
         );
     }
@@ -181,12 +181,10 @@ export class ProjectFs {
                 return result;
             }
         }
-        return { ok: false, error: errText };
+        return {ok: false, error: errText};
     }
 
     private toRetryStack(paths: string[], message: string = ""): string {
         return message + "\nFiles tried:" + paths.map(p => `\n    ${Logger.chalk.blue(p)}`);
     }
 }
-
-
