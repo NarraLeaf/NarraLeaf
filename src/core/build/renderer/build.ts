@@ -42,6 +42,9 @@ export async function buildRenderer(
         .useModule(new StyleSheet())
         .usePlugin(new HtmlWebpackPlugin({
             template: htmlEntry,
+            minify: {
+                removeComments: false,
+            }
         }))
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration();

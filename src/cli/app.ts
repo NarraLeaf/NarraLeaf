@@ -7,6 +7,8 @@ type AppConfig = {
     name: string;
     version: string;
     actions: CLIRegistry;
+    cliRoot: string;
+    cliDist: string;
 };
 type AppOptions = {
     debug: boolean;
@@ -35,8 +37,12 @@ export class App {
 
     public process: NodeJS.Process | undefined;
 
-    constructor(private config: AppConfig) {
+    constructor(public config: AppConfig) {
         this.registerCommands(config.actions);
+
+        if (!this.config.cliRoot) {
+            throw new Error("cliRoot is required");
+        }
     }
 
     public async run(process: NodeJS.Process): Promise<Command> {

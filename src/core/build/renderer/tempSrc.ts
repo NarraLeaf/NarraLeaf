@@ -8,6 +8,7 @@ export const RendererAppEntryPoint: Structure = {
     type: StructureEntityType.File,
     name: "app.tsx",
     src: (rendererProject) => ejs.render(RendererEntryTemplateApp, {
+        version: rendererProject.project.app.config.version,
         appPath: safeImportPath(rendererProject.getAppEntry()),
     })
 };
@@ -16,6 +17,7 @@ export const RendererHTMLEntryPoint: Structure = {
     type: StructureEntityType.File,
     name: "index.html",
     src: (rendererProject) => ejs.render(RendererEntryTemplateHTML, {
+        version: rendererProject.project.app.config.version,
         title: rendererProject.project.name,
     })
 };

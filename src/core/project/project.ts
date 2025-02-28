@@ -9,6 +9,7 @@ import {buildMain, MainBuildResult} from "@core/build/main/build";
 import {AppBuildResult, buildApp} from "@core/build/electron/pack";
 import {ProjectFs} from "@/utils/contaminated/fs";
 import {TempNamespace} from "@core/constants/tempNamespace";
+import {App} from "@/cli/app";
 
 export class Project {
     public static readonly TempNamespace = TempNamespace;
@@ -17,15 +18,17 @@ export class Project {
     public config: BaseProjectConfig;
     public readonly root: string;
     public readonly fs: ProjectFs;
+    public readonly app: App;
     public name: string = "";
     public version: string = "";
     public description: string = "";
 
-    constructor(root: string, structure: InferDirStructure<typeof BaseProjectStructure>) {
+    constructor(app: App, root: string, structure: InferDirStructure<typeof BaseProjectStructure>) {
         this.structure = structure;
 
         this.root = root;
         this.fs = new ProjectFs(this.root);
+        this.app = app;
         this.config = this.mergeConfig();
         this.readPackage();
     }

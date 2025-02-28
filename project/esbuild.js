@@ -23,62 +23,56 @@ const alias = {
   '@main': './src/main',
 };
 
+const common = {
+  alias,
+  bundle: true,
+  loader: {
+    ".ejs": "text",
+  },
+  logLevel: 'info',
+  platform: 'node',
+}
+
 Promise.all([
   esbuild.build({
-    alias,
-    bundle: true,
+    ...common,
     entryPoints: ['src/index.ts'],
     external,
     format: 'esm',
-    loader: {
-      ".ejs": "text",
-    },
-    logLevel: 'info',
     outfile: 'dist/index.mjs',
-    platform: 'node',
-    sourcemap: true,
     target: 'node22'
   }),
   esbuild.build({
-    alias,
-    bundle: true,
+    ...common,
     entryPoints: ['src/index.ts'],
     external,
     format: 'cjs',
-    loader: {
-      ".ejs": "text",
-    },
-    logLevel: 'info',
     outfile: 'dist/index.cjs',
-    platform: 'node',
     sourcemap: true,
     target: 'node22'
   }),
   esbuild.build({
-    alias,
-    bundle: true,
+    ...common,
     entryPoints: ['src/cli.ts'],
     external,
     format: 'cjs',
-    loader: {
-      ".ejs": "text",
-    },
-    logLevel: 'info',
     outfile: 'dist/cli.cjs',
-    platform: 'node',
     target: 'node16'
   }),
   esbuild.build({
-    alias,
-    bundle: true,
+    ...common,
     entryPoints: ['src/client.ts'],
     external,
     format: 'esm',
-    loader: {
-      ".ejs": "text",
-    },
-    logLevel: 'info',
     outfile: 'dist/client.mjs',
     platform: 'browser',
+  }),
+  esbuild.build({
+    ...common,
+    entryPoints: ['src/preload.ts'],
+    external,
+    format: 'cjs',
+    outfile: 'dist/preload.cjs',
+    target: 'node16'
   }),
 ]).catch(() => process.exit(1));

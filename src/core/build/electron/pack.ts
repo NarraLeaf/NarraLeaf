@@ -4,6 +4,10 @@ import {BuildTarget} from "@core/build/electron/target";
 import path from "path";
 import {MainOutputFileName} from "@core/build/constants";
 import {TempNamespace} from "@core/constants/tempNamespace";
+import NarraLeafLicense from "@/assets/app-licence-narraleaf.ejs";
+import NarraLeafReactLicense from "@/assets/app-licence-narraleaf-react.ejs";
+import {Fs} from "@/utils/contaminated/fs";
+import ejs from "ejs";
 
 export type AppBuildResult = {
     distDir: string;
@@ -41,9 +45,16 @@ export async function buildApp(project: Project): Promise<AppBuildResult> {
         extraMetadata: {
             main: entryFile,
         },
+        extraFiles: [
+            {
+                from: project.getTempDir(TempNamespace.License),
+                to: ".",
+            }
+        ],
         ...BuildTarget.createCommonConfig(project.config.build.targets),
     };
 
+    await writeLicense(project, project.getTempDir(TempNamespace.License));
     const result = await builder.build({
         targets: Platform.current().createTarget(),
         config,
@@ -53,4 +64,18 @@ export async function buildApp(project: Project): Promise<AppBuildResult> {
         distDir,
         _res: result,
     };
+}
+
+async function writeLicense(project: Project, distDir: string): Promise<void> {
+    await Fs.createDir(distDir);
+
+    const narraleafLicense = path.join(distDir, "LICENSE.narraleaf.txt");
+    await Fs.write(narraleafLicense, ejs.render(NarraLeafLicense, {
+        version: project.app.config.version,
+    }));
+
+    const narraleafReactLicense = path.join(distDir, "LICENSE.narraleaf-react.txt");
+    await Fs.write(narraleafReactLicense, ejs.render(NarraLeafReactLicense, {
+        version: project.app.config.version,
+    }));
 }
