@@ -16,6 +16,9 @@ export type BaseProjectConfigZod = z.ZodObject<{
         baseDir: z.ZodString;
     }>;
     temp: z.ZodString;
+    dev: z.ZodObject<{
+        port: z.ZodNumber;
+    }>;
 }>;
 export type BaseProjectConfig = z.infer<BaseProjectConfigZod>;
 
@@ -61,6 +64,9 @@ export const BaseProjectStructure: DirStructureDefinition<{
                         baseDir: z.string(),
                     }).partial(),
                     temp: z.string(),
+                    dev: z.object({
+                        port: z.number(),
+                    }).partial(),
                 }).partial(),
             }),
         }

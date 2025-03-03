@@ -2,6 +2,8 @@ import {Command, program} from "commander";
 import {Logger} from "./logger";
 import path from "path";
 import {Platform, PlatformInfo} from "@/utils/pure/os";
+import {errorToString} from "@/utils/pure/string";
+import {ChildProcess} from "child_process";
 
 type AppConfig = {
     name: string;
@@ -36,6 +38,7 @@ export class App {
     }
 
     public process: NodeJS.Process | undefined;
+    private childProcesses: ChildProcess[] = [];
 
     constructor(public config: AppConfig) {
         this.registerCommands(config.actions);
@@ -77,6 +80,33 @@ export class App {
             return p;
         }
         return path.resolve(this.getProcess().cwd(), p);
+    }
+
+    public createLogger(): Logger {
+        return App.createLogger(this);
+    }
+
+    public registerChildProcess(process: ChildProcess): this {
+        this.childProcesses.push(process);
+        return this;
+    }
+
+    public unregisterChildProcess(process: ChildProcess): this {
+        this.childProcesses = this.childProcesses.filter((p) => p !== process);
+        return this;
+    }
+
+    public forceExit(code: number = 0): void {
+        const logr = this.createLogger();
+        this.childProcesses.forEach((process) => {
+            try {
+                process.kill("SIGKILL");
+            } catch (e) {
+                logr.warn("Failed to kill child process", errorToString(e));
+            }
+        });
+        logr.warn("Force exiting with code", code);
+        this.process?.exit(code);
     }
 
     private registerCommands(registry: CLIRegistry) {

@@ -4,7 +4,6 @@ import _ from "lodash";
 
 export interface WindowConfig {
     isolated: boolean;
-    waitUntilReady: boolean;
     /**
      * https://www.electronjs.org/docs/latest/api/browser-window#setting-the-backgroundcolor-property
      *
@@ -41,7 +40,6 @@ export interface WindowConfig {
 export class AppWindow {
     public static readonly DefaultConfig: WindowConfig = {
         isolated: true,
-        waitUntilReady: true,
         backgroundColor: "#fff"
     }
     public readonly app: App;
@@ -85,6 +83,10 @@ export class AppWindow {
         return this.win.webContents;
     }
 
+    public reload() {
+        this.win.reload();
+    }
+
     public onKeyUp(key: KeyboardEvent["key"], fn: () => void): AppEventToken {
         const handler = (event: Electron.Event, input: Electron.Input) => {
             if (input.type === "keyUp" && input.key === key) {
@@ -105,15 +107,7 @@ export class AppWindow {
     }
 
     async show(): Promise<void> {
-        if (!this.config.waitUntilReady) {
-            this.win.show();
-        }
-        return new Promise<void>(resolve => {
-            this.win.once("ready-to-show", () => {
-                this.win.show();
-                resolve();
-            });
-        });
+        return this.win.show();
     }
 
     async loadURL(url: string): Promise<void> {

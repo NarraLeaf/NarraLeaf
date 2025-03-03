@@ -6,7 +6,7 @@ import {MainOutputFileName} from "@core/build/constants";
 import {TempNamespace} from "@core/constants/tempNamespace";
 import NarraLeafLicense from "@/assets/app-licence-narraleaf.ejs";
 import NarraLeafReactLicense from "@/assets/app-licence-narraleaf-react.ejs";
-import {Fs} from "@/utils/contaminated/fs";
+import {Fs} from "@/utils/nodejs/fs";
 import ejs from "ejs";
 
 export type AppBuildResult = {

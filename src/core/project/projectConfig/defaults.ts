@@ -1,5 +1,6 @@
 import _ from "lodash";
 import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
+import {DefaultDevServerPort} from "@core/build/constants";
 
 
 export const DefaultProjectConfig: BaseProjectConfig = {
@@ -16,6 +17,9 @@ export const DefaultProjectConfig: BaseProjectConfig = {
         baseDir: "renderer",
     },
     temp: ".narraleaf",
+    dev: {
+        port: DefaultDevServerPort,
+    },
 };
 
 export function mergeConfig<T, U>(base: T, user: U): T & U {

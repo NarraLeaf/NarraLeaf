@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import {App} from "./app";
 import {input, confirm} from "./inquirer";
-import {Fs} from "@/utils/contaminated/fs";
+import {Fs} from "@/utils/nodejs/fs";
 import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
 import {sliceString} from "@/utils/pure/string";
 
@@ -13,7 +13,7 @@ type LoggerConfig = {
     platform: PlatformInfo;
 };
 
-type MessageContent = string | null | undefined | Array<any> | object;
+type MessageContent = string | number | null | undefined | Array<any> | object;
 
 export class Logger {
     public static readonly chalk = chalk;

@@ -1,7 +1,7 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import path from "path";
 
-import {Fs} from "@/utils/contaminated/fs";
+import {Fs} from "@/utils/nodejs/fs";
 
 export enum StructureEntityType {
     File = "file",
