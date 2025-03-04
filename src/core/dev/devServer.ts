@@ -65,6 +65,9 @@ export class DevServer {
         this.wsServer.onConnection(() => {
             logr.info("Dev client attached, number of clients: ", this.wsServer?.wss?.clients.size || 0);
         });
+        this.wsServer.onDisconnect(() => {
+            logr.info("Dev client detached, number of clients remaining: ", this.wsServer?.wss?.clients.size || 0);
+        });
     }
 
     async stop(): Promise<void> {

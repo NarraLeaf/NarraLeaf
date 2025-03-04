@@ -60,6 +60,19 @@ export class Server<T extends Record<any, WSEventProp>> {
         };
     }
 
+    onDisconnect(callback: (ws: WebSocket) => void): AppEventToken {
+        if (!this.wss) {
+            throw new Error("Websocket server is not started");
+        }
+        this.wss?.on("close", callback);
+
+        return {
+            cancel: () => {
+                this.wss?.off("close", callback);
+            }
+        };
+    }
+
     send<U extends keyof T>(type: U, data: T[U]["data"], ws: WebSocket): void {
         ws.send(JSON.stringify({
             type,
