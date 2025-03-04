@@ -6,4 +6,5 @@ export type Result<T, OK extends true | false = true | false> = OK extends true 
 };
 export type Overlap<T, U> = {
     [K in keyof T]: K extends keyof U ? T[K] & U[K] : never;
-}
+};
+export type MayPromise<T> = T | Promise<T>;

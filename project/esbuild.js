@@ -66,13 +66,15 @@ Promise.all([
     format: 'esm',
     outfile: 'dist/client.mjs',
     platform: 'browser',
+    minify: true,
   }),
   esbuild.build({
     ...common,
     entryPoints: ['src/preload.ts'],
     external,
     format: 'cjs',
-    outfile: 'dist/preload.cjs',
-    target: 'node16'
+    outfile: 'dist/preload.js',
+    target: 'node16',
+    minify: true,
   }),
 ]).catch(() => process.exit(1));

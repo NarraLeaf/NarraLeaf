@@ -2,7 +2,12 @@ import {app} from "electron";
 import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
 import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
-import {DefaultDevServerPort, ENV_DEV_SERVER_PORT, RendererOutputHTMLFileName} from "@core/build/constants";
+import {
+    DefaultDevServerPort,
+    ENV_DEV_SERVER_PORT,
+    PreloadFileName,
+    RendererOutputHTMLFileName
+} from "@core/build/constants";
 import {CriticalMainProcessError} from "@/main/error/criticalError";
 import {Platform, PlatformInfo, safeExecuteFn} from "@/utils/pure/os";
 import {DevTempNamespace, TempNamespace} from "@core/constants/tempNamespace";
@@ -54,7 +59,9 @@ export class App {
     }
 
     createWindow(config: Partial<WindowConfig>): AppWindow {
-        return new AppWindow(this, config);
+        return new AppWindow(this, config, {
+            preload: this.getPreloadScript(),
+        });
     }
 
     getConfig() {
@@ -77,6 +84,14 @@ export class App {
         });
     }
 
+    getPreloadScript(): string {
+        const appDir = this.electronApp.getAppPath();
+
+        return this.electronApp.isPackaged
+            ? path.resolve(appDir, TempNamespace.MainBuild, PreloadFileName)
+            : path.resolve(appDir, PreloadFileName);
+    }
+
     public getEntryFile(): string {
         const appDir = this.electronApp.getAppPath();
 
@@ -90,7 +105,9 @@ export class App {
     }
 
     public async launchApp(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
-        const win = new AppWindow(this, config);
+        const win = new AppWindow(this, config, {
+            preload: this.getPreloadScript(),
+        });
         await win.loadFile(this.getEntryFile());
         await win.show();
 

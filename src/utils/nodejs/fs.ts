@@ -49,6 +49,10 @@ export class Fs {
         return this.wrap(fs.cp(src, destDir, {recursive: true}));
     }
 
+    public static cpFile(src: string, destFile: string): Promise<FsResult<void>> {
+        return this.wrap(fs.copyFile(src, destFile));
+    }
+
     private static errorToString(error: unknown): string {
         if (error instanceof Error) {
             return error.message;

@@ -5,3 +5,5 @@ export const MainOutputFileName = "main.js";
 export const Separator = "/";
 export const DefaultDevServerPort = 5050;
 export const ENV_DEV_SERVER_PORT = "NARRALEAF_DEV_SERVER_PORT";
+export const RendererMainWorldProperty = "NarraLeaf" as const;
+export const PreloadFileName = "preload.js";

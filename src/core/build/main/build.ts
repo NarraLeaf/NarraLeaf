@@ -1,6 +1,6 @@
 import {Project} from "@core/project/project";
 import {WebpackConfig, WebpackMode} from "@core/build/webpack";
-import {MainOutputFileName} from "@core/build/constants";
+import {MainOutputFileName, PreloadFileName} from "@core/build/constants";
 import {Babel} from "@core/build/renderer/babel";
 import webpack from "webpack";
 import path from "path";
@@ -24,10 +24,12 @@ export async function buildMain(
         project: Project;
     }
 ): Promise<MainBuildResult> {
+    const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
     const distDir = project.getTempDir(Project.TempNamespace.MainBuild);
     const packMode = project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(distDir);
+    await Fs.cpFile(preloadFile, path.resolve(distDir, PreloadFileName));
 
     const webpackConfig = new WebpackConfig({
         mode: packMode,
@@ -74,10 +76,12 @@ export async function watchMain(
         onRebuild?: () => void;
     }
 ): Promise<MainBuildWatchToken> {
+    const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
     const distDir = project.getDevTempDir(Project.DevTempNamespace.MainBuild);
     const logr = App.createLogger(project.app);
 
     await Fs.createDir(distDir);
+    await Fs.cpFile(preloadFile, path.resolve(distDir, PreloadFileName));
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,

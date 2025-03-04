@@ -1,6 +1,9 @@
 import {App, AppEventToken} from "@/main/electron/app/app";
 import {BrowserWindow, WebPreferences} from "electron";
 import _ from "lodash";
+import {IPCHost} from "@/main/electron/data/ipcHost";
+import {IpcEvent, Namespace} from "@core/ipc/events";
+import {Platform} from "@/utils/pure/os";
 
 export interface WindowConfig {
     isolated: boolean;
@@ -37,34 +40,48 @@ export interface WindowConfig {
     devTools?: boolean;
 }
 
+export interface AppWindowConfig {
+    preload: string;
+}
+
 export class AppWindow {
     public static readonly DefaultConfig: WindowConfig = {
         isolated: true,
-        backgroundColor: "#fff"
+        backgroundColor: "#fff",
     }
     public readonly app: App;
     public readonly config: WindowConfig;
+    public readonly appConfig: AppWindowConfig;
     public readonly win: BrowserWindow;
+    public readonly ipc: IPCHost;
 
-    constructor(app: App, config: Partial<WindowConfig>) {
+    constructor(app: App, config: Partial<WindowConfig>, appConfig: AppWindowConfig) {
         this.app = app;
         this.config = _.defaultsDeep(config, AppWindow.DefaultConfig);
+        this.appConfig = appConfig;
         this.win = new BrowserWindow({
             webPreferences: this.getWebPreference(),
             width: this.config.width,
             height: this.config.height,
         });
+        this.ipc = new IPCHost(Namespace.NarraLeaf);
 
         this.prepare();
     }
 
     prepare() {
         this.win.setBackgroundColor(this.config.backgroundColor);
+        this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
+            return {
+                platform: Platform.getInfo(process),
+            };
+        })
     }
 
     getWebPreference(): WebPreferences {
         return {
             contextIsolation: this.config.isolated,
+            preload: this.appConfig.preload,
         };
     }
 
