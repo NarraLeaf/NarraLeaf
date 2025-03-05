@@ -12,8 +12,11 @@
     "emitDeclarationOnly": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@core/*": ["./src/core/*"],
-    }
+      "@core/*": ["./src/core/*"]
+    },
+    "typeRoots": [
+      "./src/core/@types"
+    ]
   },
   "include": ["src"],
 }

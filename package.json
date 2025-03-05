@@ -6,6 +6,7 @@
   "main": "dist/index.mjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "license": "MPL-2.0",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -52,6 +53,7 @@
     "lodash": "^4.17.21",
     "style-loader": "^4.0.0",
     "uglify-js": "^3.19.3",
+    "ws": "^8.18.1",
     "zod": "^3.24.2"
   },
   "peerDependencies": {
@@ -68,12 +70,14 @@
     "@types/lodash": "^4.17.15",
     "@types/react": "^19.0.10",
     "@types/webpack-node-externals": "^3",
+    "@types/ws": "^8",
     "babel-loader": "^9.2.1",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
-    "electron": "^34.2.0",
+    "electron": "^34.3.0",
     "electron-builder": "^25.1.8",
     "esbuild": "0.25.0",
+    "esbuild-css-modules-plugin": "^3.1.4",
     "html-webpack-plugin": "^5.6.3",
     "motion": "^11.15.0",
     "narraleaf-react": "^0.3.0",

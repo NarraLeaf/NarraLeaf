@@ -4,23 +4,26 @@ import RendererEntryTemplateHTML from "@/assets/renderer-entry-template-html.ejs
 import RendererEntryTemplateApp from "@/assets/renderer-entry-template-app.ejs";
 import {safeImportPath} from "@/utils/str";
 
-export const RendererAppEntryPoint: Structure = {
-    type: StructureEntityType.File,
-    name: "app.tsx",
-    src: (rendererProject) => ejs.render(RendererEntryTemplateApp, {
-        appPath: safeImportPath(rendererProject.getAppEntry()),
-    })
-};
-
 export const RendererHTMLEntryPoint: Structure = {
     type: StructureEntityType.File,
     name: "index.html",
     src: (rendererProject) => ejs.render(RendererEntryTemplateHTML, {
+        version: rendererProject.project.app.config.version,
         title: rendererProject.project.name,
     })
 };
 
-export const BuildTempStructure: Structure[] = [
-    RendererHTMLEntryPoint,
-    RendererAppEntryPoint
-];
+export function createRendererAppStructure(
+    pages: string[],
+): Structure {
+    return {
+        type: StructureEntityType.File,
+        name: "App.tsx",
+        src: (rendererProject) => ejs.render(RendererEntryTemplateApp, {
+            version: rendererProject.project.app.config.version,
+            appPath: safeImportPath(rendererProject.getAppEntry()),
+            pages: pages.map((page) => safeImportPath(page)),
+        })
+    };
+}
+

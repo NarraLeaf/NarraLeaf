@@ -3,7 +3,7 @@ import {ValuesOf} from "@/utils/types";
 import {jsonc as jsoncLib} from "jsonc";
 import {failed, importCJS, success, zodErrorToString} from "@/utils/userInput";
 import {Logger} from "@/cli/logger";
-import {FsResult, ProjectFs} from "@/utils/contaminated/fs";
+import {FsResult, ProjectFs} from "@/utils/nodejs/fs";
 import {errorToString} from "@/utils/pure/string";
 
 const safe = jsoncLib.safe;

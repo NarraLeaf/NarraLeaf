@@ -2,7 +2,7 @@ import {Project} from "@core/project/project";
 import {InferDirStructure} from "@core/project/projectConfig/parser";
 import {AppProjectRendererStructure} from "@core/project/projectConfig/appProject";
 
-import {ProjectFs} from "@/utils/contaminated/fs";
+import {ProjectFs} from "@/utils/nodejs/fs";
 
 
 export class RendererProject {

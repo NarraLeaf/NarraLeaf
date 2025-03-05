@@ -31,3 +31,22 @@ export function rest(p: string): string {
 export function root(p: string, sep: string): string {
     return p.split(sep)[0];
 }
+
+export function timeStringify(ms: number): string {
+    if (ms < 1000) {
+        return `${ms}ms`;
+    }
+    if (ms < 1000 * 60) {
+        return `${(ms / 1000).toFixed(1)}s`;
+    }
+    return `${(ms / 1000 / 60).toFixed(1)}m`;
+}
+
+export function countDirectoryLevels(path: string): number {
+    path = path.replace(/^\.\/|\/$/g, "");
+    return path.split("/").length;
+}
+
+export function reverseDirectoryLevels(path: string): string {
+    return "../".repeat(countDirectoryLevels(path));
+}

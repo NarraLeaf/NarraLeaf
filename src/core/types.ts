@@ -1,5 +1,6 @@
 import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
-import {DeepPartial} from "@/utils/types/utils";
+
+import {DeepPartial} from "@/utils/types";
 
 type ProjectConfig = DeepPartial<BaseProjectConfig>;
 

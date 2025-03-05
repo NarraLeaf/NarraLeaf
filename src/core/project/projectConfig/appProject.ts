@@ -17,7 +17,7 @@ export const AppProjectRendererStructure: DirStructureDefinition<{
             validator: null
         },
         "app": {
-            path: ["app.tsx", "app.jsx"],
+            path: ["App.tsx", "App.jsx"],
             type: ProjectFileType.FILE,
             validator: null
         }
