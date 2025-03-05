@@ -19,7 +19,7 @@ yarn-error.log
 yarn-debug.log
 yarn.lock
 
-# React app ignores
+# React App ignores
 ./build
 dist
 *.env

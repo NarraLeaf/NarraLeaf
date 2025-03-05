@@ -1,7 +1,7 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {Project} from "@core/project/project";
 import {createStructure} from "@core/build/renderer/prepare";
-import {BuildTempStructure, RendererAppEntryPoint, RendererHTMLEntryPoint} from "@core/build/renderer/tempSrc";
+import {createRendererAppStructure, RendererHTMLEntryPoint} from "@core/build/renderer/tempSrc";
 import {WebpackConfig, WebpackMode} from "@core/build/webpack";
 import path from "path";
 import {Babel} from "@core/build/renderer/babel";
@@ -11,6 +11,7 @@ import webpack from "webpack";
 import {RendererOutputFileName, RendererOutputHTMLFileName, RendererOutputPublicDir} from "@core/build/constants";
 import {Fs} from "@/utils/nodejs/fs";
 import {App} from "@/cli/app";
+import {getFileTree} from "@/utils/nodejs/string";
 
 export type RendererBuildResult = {
     dir: string;
@@ -26,15 +27,20 @@ export async function buildRenderer(
         rendererProject: RendererProject;
     }
 ): Promise<RendererBuildResult> {
+    const pages = await getPages(rendererProject);
+    const rendererAppStructure = createRendererAppStructure(pages);
     const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildTemp);
     const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
     const publicDir = rendererProject.getPublicDir();
-    const appEntry = path.resolve(buildDir, RendererAppEntryPoint.name);
+    const appEntry = path.resolve(buildDir, rendererAppStructure.name);
     const htmlEntry = path.resolve(buildDir, RendererHTMLEntryPoint.name);
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(buildDir);
-    await createStructure(BuildTempStructure, rendererProject, buildDir);
+    await createStructure([
+        RendererHTMLEntryPoint,
+        rendererAppStructure,
+    ], rendererProject, buildDir);
 
     const webpackConfig = new WebpackConfig({
         mode: packMode,
@@ -80,14 +86,19 @@ export async function watchRenderer(
         onRebuild?: () => void;
     }
 ): Promise<RendererBuildWatchToken> {
+    const pages = await getPages(rendererProject);
+    const rendererAppStructure = createRendererAppStructure(pages);
     const buildTempDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuildTemp);
     const buildDistDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuild);
-    const appEntry = path.resolve(buildTempDir, RendererAppEntryPoint.name);
+    const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
     const htmlEntry = path.resolve(buildTempDir, RendererHTMLEntryPoint.name);
     const logr = App.createLogger(rendererProject.project.app);
 
     await Fs.createDir(buildTempDir);
-    await createStructure(BuildTempStructure, rendererProject, buildTempDir);
+    await createStructure([
+        RendererHTMLEntryPoint,
+        rendererAppStructure,
+    ], rendererProject, buildTempDir);
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
@@ -151,5 +162,29 @@ export async function watchRenderer(
             })
         }
     };
+}
+
+async function getPages(rendererProject: RendererProject): Promise<string[]> {
+    const logr = rendererProject.project.app.createLogger();
+    const pagesDir = rendererProject.getPagesDir();
+    const result = await Fs.getFiles(
+        pagesDir,
+        [".js", ".jsx", ".ts", ".tsx"]
+    );
+
+    if (!result.ok) {
+        logr.warn("Failed to get pages:", result.error);
+        return [];
+    }
+
+    logr
+        .debug("Scanning", pagesDir)
+        .info("Scanning", result.data.length, "pages")
+        .info(getFileTree("Pages Found", result.data.map(p => ({
+            type: "file",
+            name: p,
+        })), []));
+
+    return result.data;
 }
 

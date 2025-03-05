@@ -53,6 +53,15 @@ export class Fs {
         return this.wrap(fs.copyFile(src, destFile));
     }
 
+    public static getFiles(dir: string, ext?: string | string[]): Promise<FsResult<string[]>> {
+        return this.wrap(fs.readdir(dir, {withFileTypes: true}).then((files) => {
+            const extSet = new Set(Array.isArray(ext) ? ext : [ext]);
+            return files
+                .filter((file) => file.isFile() && (extSet.size === 0 || extSet.has(path.extname(file.name))))
+                .map((file) => path.join(dir, file.name));
+        }));
+    }
+
     private static errorToString(error: unknown): string {
         if (error instanceof Error) {
             return error.message;

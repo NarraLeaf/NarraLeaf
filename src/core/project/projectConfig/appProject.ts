@@ -2,6 +2,7 @@ import {DirStructureDefinition, ProjectFileType} from "@core/project/projectConf
 
 export const AppProjectRendererStructure: DirStructureDefinition<{
     "public": string;
+    "pages": string;
     "app": string;
 }> = {
     contains: {
@@ -10,8 +11,13 @@ export const AppProjectRendererStructure: DirStructureDefinition<{
             type: ProjectFileType.DIR,
             validator: null
         },
+        "pages": {
+            path: "pages",
+            type: ProjectFileType.DIR,
+            validator: null
+        },
         "app": {
-            path: ["app.tsx", "app.jsx"],
+            path: ["App.tsx", "App.jsx"],
             type: ProjectFileType.FILE,
             validator: null
         }

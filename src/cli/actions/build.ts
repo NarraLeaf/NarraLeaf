@@ -28,8 +28,8 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
         logr.info("Building main (2/3)");
         await project.buildMain();
 
-        // Pack app
-        logr.info("Packing app (3/3)");
+        // Pack App
+        logr.info("Packing App (3/3)");
         await project.buildApp();
 
         logr.info("Project built in", String(Date.now() - time), "ms");

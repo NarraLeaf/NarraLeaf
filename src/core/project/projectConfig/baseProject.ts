@@ -37,9 +37,9 @@ export const BaseProjectStructure: DirStructureDefinition<{
             path: "package.json",
             type: ProjectFileType.JSONC,
             validator: z.object({
-                name: z.string().nonempty("Name is required when publishing your app"),
-                version: z.string().nonempty("Version is required when publishing your app"),
-                description: z.string().nonempty("Description is required when publishing your app"),
+                name: z.string().nonempty("Name is required when publishing your App"),
+                version: z.string().nonempty("Version is required when publishing your App"),
+                description: z.string().nonempty("Description is required when publishing your App"),
             })
         },
         "narraleaf.config": {
