@@ -3,6 +3,7 @@ import {PlatformInfo} from "@/utils/pure/os";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
+    app_terminate = "app.terminate",
 }
 
 export type IpcEvents = {
@@ -12,7 +13,16 @@ export type IpcEvents = {
         data: {},
         response: {
             platform: PlatformInfo;
+            isPackaged: boolean;
         };
+    };
+    [IpcEvent.app_terminate]: {
+        type: IPCMessageType.message,
+        consumer: IPCType.Host,
+        data: {
+            err: string | null;
+        },
+        response: never;
     };
 };
 

@@ -8,14 +8,12 @@
  */
 import React from "react";
 import {createRoot} from "react-dom/client";
-import {AppRoot} from "narraleaf/client";
+import {AppRoot, render} from "narraleaf/client";
 
 import {default as App, story} from "<%= appPath %>";
 import * as NarraLeafReact from "narraleaf-react";
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
-root.render(
-    <AppRoot story={story} lib={NarraLeafReact}>
-        <App />
-    </AppRoot>
-);
+!async function () {
+    await render(root, (<AppRoot story={story} lib={NarraLeafReact}><App/></AppRoot>));
+}();

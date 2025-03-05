@@ -8,3 +8,6 @@ export type Overlap<T, U> = {
     [K in keyof T]: K extends keyof U ? T[K] & U[K] : never;
 };
 export type MayPromise<T> = T | Promise<T>;
+export type DeepPartial<T> = {
+    [P in keyof T]?: DeepPartial<T[P]>;
+}

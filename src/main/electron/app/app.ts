@@ -1,4 +1,4 @@
-import {app} from "electron";
+import {app, Menu} from "electron";
 import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
 import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
@@ -68,23 +68,7 @@ export class App {
         return this.config.getConfig(this.platform);
     }
 
-    prepare() {
-        const config = this.config.getConfig(this.platform);
-        if (!this.electronApp && !app) {
-            throw new CriticalMainProcessError("Electron app is not available");
-        }
-        if (config.forceSandbox) {
-            this.electronApp.enableSandbox();
-        }
-        if (!this.electronApp.isPackaged) {
-            this.prepareDevMode();
-        }
-        this.electronApp.whenReady().then(() => {
-            this.events.emit(App.Events.Ready);
-        });
-    }
-
-    getPreloadScript(): string {
+    public getPreloadScript(): string {
         const appDir = this.electronApp.getAppPath();
 
         return this.electronApp.isPackaged
@@ -120,12 +104,31 @@ export class App {
         return this.electronApp.isPackaged;
     }
 
-    public prepareDevMode(): void {
+    private prepare() {
+        const config = this.config.getConfig(this.platform);
+        if (!this.electronApp && !app) {
+            throw new CriticalMainProcessError("Electron app is not available");
+        }
+        if (config.forceSandbox) {
+            this.electronApp.enableSandbox();
+        }
+        if (!this.electronApp.isPackaged) {
+            this.prepareDevMode();
+        }
+
+        this.prepareMenu();
+        this.electronApp.whenReady().then(() => {
+            this.events.emit(App.Events.Ready);
+        });
+    }
+
+    private prepareDevMode(): this {
         this.devState.wsClient = Client.construct<DevServerEvents>("localhost",
             process.env[ENV_DEV_SERVER_PORT] ? Number(process.env[ENV_DEV_SERVER_PORT]) : DefaultDevServerPort
         ).connect();
 
         this.devState.wsClient.onMessage(DevServerEvent.RequestMainQuit, () => {
+            this.devState.wsClient.close();
             this.quit();
         });
         this.devState.wsClient.onMessage(DevServerEvent.RequestPageRefresh, () => {
@@ -135,5 +138,14 @@ export class App {
                 console.log("Warning: Main window is not available when trying to refresh");
             }
         });
+
+        return this;
+    }
+
+    private prepareMenu(): this {
+        const menu = Menu.buildFromTemplate([] satisfies Electron.MenuItemConstructorOptions[]);
+        Menu.setApplicationMenu(menu);
+
+        return this;
     }
 }

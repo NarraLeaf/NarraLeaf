@@ -13,3 +13,10 @@ export class CriticalMainProcessError extends CriticalError {
     }
 }
 
+export class CriticalRendererProcessError extends CriticalError {
+    constructor(message: string) {
+        super(message);
+        this.name = "CriticalRendererProcessError";
+    }
+}
+

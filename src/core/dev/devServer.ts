@@ -44,11 +44,14 @@ export class DevServer {
         const logr = project.app.createLogger();
 
         const [mainToken, rendererToken] = await Promise.all([
-            await project.watchMain(() => {
+            await project.watchMain(async () => {
+                logr.info("Requesting main process to quit");
                 this.wsServer?.announce<DevServerEvent.RequestMainQuit>(DevServerEvent.RequestMainQuit, {});
-                this.restart();
+                await this.restart();
+                logr.info("Main process restarted");
             }),
             await project.watchRenderer(this.renderer, () => {
+                logr.info("Requesting renderer process to refresh");
                 this.wsServer?.announce<DevServerEvent.RequestPageRefresh>(DevServerEvent.RequestPageRefresh, {});
             }),
         ]);

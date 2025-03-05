@@ -74,8 +74,16 @@ export class AppWindow {
         this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
             return {
                 platform: Platform.getInfo(process),
+                isPackaged: this.app.electronApp.isPackaged,
             };
-        })
+        });
+        this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
+            if (err) {
+                console.error("The app is terminating due to an error:");
+                console.error(err);
+            }
+            this.app.electronApp.quit();
+        });
     }
 
     getWebPreference(): WebPreferences {
