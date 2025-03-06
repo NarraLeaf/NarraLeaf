@@ -67,7 +67,7 @@ export class DevServer {
         logr.info("Watching main and renderer processes");
 
         this.electronToken = await project.electron();
-        logr.info("Watching electron app");
+        logr.info("Watching electron App");
 
         this.wsServer = new Server<DevServerEvents>({
             port: project.config.dev.port,

@@ -25,5 +25,9 @@ export class RendererProject {
     getPublicDir(): string {
         return this.fs.resolve(this.structure.public);
     }
+
+    getPagesDir(): string {
+        return this.fs.resolve(this.structure.pages);
+    }
 }
 

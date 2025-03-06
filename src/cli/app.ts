@@ -63,14 +63,14 @@ export class App {
 
     public getPlatform(): PlatformInfo {
         if (!this.process) {
-            throw new Error("Cannot access platform info before running the app");
+            throw new Error("Cannot access platform info before running the App");
         }
         return Platform.getInfo(this.process);
     }
 
     public getProcess(): NodeJS.Process {
         if (!this.process) {
-            throw new Error("Cannot access process before running the app");
+            throw new Error("Cannot access process before running the App");
         }
         return this.process;
     }

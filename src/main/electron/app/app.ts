@@ -144,7 +144,7 @@ export class App {
     private prepare() {
         const config = this.config.getConfig(this.platform);
         if (!this.electronApp && !app) {
-            throw new CriticalMainProcessError("Electron app is not available");
+            throw new CriticalMainProcessError("Electron App is not available");
         }
         if (config.forceSandbox) {
             this.electronApp.enableSandbox();

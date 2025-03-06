@@ -5,7 +5,7 @@ import {DefaultDevServerPort} from "@core/build/constants";
 
 export const DefaultProjectConfig: BaseProjectConfig = {
     build: {
-        appId: "com.example.app",
+        appId: "com.example.App",
         copyright: "",
         dev: false,
         dist: "dist",

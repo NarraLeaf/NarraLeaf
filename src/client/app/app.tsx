@@ -4,11 +4,22 @@ import React from "react";
 import {AppInfo} from "@core/@types/global";
 import {ErrorBoundary} from "@/client/app/error-boundary";
 import ErrorFallback from "@/client/app/error-fallback";
+import {AppPlayer} from "@/client";
 
-async function render(root: {
-    render: (children: React.ReactNode) => void;
-    unmount: () => void;
-}, children: React.ReactNode): Promise<void> {
+type NarraLeafReact = typeof import("narraleaf-react");
+
+async function render(
+    root: {
+        render: (children: React.ReactNode) => void;
+        unmount: () => void;
+    },
+    lib: {
+        NarraLeafReact: NarraLeafReact;
+        story: InstanceType<NarraLeafReact["Story"]>;
+        App: React.ComponentClass<React.PropsWithChildren<{}>>;
+        pages: React.ReactNode[];
+    },
+): Promise<void> {
     if (!window) {
         throw new CriticalRendererProcessError("Window object is not available in the renderer process");
     }
@@ -17,12 +28,16 @@ async function render(root: {
     }
 
     const appInfo: AppInfo = await window[NarraLeafMainWorldProperty].getPlatform();
-    console.log("NarraLeaf App info: ", appInfo);
 
-    // @debug
     root.render(
-        <ErrorBoundary fallback={<ErrorFallback/>} crash={true}>
-            {children}
+        <ErrorBoundary fallback={<ErrorFallback/>} crash={appInfo.isPackaged}>
+            <lib.NarraLeafReact.GameProviders>
+                <lib.App>
+                    <AppPlayer story={lib.story} lib={lib.NarraLeafReact}>
+                        {...lib.pages}
+                    </AppPlayer>
+                </lib.App>
+            </lib.NarraLeafReact.GameProviders>
         </ErrorBoundary>
     );
 }

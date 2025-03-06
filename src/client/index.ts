@@ -1,4 +1,4 @@
-import {AppRoot} from "@/client/app/app-root";
+import {AppPlayer} from "@/client/app/app-player";
 import {render} from "@/client/app/app";
 
-export {AppRoot, render};
+export {AppPlayer, render};

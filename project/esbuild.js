@@ -1,5 +1,6 @@
 // import esbuild from 'esbuild';
 const esbuild = require('esbuild');
+const CssModulesPlugin = require('esbuild-css-modules-plugin');
 
 const external = [
   "babel-loader",
@@ -67,6 +68,18 @@ Promise.all([
     outfile: 'dist/client.mjs',
     platform: 'browser',
     minify: true,
+    plugins: [
+      CssModulesPlugin({
+        inject: {
+          insertAt: 'top',
+        },
+        force: true,
+      }),
+    ],
+    metafile: true,
+    loader: {
+      '.css': 'css',
+    },
   }),
   esbuild.build({
     ...common,
