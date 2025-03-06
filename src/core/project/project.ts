@@ -86,8 +86,8 @@ export class Project {
         return watchElectronApp(this);
     }
 
-    public buildApp(): Promise<AppBuildResult> {
-        return buildApp(this);
+    public buildApp(rendererProject: RendererProject): Promise<AppBuildResult> {
+        return buildApp(rendererProject);
     }
 
     private readPackage(): this {

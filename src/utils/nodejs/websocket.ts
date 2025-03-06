@@ -1,4 +1,4 @@
-import {WebSocketServer, WebSocket} from "ws";
+import {WebSocket, WebSocketServer} from "ws";
 import {EventEmitter} from "events";
 import {AppEventToken} from "@/main/electron/app/app";
 import url from "url";
@@ -6,6 +6,11 @@ import url from "url";
 export type WSEventProp = {
     type: WSEventType;
     data: Record<string, any>;
+    response?: Record<string, any>;
+};
+
+export type WSData<T extends Record<string, any>> = T & {
+    replyId?: string;
 };
 
 export enum WSEventType {
@@ -21,6 +26,7 @@ export interface WebsocketServerConfig {
 export class Server<T extends Record<any, WSEventProp>> {
     events: EventEmitter = new EventEmitter();
     wss: WebSocketServer | null = null;
+
     constructor(private config: WebsocketServerConfig) {
     }
 
@@ -45,11 +51,24 @@ export class Server<T extends Record<any, WSEventProp>> {
         };
     }
 
-    onMessage<U extends keyof T>(type: U, callback: (data: T[U]["data"]) => void, ws: WebSocket): AppEventToken {
+    onMessage<U extends keyof T>(
+        type: U,
+        callback: (data: WSData<T[U]>["data"]) => WSData<T[U]>["replyId"] extends string ? WSData<T[U]>["response"] : void,
+        ws: WebSocket
+    ): AppEventToken {
         ws.on("message", (data) => {
-            const parsedData = JSON.parse(data.toString());
+            const parsedData: WSData<T[U]> = JSON.parse(data.toString());
             if (parsedData.type === type) {
-                callback(parsedData.data);
+                if (parsedData.replyId) {
+                    const response = callback(parsedData.data);
+                    ws.send(JSON.stringify({
+                        type,
+                        data: response,
+                        replyId: parsedData.replyId,
+                    }));
+                } else {
+                    callback(parsedData.data);
+                }
             }
         });
 
@@ -100,16 +119,18 @@ export class Server<T extends Record<any, WSEventProp>> {
 }
 
 export class Client<T extends Record<any, WSEventProp>> {
+    ws: WebSocket | null = null;
+    private _id: number = 0;
+
+    constructor(private url: string) {
+    }
+
     public static construct<T extends Record<any, WSEventProp>>(host: string, port: number): Client<T> {
         return new Client<T>(url.format({
             protocol: "ws",
             hostname: host,
             port,
         }));
-    }
-
-    ws: WebSocket | null = null;
-    constructor(private url: string) {
     }
 
     connect(): this {
@@ -147,5 +168,40 @@ export class Client<T extends Record<any, WSEventProp>> {
 
     close(): void {
         this.ws?.close();
+    }
+
+    fetch<U extends keyof T>(type: U, data: T[U]["data"]): Promise<T[U]["response"]> {
+        return new Promise((resolve) => {
+            if (!this.ws) {
+                throw new Error("Websocket client is not connected");
+            }
+            const replyId = String(this._id++);
+            this.ws.send(JSON.stringify({
+                type,
+                data,
+                replyId,
+            }));
+            const listener = (data: WSData<WSEventProp>) => {
+                if (data.type === type && data.replyId === replyId) {
+                    this.ws?.off("message", listener);
+                    resolve(data.data);
+                }
+            }
+            this.ws.on("message", listener);
+        });
+    }
+
+    async forSocketToOpen(): Promise<void> {
+        return new Promise((resolve) => {
+            if (!this.ws) {
+                throw new Error("Websocket client is not connected");
+            }
+            if (this.ws.readyState === WebSocket.OPEN) {
+                resolve();
+            }
+            this.ws.on("open", () => {
+                resolve();
+            });
+        });
     }
 }

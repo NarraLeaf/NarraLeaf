@@ -1,6 +1,7 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {ElectronDevServerToken} from "@core/dev/electron";
 import {Server, WSEventType} from "@/utils/nodejs/websocket";
+import {AppMeta} from "@/main/electron/app/app";
 
 export type DevServerToken = {
     close(): Promise<void>;
@@ -13,6 +14,7 @@ export type ClosableToken = {
 export enum DevServerEvent {
     RequestPageRefresh = "narraleaf_dev:request_page_refresh",
     RequestMainQuit = "narraleaf_dev:request_main_quit",
+    FetchMetadata = "narraleaf_dev:fetch_metadata",
 }
 
 export type DevServerEvents = {
@@ -23,6 +25,11 @@ export type DevServerEvents = {
     [DevServerEvent.RequestMainQuit]: {
         type: WSEventType.Message;
         data: {};
+    };
+    [DevServerEvent.FetchMetadata]: {
+        type: WSEventType.Message;
+        data: {};
+        response: AppMeta;
     };
 };
 

@@ -3,6 +3,7 @@ export enum TempNamespace {
     MainBuild = "app-build/main",
     RendererBuildTemp = "app-build/.cache/renderer",
     License = "app-build/.cache/license",
+    Public = "app-build/public",
 }
 export enum DevTempNamespace {
     MainBuild = "app-dev/main",

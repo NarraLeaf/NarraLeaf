@@ -8,13 +8,15 @@ import NarraLeafLicense from "@/assets/app-licence-narraleaf.ejs";
 import NarraLeafReactLicense from "@/assets/app-licence-narraleaf-react.ejs";
 import {Fs} from "@/utils/nodejs/fs";
 import ejs from "ejs";
+import {RendererProject} from "@core/project/renderer/rendererProject";
 
 export type AppBuildResult = {
     distDir: string;
     _res: any;
 };
 
-export async function buildApp(project: Project): Promise<AppBuildResult> {
+export async function buildApp(rendererProject: RendererProject): Promise<AppBuildResult> {
+    const project = rendererProject.project;
     const {default: builder, Platform} = await import("electron-builder");
     const distDir = project.fs.resolve(project.config.build.dist);
     const enableFastPack = project.config.build.dev;
@@ -39,6 +41,10 @@ export async function buildApp(project: Project): Promise<AppBuildResult> {
             {
                 from: project.getTempDir(TempNamespace.MainBuild),
                 to: TempNamespace.MainBuild,
+            },
+            {
+                from: rendererProject.getPublicDir(),
+                to: TempNamespace.Public,
             },
             "package.json",
         ],

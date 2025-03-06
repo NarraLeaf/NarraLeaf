@@ -8,7 +8,7 @@ import {Babel} from "@core/build/renderer/babel";
 import {StyleSheet} from "@core/build/renderer/stylesheet";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import webpack from "webpack";
-import {RendererOutputFileName, RendererOutputHTMLFileName, RendererOutputPublicDir} from "@core/build/constants";
+import {RendererOutputFileName, RendererOutputHTMLFileName} from "@core/build/constants";
 import {Fs} from "@/utils/nodejs/fs";
 import {App} from "@/cli/app";
 
@@ -66,7 +66,6 @@ export async function buildRenderer(
             }
         });
     });
-    await Fs.copyDir(publicDir, path.resolve(outputDir, RendererOutputPublicDir));
 
     return {
         dir: outputDir,
