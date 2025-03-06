@@ -78,6 +78,8 @@ export class DevServer {
         this.wsServer.onDisconnect(() => {
             logr.info("Dev client detached, number of clients remaining: ", this.wsServer?.wss?.clients.size || 0);
         });
+
+        this.listen();
     }
 
     async stop(): Promise<void> {
@@ -120,6 +122,16 @@ export class DevServer {
                 resolve();
                 terminated = true;
             });
+        });
+    }
+
+    listen() {
+        this.wsServer?.onConnection((ws) => {
+            this.wsServer?.onMessage(DevServerEvent.FetchMetadata, () => {
+                return {
+                    publicDir: this.renderer.getPublicDir(),
+                };
+            }, ws);
         });
     }
 }

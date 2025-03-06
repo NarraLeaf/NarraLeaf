@@ -1,9 +1,11 @@
 import path from "path";
-import {app, Menu, session} from "electron";
+import {app, Menu, protocol} from "electron";
 import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
 import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
 import {
+    AppHost,
+    AppProtocol,
     DefaultDevServerPort,
     ENV_DEV_SERVER_PORT,
     PreloadFileName,
@@ -16,7 +18,10 @@ import {reverseDirectoryLevels} from "@/utils/pure/string";
 import {Client} from "@/utils/nodejs/websocket";
 import {DevServerEvent, DevServerEvents} from "@core/dev/devServer";
 import {LocalAssets} from "@/main/electron/app/assets";
-import url from "url";
+import url, {fileURLToPath} from "url";
+import {normalizePath} from "@/utils/nodejs/string";
+import {Fs} from "@/utils/nodejs/fs";
+import {getMimeType} from "@/utils/nodejs/os";
 
 type AppEvents = {
     "ready": [];
@@ -104,7 +109,7 @@ export class App {
 
         return this.electronApp.isPackaged
             ? path.resolve(appDir, TempNamespace.Public)
-            : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), TempNamespace.Public);
+            : this.metadata?.publicDir ?? path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), TempNamespace.Public);
     }
 
     public getAppPath(): string {
@@ -113,6 +118,14 @@ export class App {
         return this.electronApp.isPackaged
             ? appDir
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild));
+    }
+
+    public getRendererBuildDir(): string {
+        const appDir = this.electronApp.getAppPath();
+
+        return this.electronApp.isPackaged
+            ? path.resolve(appDir, TempNamespace.RendererBuild)
+            : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), DevTempNamespace.RendererBuild);
     }
 
     public quit(): void {
@@ -190,31 +203,66 @@ export class App {
     }
 
     private prepareWebAssets(): this {
+        protocol.registerSchemesAsPrivileged([
+            {scheme: AppProtocol, privileges: {standard: true, secure: true, supportFetchAPI: true, corsEnabled: true}},
+        ]);
         this.assets.addRule({
-            include: /^.*$/,
-            exclude: /^[a-zA-Z]+:\/\//,
-            handler: (u) => {
-                const resolved = path.join(this.getPublicDir(), u);
+            include: (requested) => {
+                const url = new URL(requested);
+                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Public;
+            },
+            handler: (requested) => {
                 return url.format({
                     protocol: "file",
-                    pathname: resolved,
+                    pathname: normalizePath(path.join(this.getPublicDir(), new URL(requested).pathname)),
+                    slashes: true,
+                });
+            }
+        }).addRule({
+            include: (requested) => {
+                const url = new URL(requested);
+                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Root;
+            },
+            handler: (requested) => {
+                return url.format({
+                    protocol: "file",
+                    pathname: normalizePath(path.join(this.getAppPath(), new URL(requested).pathname)),
+                    slashes: true,
+                });
+            }
+        }).addRule({
+            include: (requested) => {
+                const url = new URL(requested);
+                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Renderer;
+            },
+            handler: (requested) => {
+                return url.format({
+                    protocol: "file",
+                    pathname: normalizePath(path.join(this.getRendererBuildDir(), new URL(requested).pathname)),
                     slashes: true,
                 });
             }
         });
         this.hook(HookEvents.AfterReady, () => {
-            session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-                console.log("[Host] Requesting URL", details.url);
+            protocol.handle(AppProtocol, async (request) => {
+                console.log("[Host] Requesting URL caught", request.url);
 
-                const newUrl = this.assets.resolve(details.url);
-                if (newUrl) {
-                    console.log("[Host] Resolved URL", newUrl);
-                    callback({
-                        redirectURL: newUrl,
+                const newUrl = this.assets.resolve(request.url);
+                if (!newUrl) {
+                    console.log("[Host] 404 URL not resolved", request.url);
+                    return new Response(null, {
+                        status: 404,
+                        statusText: "Not Found",
                     });
                 }
 
-                callback({});
+                console.log("[Host] URL resolved to", newUrl);
+                const {data, mimeType} = await this.readFile(fileURLToPath(newUrl));
+                return new Response(data, {
+                    headers: new Headers({
+                        "Content-Type": mimeType,
+                    }),
+                });
             });
         });
         return this;
@@ -250,8 +298,25 @@ export class App {
         await this.devState.wsClient.forSocketToOpen();
 
         const data = await this.devState.wsClient.fetch(DevServerEvent.FetchMetadata, {});
-        console.log("Fetched metadata", data);
+        console.log("[Main] Fetching metadata");
 
         this.metadata = data;
+    }
+
+    private async readFile(filePath: string): Promise<{
+        data: Buffer;
+        mimeType: string;
+    }> {
+        const data = await Fs.readRaw(filePath);
+        const mimeType = getMimeType(filePath);
+
+        if (!data.ok) {
+            throw new Error(data.error);
+        }
+
+        return {
+            data: data.data,
+            mimeType,
+        };
     }
 }

@@ -15,13 +15,14 @@ export type BuildTempStructure = {
 } | {
     type: StructureEntityType.File;
     name: string;
-    src: string | ((rendererProject: RendererProject) => string);
+    src: string | ((rendererProject: RendererProject, ...args: any[]) => string);
 };
 
 export async function createStructure(
     structure: BuildTempStructure[],
     rendererProject: RendererProject,
     dest: string,
+    ...args: any[]
 ): Promise<void> {
     if (!path.isAbsolute(dest)) {
         throw new Error("Destination path must be absolute");
@@ -35,7 +36,7 @@ export async function createStructure(
                 await createStructure(item.children, rendererProject, path.resolve(dest, item.name));
             }
         } else {
-            const src = typeof item.src === "function" ? item.src(rendererProject) : item.src;
+            const src = typeof item.src === "function" ? item.src(rendererProject, ...args) : item.src;
             await Fs.write(p, src);
         }
     }

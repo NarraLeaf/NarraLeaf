@@ -1,5 +1,6 @@
 import {ChildProcess, spawn } from "child_process";
 import {AppEventToken} from "@/main/electron/app/app";
+import mime from "mime-types";
 
 export type SummonedProcess = {
     kill(): void;
@@ -41,4 +42,8 @@ export function summon(
         },
         childProcesses: child,
     };
+}
+
+export function getMimeType(filePath: string) {
+    return mime.lookup(filePath) || "application/octet-stream";
 }

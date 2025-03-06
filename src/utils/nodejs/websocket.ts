@@ -53,13 +53,13 @@ export class Server<T extends Record<any, WSEventProp>> {
 
     onMessage<U extends keyof T>(
         type: U,
-        callback: (data: WSData<T[U]>["data"]) => WSData<T[U]>["replyId"] extends string ? WSData<T[U]>["response"] : void,
+        callback: (data: WSData<T[U]>["data"]) => WSData<T[U]>["response"] extends Record<any, any> ? WSData<T[U]>["response"] : void,
         ws: WebSocket
     ): AppEventToken {
         ws.on("message", (data) => {
             const parsedData: WSData<T[U]> = JSON.parse(data.toString());
             if (parsedData.type === type) {
-                if (parsedData.replyId) {
+                if (parsedData.replyId !== undefined) {
                     const response = callback(parsedData.data);
                     ws.send(JSON.stringify({
                         type,
@@ -156,6 +156,26 @@ export class Client<T extends Record<any, WSEventProp>> {
         };
     }
 
+    onReply<U extends keyof T>(type: U, replyId: string, callback: (data: T[U]["response"]) => void): AppEventToken {
+        if (!this.ws) {
+            throw new Error("Websocket client is not connected");
+        }
+        const listener = (raw: any) => {
+            const data: WSData<T[U]> = JSON.parse(raw.toString());
+            if (data.type === type && data.replyId === replyId) {
+                callback(data.data);
+                this.ws?.off("message", listener);
+            }
+        };
+        this.ws.on("message", listener);
+
+        return {
+            cancel: () => {
+                this.ws?.off("message", callback);
+            }
+        };
+    }
+
     send<U extends keyof T>(type: U, data: T[U]["data"]): void {
         if (!this.ws) {
             throw new Error("Websocket client is not connected");
@@ -181,13 +201,9 @@ export class Client<T extends Record<any, WSEventProp>> {
                 data,
                 replyId,
             }));
-            const listener = (data: WSData<WSEventProp>) => {
-                if (data.type === type && data.replyId === replyId) {
-                    this.ws?.off("message", listener);
-                    resolve(data.data);
-                }
-            }
-            this.ws.on("message", listener);
+            this.onReply(type, replyId, (response) => {
+                resolve(response);
+            });
         });
     }
 

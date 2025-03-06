@@ -15,6 +15,7 @@ export const DefaultProjectConfig: BaseProjectConfig = {
     main: "main/index.js",
     renderer: {
         baseDir: "renderer",
+        allowHTTP: false,
     },
     temp: ".narraleaf",
     dev: {

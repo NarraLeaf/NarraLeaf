@@ -13,6 +13,10 @@ export class Fs {
         return this.wrap(fs.readFile(path, {encoding}));
     }
 
+    public static readRaw(path: string): Promise<FsResult<Buffer>> {
+        return this.wrap(fs.readFile(path));
+    }
+
     public static write(path: string, data: string, encoding: BufferEncoding = "utf-8"): Promise<FsResult<void>> {
         return this.wrap(fs.writeFile(path, data, {encoding}));
     }

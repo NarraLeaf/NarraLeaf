@@ -5,3 +5,10 @@ export const DefaultDevServerPort = 5050;
 export const ENV_DEV_SERVER_PORT = "NARRALEAF_DEV_SERVER_PORT";
 export const NarraLeafMainWorldProperty = "NarraLeaf" as const;
 export const PreloadFileName = "preload.js";
+export const AppProtocol = "app" as const;
+export const AppPublicHostName = "public";
+export enum AppHost {
+    Public = "public",
+    Root = "root",
+    Renderer = "renderer",
+}

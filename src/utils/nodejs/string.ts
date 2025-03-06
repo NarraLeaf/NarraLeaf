@@ -1,4 +1,5 @@
 import {Logger} from "@/cli/logger";
+import path from "path";
 
 export type FileTree = {
     type: "file";
@@ -29,4 +30,8 @@ export function getFileTree(header: string, fileTree: FileTree[], failedEntities
 
     printTree(fileTree, "");
     return `${header}\n${lines.join("\n")}`;
+}
+
+export function normalizePath(p: string): string {
+    return path.normalize(p).replace(/\\/g, "/");
 }

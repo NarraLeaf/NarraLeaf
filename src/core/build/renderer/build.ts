@@ -6,7 +6,6 @@ import {WebpackConfig, WebpackMode} from "@core/build/webpack";
 import path from "path";
 import {Babel} from "@core/build/renderer/babel";
 import {StyleSheet} from "@core/build/renderer/stylesheet";
-import HtmlWebpackPlugin from "html-webpack-plugin";
 import webpack from "webpack";
 import {RendererOutputFileName, RendererOutputHTMLFileName} from "@core/build/constants";
 import {Fs} from "@/utils/nodejs/fs";
@@ -31,16 +30,16 @@ export async function buildRenderer(
     const rendererAppStructure = createRendererAppStructure(pages);
     const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildTemp);
     const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
-    const publicDir = rendererProject.getPublicDir();
     const appEntry = path.resolve(buildDir, rendererAppStructure.name);
-    const htmlEntry = path.resolve(buildDir, RendererHTMLEntryPoint.name);
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(buildDir);
     await createStructure([
-        RendererHTMLEntryPoint,
         rendererAppStructure,
     ], rendererProject, buildDir);
+    await createStructure([
+        RendererHTMLEntryPoint,
+    ], rendererProject, outputDir, false);
 
     const webpackConfig = new WebpackConfig({
         mode: packMode,
@@ -51,12 +50,6 @@ export async function buildRenderer(
     })
         .useModule(new Babel(true))
         .useModule(new StyleSheet())
-        .usePlugin(new HtmlWebpackPlugin({
-            template: htmlEntry,
-            minify: {
-                removeComments: false,
-            }
-        }))
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration();
 
@@ -90,14 +83,15 @@ export async function watchRenderer(
     const buildTempDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuildTemp);
     const buildDistDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuild);
     const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
-    const htmlEntry = path.resolve(buildTempDir, RendererHTMLEntryPoint.name);
     const logr = App.createLogger(rendererProject.project.app);
 
     await Fs.createDir(buildTempDir);
     await createStructure([
-        RendererHTMLEntryPoint,
         rendererAppStructure,
     ], rendererProject, buildTempDir);
+    await createStructure([
+        RendererHTMLEntryPoint,
+    ], rendererProject, buildDistDir, true);
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
@@ -114,10 +108,6 @@ export async function watchRenderer(
     })
         .useModule(new Babel(true))
         .useModule(new StyleSheet())
-        .usePlugin(new HtmlWebpackPlugin({
-            template: htmlEntry,
-            minify: false,
-        }))
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
 
     const config = webpackConfig.getConfiguration();
@@ -181,7 +171,7 @@ async function getPages(rendererProject: RendererProject): Promise<string[]> {
         .info("Scanning", result.data.length, "pages")
         .info(getFileTree("Pages Found", result.data.map(p => ({
             type: "file",
-            name: p,
+            name: path.parse(p).base,
         })), []));
 
     return result.data;
