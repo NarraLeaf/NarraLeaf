@@ -142,5 +142,13 @@ export class AppWindow {
     async loadFile(file: string): Promise<void> {
         return this.win.loadFile(file);
     }
+
+    public setTitle(title: string) {
+        this.win.setTitle(title);
+    }
+
+    public getTitle(): string {
+        return this.win.getTitle();
+    }
 }
 
