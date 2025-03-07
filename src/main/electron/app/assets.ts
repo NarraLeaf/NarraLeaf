@@ -2,7 +2,12 @@
 type AssetRuleDefinition = {
     include: RegExp | ((path: string) => boolean);
     exclude?: RegExp | ((path: string) => boolean);
-    handler: (path: string) => string | null;
+    handler: (path: string) => AssetResolved | null;
+};
+
+export type AssetResolved = {
+    path: string;
+    noCache: boolean;
 };
 
 export class LocalAssets {
@@ -13,7 +18,7 @@ export class LocalAssets {
         return this;
     }
 
-    public resolve(path: string): string | null {
+    public resolve(path: string): AssetResolved | null {
         const exec = (rule: RegExp | ((path: string) => boolean)): boolean => {
             if (rule instanceof RegExp) {
                 return rule.test(path);

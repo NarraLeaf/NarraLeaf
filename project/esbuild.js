@@ -80,6 +80,7 @@ Promise.all([
     loader: {
       '.css': 'css',
     },
+    sourcemap: true,
   }),
   esbuild.build({
     ...common,

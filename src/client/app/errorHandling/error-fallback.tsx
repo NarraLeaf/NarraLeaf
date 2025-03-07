@@ -1,4 +1,4 @@
-import styles from "@/client/app/error-fallbacl.module.css";
+import styles from "@/client/app/errorHandling/error-fallbacl.module.css";
 
 export default function ErrorFallback() {
     return (

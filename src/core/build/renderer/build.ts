@@ -100,10 +100,8 @@ export async function watchRenderer(
         outputFilename: RendererOutputFileName,
         extensions: [".ts", ".tsx", ".js", ".jsx"],
         extend: {
-            cache: {
-                type: "filesystem",
-                cacheDirectory: rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuildCache),
-            },
+            cache: false,
+            devtool: "source-map",
         }
     })
         .useModule(new Babel(true))

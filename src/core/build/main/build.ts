@@ -101,6 +101,7 @@ export async function watchMain(
                 type: "filesystem",
                 cacheDirectory: project.getDevTempDir(Project.DevTempNamespace.MainBuildCache),
             },
+            devtool: "source-map"
         }
     })
         .useModule(new Babel(false))

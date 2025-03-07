@@ -17,7 +17,7 @@ import {DevTempNamespace, TempNamespace} from "@core/constants/tempNamespace";
 import {reverseDirectoryLevels} from "@/utils/pure/string";
 import {Client} from "@/utils/nodejs/websocket";
 import {DevServerEvent, DevServerEvents} from "@core/dev/devServer";
-import {LocalAssets} from "@/main/electron/app/assets";
+import {AssetResolved, LocalAssets} from "@/main/electron/app/assets";
 import url, {fileURLToPath} from "url";
 import {normalizePath} from "@/utils/nodejs/string";
 import {Fs} from "@/utils/nodejs/fs";
@@ -212,11 +212,14 @@ export class App {
                 return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Public;
             },
             handler: (requested) => {
-                return url.format({
-                    protocol: "file",
-                    pathname: normalizePath(path.join(this.getPublicDir(), new URL(requested).pathname)),
-                    slashes: true,
-                });
+                return {
+                    path: url.format({
+                        protocol: "file",
+                        pathname: normalizePath(path.join(this.getPublicDir(), new URL(requested).pathname)),
+                        slashes: true,
+                    }),
+                    noCache: false,
+                };
             }
         }).addRule({
             include: (requested) => {
@@ -224,23 +227,29 @@ export class App {
                 return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Root;
             },
             handler: (requested) => {
-                return url.format({
-                    protocol: "file",
-                    pathname: normalizePath(path.join(this.getAppPath(), new URL(requested).pathname)),
-                    slashes: true,
-                });
+                return {
+                    path: url.format({
+                        protocol: "file",
+                        pathname: normalizePath(path.join(this.getAppPath(), new URL(requested).pathname)),
+                        slashes: true,
+                    }),
+                    noCache: false,
+                };
             }
         }).addRule({
             include: (requested) => {
                 const url = new URL(requested);
                 return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Renderer;
             },
-            handler: (requested) => {
-                return url.format({
-                    protocol: "file",
-                    pathname: normalizePath(path.join(this.getRendererBuildDir(), new URL(requested).pathname)),
-                    slashes: true,
-                });
+            handler: (requested): AssetResolved => {
+                return {
+                    path: url.format({
+                        protocol: "file",
+                        pathname: normalizePath(path.join(this.getRendererBuildDir(), new URL(requested).pathname)),
+                        slashes: true,
+                    }),
+                    noCache: true,
+                };
             }
         });
         this.hook(HookEvents.AfterReady, () => {
@@ -256,11 +265,12 @@ export class App {
                     });
                 }
 
-                console.log("[Host] URL resolved to", newUrl);
-                const {data, mimeType} = await this.readFile(fileURLToPath(newUrl));
+                console.log("[Host] URL resolved to", newUrl.path, ...[newUrl.noCache ? ["(no cache)"] : []]);
+                const {data, mimeType} = await this.readFile(fileURLToPath(newUrl.path));
                 return new Response(data, {
                     headers: new Headers({
                         "Content-Type": mimeType,
+                        ...(newUrl.noCache ? {"Cache-Control": "no-cache"} : {}),
                     }),
                 });
             });
