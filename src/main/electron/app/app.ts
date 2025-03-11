@@ -33,6 +33,7 @@ export type AppEventToken = {
 
 export type AppMeta = {
     publicDir: string;
+    rootDir: string;
 };
 
 enum HookEvents {
@@ -142,12 +143,29 @@ export class App {
         const win = new AppWindow(this, config, {
             preload: this.getPreloadScript(),
         });
+        this.prepareAppWindow(win);
         await win.loadFile(this.getEntryFile());
         await win.show();
 
         this.mainWindow = win;
 
         return win;
+    }
+
+    private prepareAppWindow(win: AppWindow): this {
+        const config = this.getConfig();
+        if (config.appIcon) {
+            if (path.isAbsolute(config.appIcon)) {
+                throw new Error("App icon path must be relative to the app directory");
+            }
+            if (this.isPackaged()) {
+                win.setIcon(path.resolve(this.getMetadata().rootDir, config.appIcon));
+            } else {
+                win.setIcon(path.resolve(this.getAppPath(), "../", config.appIcon));
+            }
+        }
+
+        return this;
     }
 
     public isPackaged(): boolean {
@@ -328,5 +346,13 @@ export class App {
             data: data.data,
             mimeType,
         };
+    }
+
+    private getMetadata(): AppMeta {
+        if (!this.metadata) {
+            throw new Error("Metadata is not available");
+        }
+
+        return this.metadata;
     }
 }

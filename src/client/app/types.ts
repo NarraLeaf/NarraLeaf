@@ -1,10 +1,10 @@
 import React from "react";
-import {TargetAndTransition} from "motion/react";
+import {AnimationProps} from "motion/react";
 
 export type SplashScreenDefinition = {
-    initial?: TargetAndTransition;
-    animate?: TargetAndTransition;
-    exit?: TargetAndTransition;
+    initial?: AnimationProps["initial"];
+    animate?: AnimationProps["animate"];
+    exit?: AnimationProps["exit"];
     /**
      * The duration of the splash screen in seconds
      *

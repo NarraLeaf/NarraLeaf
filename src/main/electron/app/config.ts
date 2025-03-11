@@ -8,15 +8,30 @@ export interface BaseAppConfig {
 }
 
 export interface IWindowsConfig {
-
+    /**
+     * Application icon
+     *
+     * should be a path to a .ico file
+     */
+    appIcon?: string;
 }
 
 export interface ILinuxConfig {
-
+    /**
+     * Application icon
+     *
+     * should be a path to a .png file
+     */
+    appIcon?: string;
 }
 
 export interface IMacConfig {
-
+    /**
+     * Application icon
+     *
+     * should be a path to a .icns file
+     */
+    appIcon?: string;
 }
 
 type PlatformConfigMap = {

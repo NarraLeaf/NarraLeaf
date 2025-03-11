@@ -9,6 +9,8 @@ import NarraLeafReactLicense from "@/assets/app-licence-narraleaf-react.ejs";
 import {Fs} from "@/utils/nodejs/fs";
 import ejs from "ejs";
 import {RendererProject} from "@core/project/renderer/rendererProject";
+import {normalize, sep} from "@/utils/pure/string";
+import {rest} from "@/utils/nodejs/os";
 
 export type AppBuildResult = {
     distDir: string;
@@ -47,6 +49,7 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
                 to: TempNamespace.Public,
             },
             "package.json",
+            rest(normalize(project.config.resources), sep.posix),
         ],
         extraMetadata: {
             main: entryFile,
@@ -56,6 +59,9 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
                 from: project.getTempDir(TempNamespace.License),
                 to: ".",
             }
+        ],
+        extraResources: [
+            rest(normalize(project.config.resources), sep.posix),
         ],
         ...BuildTarget.createCommonConfig(project.config.build.targets),
     };

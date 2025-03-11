@@ -1,49 +1,13 @@
 import {App, AppEventToken} from "@/main/electron/app/app";
-import {BrowserWindow, WebPreferences} from "electron";
+import {BrowserWindow, WebPreferences, BaseWindowConstructorOptions} from "electron";
 import _ from "lodash";
 import {IPCHost} from "@/main/electron/data/ipcHost";
 import {IpcEvent, Namespace} from "@core/ipc/events";
 import {Platform} from "@/utils/pure/os";
-import BaseWindowConstructorOptions = Electron.BaseWindowConstructorOptions;
 
-export interface WindowConfig {
+export interface WindowConfig extends BaseWindowConstructorOptions {
     isolated: boolean;
-    /**
-     * https://www.electronjs.org/docs/latest/api/browser-window#setting-the-backgroundcolor-property
-     *
-     * Examples of valid `backgroundColor` values:
-     *
-     * * Hex
-     *   * #fff (shorthand RGB)
-     *   * #ffff (shorthand ARGB)
-     *   * #ffffff (RGB)
-     *   * #ffffffff (ARGB)
-     * * RGB
-     *   * `rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)`
-     *     * e.g. rgb(255, 255, 255)
-     * * RGBA
-     *   * `rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)`
-     *     * e.g. rgba(255, 255, 255, 1.0)
-     * * HSL
-     *   * `hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)`
-     *     * e.g. hsl(200, 20%, 50%)
-     * * HSLA
-     *   * `hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)`
-     *     * e.g. hsla(200, 20%, 50%, 0.5)
-     * * Color name
-     *   * Options are listed in SkParseColor.cpp
-     *   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
-     *     * e.g. `blueviolet` or `red`
-     */
-    backgroundColor: string;
-    width?: number;
-    height?: number;
     devTools?: boolean;
-    transparent?: boolean;
-    frame?: boolean;
-    vibrancy?: BaseWindowConstructorOptions["vibrancy"];
-    visualEffectState?: BaseWindowConstructorOptions["visualEffectState"];
-    backgroundMaterial?: BaseWindowConstructorOptions["backgroundMaterial"];
 }
 
 export interface AppWindowConfig {
@@ -67,21 +31,14 @@ export class AppWindow {
         this.appConfig = appConfig;
         this.win = new BrowserWindow({
             webPreferences: this.getWebPreference(),
-            width: this.config.width,
-            height: this.config.height,
-            transparent: this.config.transparent,
-            frame: this.config.frame,
-            vibrancy: this.config.vibrancy,
-            visualEffectState: this.config.visualEffectState,
-            backgroundMaterial: this.config.backgroundMaterial,
+            ...this.config,
         });
         this.ipc = new IPCHost(Namespace.NarraLeaf);
 
         this.prepare();
     }
 
-    prepare() {
-        this.win.setBackgroundColor(this.config.backgroundColor);
+    private prepare() {
         this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
             return {
                 platform: Platform.getInfo(process),
@@ -139,7 +96,16 @@ export class AppWindow {
     }
 
     public toggleDevTools() {
-        this.win.webContents.toggleDevTools();
+        if (this.win.webContents.isDevToolsOpened()) {
+            this.win.webContents.closeDevTools();
+        }
+        if (this.config.devTools) {
+            this.win.webContents.openDevTools();
+        }
+    }
+
+    public setIcon(icon: string) {
+        this.win.setIcon(icon);
     }
 
     async show(): Promise<void> {

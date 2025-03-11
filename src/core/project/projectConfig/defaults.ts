@@ -21,6 +21,7 @@ export const DefaultProjectConfig: BaseProjectConfig = {
     dev: {
         port: DefaultDevServerPort,
     },
+    resources: "assets",
 };
 
 export function mergeConfig<T, U>(base: T, user: U): T & U {

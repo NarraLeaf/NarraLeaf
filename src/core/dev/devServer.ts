@@ -130,6 +130,7 @@ export class DevServer {
             this.wsServer?.onMessage(DevServerEvent.FetchMetadata, () => {
                 return {
                     publicDir: this.renderer.getPublicDir(),
+                    rootDir: this.renderer.project.getRootDir(),
                 };
             }, ws);
         });
