@@ -4,6 +4,7 @@ import _ from "lodash";
 import {IPCHost} from "@/main/electron/data/ipcHost";
 import {IpcEvent, Namespace} from "@core/ipc/events";
 import {Platform} from "@/utils/pure/os";
+import BaseWindowConstructorOptions = Electron.BaseWindowConstructorOptions;
 
 export interface WindowConfig {
     isolated: boolean;
@@ -38,6 +39,11 @@ export interface WindowConfig {
     width?: number;
     height?: number;
     devTools?: boolean;
+    transparent?: boolean;
+    frame?: boolean;
+    vibrancy?: BaseWindowConstructorOptions["vibrancy"];
+    visualEffectState?: BaseWindowConstructorOptions["visualEffectState"];
+    backgroundMaterial?: BaseWindowConstructorOptions["backgroundMaterial"];
 }
 
 export interface AppWindowConfig {
@@ -63,6 +69,11 @@ export class AppWindow {
             webPreferences: this.getWebPreference(),
             width: this.config.width,
             height: this.config.height,
+            transparent: this.config.transparent,
+            frame: this.config.frame,
+            vibrancy: this.config.vibrancy,
+            visualEffectState: this.config.visualEffectState,
+            backgroundMaterial: this.config.backgroundMaterial,
         });
         this.ipc = new IPCHost(Namespace.NarraLeaf);
 
