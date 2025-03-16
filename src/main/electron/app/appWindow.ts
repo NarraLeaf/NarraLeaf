@@ -1,9 +1,11 @@
 import {App, AppEventToken} from "@/main/electron/app/app";
-import {BrowserWindow, WebPreferences, BaseWindowConstructorOptions} from "electron";
+import {BaseWindowConstructorOptions, BrowserWindow, WebPreferences} from "electron";
 import _ from "lodash";
 import {IPCHost} from "@/main/electron/data/ipcHost";
 import {IpcEvent, Namespace} from "@core/ipc/events";
 import {Platform} from "@/utils/pure/os";
+import {EventEmitter} from "events";
+import {StringKeyOf} from "narraleaf-react/dist/util/data";
 
 export interface WindowConfig extends BaseWindowConstructorOptions {
     isolated: boolean;
@@ -13,6 +15,10 @@ export interface WindowConfig extends BaseWindowConstructorOptions {
 export interface AppWindowConfig {
     preload: string;
 }
+
+type WindowEvents = {
+    close: [];
+};
 
 export class AppWindow {
     public static readonly DefaultConfig: WindowConfig = {
@@ -24,6 +30,7 @@ export class AppWindow {
     public readonly appConfig: AppWindowConfig;
     public readonly win: BrowserWindow;
     public readonly ipc: IPCHost;
+    private events: EventEmitter<WindowEvents> = new EventEmitter<WindowEvents>();
 
     constructor(app: App, config: Partial<WindowConfig>, appConfig: AppWindowConfig) {
         this.app = app;
@@ -38,22 +45,6 @@ export class AppWindow {
         this.prepare();
     }
 
-    private prepare() {
-        this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
-            return {
-                platform: Platform.getInfo(process),
-                isPackaged: this.app.electronApp.isPackaged,
-            };
-        });
-        this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
-            if (err) {
-                console.error("The App is terminating due to an error:");
-                console.error(err);
-            }
-            this.app.electronApp.quit();
-        });
-    }
-
     getWebPreference(): WebPreferences {
         return {
             contextIsolation: this.config.isolated,
@@ -61,13 +52,14 @@ export class AppWindow {
         };
     }
 
-    onClosed(fn: () => void): AppEventToken {
-        this.win.on("closed", () => {
+    onClose(fn: () => void): AppEventToken {
+        const handler = () => {
             fn();
-        });
+        };
+        this.events.on("close", handler);
         return {
             cancel: () => {
-                this.win.removeListener("closed", fn);
+                this.events.removeListener("close", handler);
             }
         };
     }
@@ -126,6 +118,33 @@ export class AppWindow {
 
     public getTitle(): string {
         return this.win.getTitle();
+    }
+
+    private prepare() {
+        this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
+            return {
+                platform: Platform.getInfo(process),
+                isPackaged: this.app.electronApp.isPackaged,
+            };
+        });
+        this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
+            if (err) {
+                console.error("The App is terminating due to an error:");
+                console.error(err);
+            }
+            this.app.electronApp.quit();
+        });
+        this.prepareEvents();
+    }
+
+    private prepareEvents() {
+        this.win.on("close", () => {
+            this.emit("close");
+        });
+    }
+
+    private emit<K extends StringKeyOf<WindowEvents>>(event: K, ...args: WindowEvents[K]) {
+        this.events.emit(event, ...args as any);
     }
 }
 

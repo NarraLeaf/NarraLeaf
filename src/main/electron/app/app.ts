@@ -22,6 +22,7 @@ import url, {fileURLToPath} from "url";
 import {normalizePath} from "@/utils/nodejs/string";
 import {Fs} from "@/utils/nodejs/fs";
 import {getMimeType} from "@/utils/nodejs/os";
+import {StringKeyOf} from "narraleaf-react/dist/util/data";
 
 type AppEvents = {
     "ready": [];
@@ -38,9 +39,14 @@ export type AppMeta = {
 
 enum HookEvents {
     AfterReady = "afterReady",
+    AfterMainWindowClose = "afterMainWindowClose",
+    OnTerminate = "onTerminate",
 }
 
 export class App {
+    public static Constants = {
+        AppLifeCycleViolationTimeout: 5000 as const,
+    } as const;
     public static Events = {
         Ready: "ready"
     } as const;
@@ -58,6 +64,7 @@ export class App {
     } = {};
     private assets: LocalAssets = new LocalAssets();
     private metadata: AppMeta | null = null;
+    private schedules: Array<() => void> = [];
 
     constructor(public config: AppConfig) {
         this.electronApp = app;
@@ -143,7 +150,7 @@ export class App {
         const win = new AppWindow(this, config, {
             preload: this.getPreloadScript(),
         });
-        this.prepareAppWindow(win);
+        this.prepareMainWindow(win);
         await win.loadFile(this.getEntryFile());
         await win.show();
 
@@ -152,7 +159,11 @@ export class App {
         return win;
     }
 
-    private prepareAppWindow(win: AppWindow): this {
+    public isPackaged(): boolean {
+        return this.electronApp.isPackaged;
+    }
+
+    private prepareMainWindow(win: AppWindow): this {
         const config = this.getConfig();
         if (config.appIcon) {
             if (path.isAbsolute(config.appIcon)) {
@@ -165,11 +176,11 @@ export class App {
             }
         }
 
-        return this;
-    }
+        win.onClose(() => {
+            this.emitHook(HookEvents.AfterMainWindowClose);
+        });
 
-    public isPackaged(): boolean {
-        return this.electronApp.isPackaged;
+        return this;
     }
 
     private prepare() {
@@ -188,7 +199,7 @@ export class App {
             .prepareMenu()
             .prepareWebAssets();
         this.electronApp.whenReady().then(() => {
-            this.events.emit(App.Events.Ready);
+            this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
         });
     }
@@ -208,6 +219,21 @@ export class App {
             } else {
                 console.log("Warning: Main window is not available when trying to refresh");
             }
+        });
+
+        this.hook(HookEvents.AfterMainWindowClose, () => {
+            this.timeout(() => {
+                console.warn("[Main] Main window life cycle violation detected. " +
+                    "You should clean up all side effects and call app.quit() when the main window is closed. " +
+                    "This usually happens when you forget to add a listener to the onClose event of the main window. " +
+                    "Try use win.onClose(() => { app.quit(); }) to prevent this from happening.");
+                console.warn("[Main] LifeCycleViolationWarning will only be shown in development mode. In production mode, not quitting the app after the main window may have these unexpected consequences:");
+                console.warn("[Main] - The app may still be running in the background");
+                console.warn("[Main] - The app may still be consuming resources");
+                console.warn("[Main] - The app may still lock some resources");
+                console.warn(`[Main] Quitting the app...`);
+                this.quit();
+            }, App.Constants.AppLifeCycleViolationTimeout);
         });
 
         return this;
@@ -309,6 +335,15 @@ export class App {
         };
     }
 
+    private onceHook(event: HookEvents, fn: (...args: any[]) => void): AppEventToken {
+        const token = this.hook(event, (...args) => {
+            token.cancel();
+            fn(...args);
+        });
+
+        return token;
+    }
+
     private unhook(event: HookEvents, fn: (...args: any[]) => void): void {
         this.hooks[event] = this.hooks[event]?.filter((f) => f !== fn);
     }
@@ -354,5 +389,30 @@ export class App {
         }
 
         return this.metadata;
+    }
+
+    private emit<K extends StringKeyOf<AppEvents>>(event: K, ...args: AppEvents[K]): void {
+        this.events.emit(event, ...args as any);
+    }
+
+    private schedule(fn: () => void): {
+        cancel(): void;
+    } {
+        this.schedules.push(fn);
+        return {
+            cancel: () => {
+                this.schedules = this.schedules.filter((f) => f !== fn);
+                fn();
+            }
+        };
+    }
+
+    private timeout(fn: () => void, ms: number): VoidFunction {
+        const token = setTimeout(() => {
+            fn();
+        }, ms);
+        return () => {
+            clearTimeout(token);
+        };
     }
 }
