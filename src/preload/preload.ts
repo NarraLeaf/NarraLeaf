@@ -16,8 +16,21 @@ const APIs: Window["NarraLeaf"] = {
             ipcClient.send(IpcEvent.app_terminate, {
                 err: err instanceof Error ? err.message : err,
             });
-        }
-    }
+        },
+    },
+    game: {
+        save: {
+            save(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData});
+            },
+            read(id: string): Promise<Response<IpcEvent.game_save_read>> {
+                return ipcClient.invoke(IpcEvent.game_save_read, {id});
+            },
+            list(): Promise<Response<IpcEvent.game_save_list>> {
+                return ipcClient.invoke(IpcEvent.game_save_list, {});
+            },
+        },
+    },
 };
 
 contextBridge.exposeInMainWorld(NarraLeafMainWorldProperty, APIs);

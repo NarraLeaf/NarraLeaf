@@ -1,4 +1,6 @@
 import {PlatformInfo} from "@/utils/pure/os";
+import {SavedGame, SavedGameMetadata} from "@core/game/save";
+import {RequestStatus} from "@core/ipc/events";
 
 export type AppInfo = {
     platform: PlatformInfo;
@@ -11,6 +13,13 @@ declare global {
             getPlatform(): Promise<AppInfo>;
             app: {
                 terminate(err: string | Error | null): void;
+            };
+            game: {
+                save: {
+                    save(gameData: SavedGame): Promise<RequestStatus<void>>;
+                    read(id: string): Promise<RequestStatus<SavedGame>>;
+                    list(): Promise<RequestStatus<SavedGameMetadata[]>>;
+                };
             };
         }
     }

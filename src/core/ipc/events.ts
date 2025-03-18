@@ -1,10 +1,25 @@
 import {IPCMessageType, IPCType} from "@core/ipc/ipc";
 import {PlatformInfo} from "@/utils/pure/os";
+import {SavedGame, SavedGameMetadata} from "@core/game/save";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
     app_terminate = "app.terminate",
+    game_save_save = "game.save.save",
+    game_save_read = "game.save.read",
+    game_save_list = "game.save.list",
 }
+
+export type VoidRequestStatus = {
+    success: boolean;
+    error?: string;
+};
+
+export type RequestStatus<T> = {
+    success: true;
+    data: T;
+    error?: never;
+} | VoidRequestStatus;
 
 export type IpcEvents = {
     [IpcEvent.getPlatform]: {
@@ -23,6 +38,28 @@ export type IpcEvents = {
             err: string | null;
         },
         response: never;
+    };
+    [IpcEvent.game_save_save]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            gameData: Record<string, any>;
+        },
+        response: VoidRequestStatus;
+    };
+    [IpcEvent.game_save_read]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            id: string;
+        },
+        response: RequestStatus<SavedGame>;
+    };
+    [IpcEvent.game_save_list]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {},
+        response: RequestStatus<SavedGameMetadata[]>;
     };
 };
 

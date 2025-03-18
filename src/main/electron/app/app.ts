@@ -23,6 +23,8 @@ import {normalizePath} from "@/utils/nodejs/string";
 import {Fs} from "@/utils/nodejs/fs";
 import {getMimeType} from "@/utils/nodejs/os";
 import {StringKeyOf} from "narraleaf-react/dist/util/data";
+import {Storage} from "@/main/electron/app/save/storage";
+import {SavedGame, SavedGameMetadata} from "@core/game/save";
 
 type AppEvents = {
     "ready": [];
@@ -36,6 +38,10 @@ export type AppMeta = {
     publicDir: string;
     rootDir: string;
 };
+
+export enum AppDataNamespace {
+    save = "msg_storage",
+}
 
 enum HookEvents {
     AfterReady = "afterReady",
@@ -59,6 +65,7 @@ export class App {
         wsClient: null,
     };
     public mainWindow: AppWindow | null = null;
+    public saveStorage: Storage<SavedGameMetadata, SavedGame>;
     private hooks: {
         [K in HookEvents]?: Array<(...args: any[]) => void>;
     } = {};
@@ -69,6 +76,10 @@ export class App {
     constructor(public config: AppConfig) {
         this.electronApp = app;
         this.platform = Platform.getInfo(process);
+        this.saveStorage = new Storage<SavedGameMetadata, SavedGame>({
+            app: this,
+            namespace: AppDataNamespace.save,
+        });
 
         this.prepare();
     }
@@ -163,6 +174,39 @@ export class App {
         return this.electronApp.isPackaged;
     }
 
+    public getUserDataDir(): string {
+        return app.getPath("userData");
+    }
+
+    public async saveGameData(data: SavedGame): Promise<void> {
+        await this.saveStorage.prepareDir();
+
+        const metadata = this.getSavedGameMetadata(data);
+        return this.saveStorage.write(String(data.meta.id), metadata, data);
+    }
+
+    public async readGameData(id: string): Promise<SavedGame> {
+        await this.saveStorage.prepareDir();
+
+        return this.saveStorage.read(id);
+    }
+
+    public async listGameData(): Promise<SavedGameMetadata[]> {
+        await this.saveStorage.prepareDir();
+
+        let files = await this.saveStorage.list("*");
+        return Promise.all(files.map((file) => file.meta()));
+    }
+
+    private getSavedGameMetadata(save: SavedGame, isTemporary: boolean = false): SavedGameMetadata {
+        return {
+            created: save.meta.created,
+            updated: save.meta.updated,
+            id: save.meta.id,
+            isTemporary,
+        };
+    }
+
     private prepareMainWindow(win: AppWindow): this {
         const config = this.getConfig();
         if (config.appIcon) {
@@ -235,6 +279,8 @@ export class App {
                 this.quit();
             }, App.Constants.AppLifeCycleViolationTimeout);
         });
+
+        this.electronApp.setPath("userData", path.join(this.getAppPath(), "userData-dev"));
 
         return this;
     }

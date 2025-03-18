@@ -6,6 +6,7 @@ import {IpcEvent, Namespace} from "@core/ipc/events";
 import {Platform} from "@/utils/pure/os";
 import {EventEmitter} from "events";
 import {StringKeyOf} from "narraleaf-react/dist/util/data";
+import {SavedGame} from "@core/game/save";
 
 export interface WindowConfig extends BaseWindowConstructorOptions {
     isolated: boolean;
@@ -133,6 +134,28 @@ export class AppWindow {
                 console.error(err);
             }
             this.app.electronApp.quit();
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData}) => {
+            try {
+                await this.app.saveGameData(gameData as SavedGame)
+                return this.ipc.success();
+            } catch (e) {
+                return this.ipc.failed(e);
+            }
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_read, async ({id}) => {
+            try {
+                return this.ipc.success(await this.app.readGameData(id));
+            } catch (e) {
+                return this.ipc.failed(e);
+            }
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_list, async () => {
+            try {
+                return this.ipc.success(await this.app.listGameData());
+            } catch (e) {
+                return this.ipc.failed(e);
+            }
         });
         this.prepareEvents();
     }
