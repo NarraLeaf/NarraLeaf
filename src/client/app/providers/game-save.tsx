@@ -1,7 +1,7 @@
 import {SavedGame} from "@core/game/save";
 import {useFlush} from "@/client/app/utils/flush";
 import {LiveGame, useGame} from "narraleaf-react";
-import {useEffect} from "react";
+import React, {useEffect} from "react";
 import {NarraLeafMainWorldProperty} from "@core/build/constants";
 import {safeClone} from "@/utils/pure/object";
 
@@ -38,18 +38,45 @@ export function useCurrentSaved(): SavedGame | null {
     return getSavedGame();
 }
 
+export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
+    const {game} = useGame();
+    const liveGame = game.getLiveGame();
+    const ref = React.useRef<SavedGame | null>(null);
+
+    useEffect(() => {
+        return liveGame.events.depends([
+            liveGame.events.on(LiveGame.EventTypes["event:menu.choose"], onStateChange),
+            liveGame.events.on(LiveGame.EventTypes["event:character.prompt"], onStateChange),
+        ]).cancel;
+    }, [liveGame]);
+
+    function onStateChange() {
+        ref.current = getSavedGame();
+    }
+
+    function getSavedGame(): SavedGame | null {
+        try {
+            return safeClone(liveGame.serialize());
+        } catch (e) {
+            return null;
+        }
+    }
+
+    return ref;
+}
+
 export function useSave(): UseSaveResult {
-    const currentSaved = useCurrentSaved();
+    const currentSaved = useCurrentSavedRef();
 
     async function save(name: string): Promise<void> {
-        if (currentSaved) {
-            await window[NarraLeafMainWorldProperty].game.save.save(currentSaved, name);
+        if (currentSaved.current) {
+            await window[NarraLeafMainWorldProperty].game.save.save(currentSaved.current, name);
         }
     }
 
     async function quickSave(): Promise<void> {
-        if (currentSaved) {
-            await window[NarraLeafMainWorldProperty].game.save.quickSave(currentSaved);
+        if (currentSaved.current) {
+            await window[NarraLeafMainWorldProperty].game.save.quickSave(currentSaved.current);
         }
     }
 
