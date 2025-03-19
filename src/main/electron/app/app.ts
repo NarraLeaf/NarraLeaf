@@ -23,8 +23,9 @@ import {normalizePath} from "@/utils/nodejs/string";
 import {Fs} from "@/utils/nodejs/fs";
 import {getMimeType} from "@/utils/nodejs/os";
 import {StringKeyOf} from "narraleaf-react/dist/util/data";
-import {Storage} from "@/main/electron/app/save/storage";
-import {SavedGame, SavedGameMetadata} from "@core/game/save";
+import {LocalFile} from "@/main/electron/app/save/localFile";
+import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
+import {StoreProvider} from "@/main/electron/app/save/storeProvider";
 
 type AppEvents = {
     "ready": [];
@@ -65,7 +66,8 @@ export class App {
         wsClient: null,
     };
     public mainWindow: AppWindow | null = null;
-    public saveStorage: Storage<SavedGameMetadata, SavedGame>;
+    public saveStorage: StoreProvider;
+    public config: AppConfig
     private hooks: {
         [K in HookEvents]?: Array<(...args: any[]) => void>;
     } = {};
@@ -73,15 +75,17 @@ export class App {
     private metadata: AppMeta | null = null;
     private schedules: Array<() => void> = [];
 
-    constructor(public config: AppConfig) {
+    constructor(config: AppConfig) {
+        this.config = config;
         this.electronApp = app;
         this.platform = Platform.getInfo(process);
-        this.saveStorage = new Storage<SavedGameMetadata, SavedGame>({
-            app: this,
-            namespace: AppDataNamespace.save,
-        });
 
         this.prepare();
+
+        // important: must be called after `prepare`
+        this.saveStorage = this.getConfig().store || new LocalFile({
+            dir: path.join(this.getUserDataDir(), AppDataNamespace.save),
+        });
     }
 
     onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
@@ -178,32 +182,25 @@ export class App {
         return app.getPath("userData");
     }
 
-    public async saveGameData(data: SavedGame): Promise<void> {
-        await this.saveStorage.prepareDir();
-
-        const metadata = this.getSavedGameMetadata(data);
-        return this.saveStorage.write(String(data.meta.id), metadata, data);
+    public async saveGameData(data: SavedGame, type: SaveType): Promise<void> {
+        const metadata = this.getSavedGameMetadata(data, type);
+        return this.saveStorage.set(String(data.meta.id), type, metadata, data);
     }
 
     public async readGameData(id: string): Promise<SavedGame> {
-        await this.saveStorage.prepareDir();
-
-        return this.saveStorage.read(id);
+        return this.saveStorage.get(id);
     }
 
     public async listGameData(): Promise<SavedGameMetadata[]> {
-        await this.saveStorage.prepareDir();
-
-        let files = await this.saveStorage.list("*");
-        return Promise.all(files.map((file) => file.meta()));
+        return await this.saveStorage.list();
     }
 
-    private getSavedGameMetadata(save: SavedGame, isTemporary: boolean = false): SavedGameMetadata {
+    private getSavedGameMetadata(save: SavedGame, type: SaveType): SavedGameMetadata {
         return {
             created: save.meta.created,
-            updated: save.meta.updated,
+            updated: Date.now(),
             id: save.meta.id,
-            isTemporary,
+            type,
         };
     }
 

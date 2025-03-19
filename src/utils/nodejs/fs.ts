@@ -86,6 +86,10 @@ export class Fs {
         }));
     }
 
+    public static deleteFile(path: string): Promise<FsResult<void>> {
+        return this.wrap(fs.unlink(path));
+    }
+
     private static errorToString(error: unknown): string {
         if (error instanceof Error) {
             return error.message;

@@ -135,9 +135,9 @@ export class AppWindow {
             }
             this.app.electronApp.quit();
         });
-        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData}) => {
+        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type}) => {
             try {
-                await this.app.saveGameData(gameData as SavedGame)
+                await this.app.saveGameData(gameData as SavedGame, type)
                 return this.ipc.success();
             } catch (e) {
                 return this.ipc.failed(e);

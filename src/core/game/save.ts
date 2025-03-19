@@ -1,3 +1,6 @@
+/**
+ * @todo: use import("narraleaf-react").SavedGame instead
+ */
 export interface SavedGame {
     name: string;
     meta: {
@@ -12,6 +15,12 @@ export interface SavedGameMetadata {
     created: number;
     updated: number;
     id: string;
-    isTemporary: boolean;
+    type: SaveType;
     capture?: string;
+}
+
+export enum SaveType {
+    Save = 0,
+    QuickSave = 1,
+    Recovery = 2,
 }

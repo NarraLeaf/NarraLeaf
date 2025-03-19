@@ -1,6 +1,6 @@
 import {IPCMessageType, IPCType} from "@core/ipc/ipc";
 import {PlatformInfo} from "@/utils/pure/os";
-import {SavedGame, SavedGameMetadata} from "@core/game/save";
+import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
@@ -44,6 +44,7 @@ export type IpcEvents = {
         consumer: IPCType.Host,
         data: {
             gameData: Record<string, any>;
+            type: SaveType;
         },
         response: VoidRequestStatus;
     };
