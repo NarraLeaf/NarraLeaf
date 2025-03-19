@@ -139,4 +139,13 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
             success: true,
         };
     }
+
+    public async tryUse<T>(exec: () => T | Promise<T>): Promise<RequestStatus<T>> {
+        try {
+            const data = await exec();
+            return this.success(data);
+        } catch (err) {
+            return this.failed(err);
+        }
+    }
 }

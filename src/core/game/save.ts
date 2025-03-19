@@ -6,7 +6,6 @@ export interface SavedGame {
     meta: {
         created: number;
         updated: number;
-        id: string;
     };
     game: Record<string, any>;
 }

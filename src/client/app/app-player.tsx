@@ -1,6 +1,9 @@
-import React from "react";
+import React, {useEffect, useRef} from "react";
 import {Meta} from "@/client/app/types";
 import {SplashScreen} from "@/client/app/splash-screen/splash-screen";
+import {useCurrentSaved} from "@/client";
+import {AsyncTaskQueue} from "@/utils/pure/array";
+import {NarraLeafMainWorldProperty} from "@core/build/constants";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
@@ -15,6 +18,16 @@ const AppPlayer = ({story, children, lib, meta}: {
             ? meta.splashScreen
             : [meta.splashScreen]
         : null;
+    const currentSaved = useCurrentSaved();
+    const queue = useRef(new AsyncTaskQueue());
+
+    useEffect(() => {
+        if (currentSaved) {
+            queue.current.clear().push(async () => {
+                await window[NarraLeafMainWorldProperty].game.save.createRecovery(currentSaved);
+            });
+        }
+    }, [currentSaved]);
 
     return (
         <>

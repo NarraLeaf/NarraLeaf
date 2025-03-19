@@ -74,6 +74,16 @@ export class LocalFile extends StoreProvider {
         }));
     }
 
+    async delete(name: string): Promise<void> {
+        await this.prepareDir();
+
+        const path = this.resolve(name);
+        const res = await Fs.deleteFile(path);
+        if (!res.ok) {
+            throw new Error(res.error);
+        }
+    }
+
     private async quickSave(metadata: SavedGameMetadata, data: SavedGame): Promise<void> {
         return this.limitedSave(SaveType.QuickSave, metadata, data, this.config.maxTemporary || LocalFile.DefaultConfig.maxTemporary);
     }

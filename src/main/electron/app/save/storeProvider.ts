@@ -8,4 +8,6 @@ export abstract class StoreProvider {
     abstract set(name: string, type: SaveType, metadata: SavedGameMetadata, data: SavedGame): Promise<void>;
 
     abstract list(): Promise<SavedGameMetadata[]>;
+
+    abstract delete(name: string): Promise<void>;
 }

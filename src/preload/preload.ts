@@ -3,6 +3,7 @@ import {IpcEvent, IpcEvents, Namespace} from "@core/ipc/events";
 import {contextBridge} from "electron";
 import {NarraLeafMainWorldProperty} from "@core/build/constants";
 import {SaveType} from "@core/game/save";
+import {generateId} from "@/utils/pure/string";
 
 type Response<K extends keyof IpcEvents> = IpcEvents[K]["response"];
 
@@ -21,14 +22,16 @@ const APIs: Window["NarraLeaf"] = {
     },
     game: {
         save: {
-            save(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save});
+            save(gameData: Record<string, any>, id: string): Promise<Response<IpcEvent.game_save_save>> {
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save, id});
             },
             quickSave(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.QuickSave});
+                const id = generateId();
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.QuickSave, id});
             },
             createRecovery(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Recovery});
+                const id = generateId();
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Recovery, id});
             },
             read(id: string): Promise<Response<IpcEvent.game_save_read>> {
                 return ipcClient.invoke(IpcEvent.game_save_read, {id});

@@ -8,6 +8,7 @@ export enum IpcEvent {
     game_save_save = "game.save.save",
     game_save_read = "game.save.read",
     game_save_list = "game.save.list",
+    game_save_delete = "game.save.delete",
 }
 
 export type VoidRequestStatus = {
@@ -44,6 +45,7 @@ export type IpcEvents = {
         consumer: IPCType.Host,
         data: {
             gameData: Record<string, any>;
+            id: string;
             type: SaveType;
         },
         response: VoidRequestStatus;
@@ -61,6 +63,14 @@ export type IpcEvents = {
         consumer: IPCType.Host,
         data: {},
         response: RequestStatus<SavedGameMetadata[]>;
+    };
+    [IpcEvent.game_save_delete]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            id: string;
+        },
+        response: VoidRequestStatus;
     };
 };
 

@@ -135,27 +135,17 @@ export class AppWindow {
             }
             this.app.electronApp.quit();
         });
-        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type}) => {
-            try {
-                await this.app.saveGameData(gameData as SavedGame, type)
-                return this.ipc.success();
-            } catch (e) {
-                return this.ipc.failed(e);
-            }
+        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type, id}) => {
+            return this.ipc.tryUse(() => this.app.saveGameData(gameData as SavedGame, type, id));
         });
         this.ipc.onRequest(this, IpcEvent.game_save_read, async ({id}) => {
-            try {
-                return this.ipc.success(await this.app.readGameData(id));
-            } catch (e) {
-                return this.ipc.failed(e);
-            }
+            return this.ipc.tryUse(() => this.app.readGameData(id));
         });
         this.ipc.onRequest(this, IpcEvent.game_save_list, async () => {
-            try {
-                return this.ipc.success(await this.app.listGameData());
-            } catch (e) {
-                return this.ipc.failed(e);
-            }
+            return this.ipc.tryUse(() => this.app.listGameData());
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_delete, async ({id}) => {
+            return this.ipc.tryUse(() => this.app.deleteGameData(id));
         });
         this.prepareEvents();
     }
