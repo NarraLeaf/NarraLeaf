@@ -1,13 +1,20 @@
-import {SavedGame} from "@core/game/save";
+import {SavedGame, SavedGameMetadata} from "@core/game/save";
 import {useFlush} from "@/client/app/utils/flush";
 import {LiveGame, useGame} from "narraleaf-react";
 import React, {useEffect} from "react";
 import {NarraLeafMainWorldProperty} from "@core/build/constants";
 import {safeClone} from "@/utils/pure/object";
 
-export type UseSaveResult = {
-    save: (name: string) => Promise<void>;
+export type UseSaveActionResult = {
+    save: (id: string) => Promise<void>;
     quickSave: () => Promise<void>;
+};
+
+export type UseSavedGameResult = {
+    result: SavedGameMetadata[] | [],
+    error: Error | null,
+    isLoading: boolean,
+    refetch: () => void,
 };
 
 export function useCurrentSaved(): SavedGame | null {
@@ -65,7 +72,7 @@ export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
     return ref;
 }
 
-export function useSave(): UseSaveResult {
+export function useSaveAction(): UseSaveActionResult {
     const currentSaved = useCurrentSavedRef();
 
     async function save(name: string): Promise<void> {
@@ -84,5 +91,9 @@ export function useSave(): UseSaveResult {
         save,
         quickSave,
     };
+}
+
+export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResult | null {
+    return null;
 }
 
