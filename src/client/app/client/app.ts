@@ -1,4 +1,5 @@
 import {AppInfo} from "@core/@types/global";
+import {CrashReport} from "@/main/electron/app/app";
 
 
 export interface AppConfig {
@@ -12,5 +13,8 @@ export class App {
         this.appInfo = config.appInfo;
     }
 
+    getCrashReport(): CrashReport | null {
+        return this.appInfo.crashReport;
+    }
 }
 

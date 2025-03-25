@@ -26,9 +26,24 @@ import {StringKeyOf} from "narraleaf-react/dist/util/data";
 import {LocalFile} from "@/main/electron/app/save/localFile";
 import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
 import {StoreProvider} from "@/main/electron/app/save/storeProvider";
+import {FsFlag} from "@/main/electron/data/fsLogger";
 
 type AppEvents = {
     "ready": [];
+};
+type AppFsFlags = {
+    crash: FsFlag<CrashReport>;
+};
+export type CrashReport = {
+    isCritical: true;
+    timestamp?: never;
+    reason?: never;
+    recoveryDisabled?: never;
+} | {
+    isCritical: false;
+    timestamp: number;
+    reason: string;
+    recoveryDisabled: boolean;
 };
 
 export type AppEventToken = {
@@ -42,6 +57,7 @@ export type AppMeta = {
 
 export enum AppDataNamespace {
     save = "msg_storage",
+    flags = "app_flags",
 }
 
 enum HookEvents {
@@ -67,13 +83,15 @@ export class App {
     };
     public mainWindow: AppWindow | null = null;
     public saveStorage: StoreProvider;
-    public config: AppConfig
+    public config: AppConfig;
     private hooks: {
         [K in HookEvents]?: Array<(...args: any[]) => void>;
     } = {};
     private assets: LocalAssets = new LocalAssets();
     private metadata: AppMeta | null = null;
     private schedules: Array<() => void> = [];
+    private flags: AppFsFlags;
+    private crashReport: CrashReport | null = null;
 
     constructor(config: AppConfig) {
         this.config = config;
@@ -82,13 +100,15 @@ export class App {
 
         this.prepare();
 
+        this.flags = this.getFsFlags();
+
         // important: must be called after `prepare`
         this.saveStorage = this.getConfig().store || new LocalFile({
             dir: path.join(this.getUserDataDir(), AppDataNamespace.save),
         });
     }
 
-    onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
+    public onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
         const handler = () => {
             safeExecuteFn(fn);
         };
@@ -109,6 +129,10 @@ export class App {
 
     getConfig() {
         return this.config.getConfig(this.platform);
+    }
+
+    public getCrashReport(): CrashReport | null {
+        return this.crashReport;
     }
 
     public getPreloadScript(): string {
@@ -151,7 +175,31 @@ export class App {
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), DevTempNamespace.RendererBuild);
     }
 
+    /**
+     * Quit the app without any error
+     */
     public quit(): void {
+        this.electronApp.quit();
+    }
+
+    /**
+     * Quit the app and create a crash report
+     *
+     * If the reason is not provided, the crash will be considered critical
+     */
+    public crash(reason?: string, {disableRecovery = false}: {disableRecovery?: boolean} = {}): void {
+        if (!reason) {
+            this.flags.crash.flagSync({
+                isCritical: true,
+            });
+        } else {
+            this.flags.crash.flagSync({
+                isCritical: false,
+                timestamp: Date.now(),
+                reason,
+                recoveryDisabled: disableRecovery,
+            });
+        }
         this.electronApp.quit();
     }
 
@@ -199,6 +247,46 @@ export class App {
         return this.saveStorage.delete(id);
     }
 
+    private crashReason(type: string, detail: string): string {
+        return `[${type}] ${detail}`;
+    }
+
+    private getFsFlags(): AppFsFlags {
+        const baseDir = path.resolve(this.getUserDataDir(), AppDataNamespace.flags);
+        return {
+            crash: new FsFlag(path.join(baseDir, "crash")),
+        };
+    }
+
+    private async consumeCrashReport(): Promise<CrashReport | null> {
+        const isCrashed = await this.flags.crash.hasFlag();
+        if (!isCrashed) {
+            return null;
+        }
+
+        const result = await this.flags.crash.readFlag();
+        await this.flags.crash.unflag();
+        return result;
+    }
+
+    private async prepareCrashHelper() {
+        const report = await this.consumeCrashReport();
+        if (report) {
+            this.crashReport = report;
+        }
+
+        if (this.devState.wsClient) {
+            console.log("[Main] Found crash report", this.crashReport);
+        }
+
+        process.on("uncaughtException", (err) => {
+            this.crash(this.crashReason(
+                "MainProcessUncaughtException",
+                err.message,
+            ));
+        });
+    }
+
     private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string): SavedGameMetadata {
         return {
             created: save.meta.created,
@@ -243,7 +331,8 @@ export class App {
         this
             .prepareMenu()
             .prepareWebAssets();
-        this.electronApp.whenReady().then(() => {
+        this.electronApp.whenReady().then(async () => {
+            await this.prepareCrashHelper();
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
         });

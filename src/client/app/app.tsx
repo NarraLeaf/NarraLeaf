@@ -38,6 +38,11 @@ async function render(
         appInfo,
     };
 
+    if (!appInfo.isPackaged) {
+        console.log("NarraLeaf is Running in development mode");
+        console.log("AppInfo received", appInfo);
+    }
+
     root.render(
         <React.StrictMode>
             <ErrorBoundary fallback={<ErrorFallback/>} crash={appInfo.isPackaged}>

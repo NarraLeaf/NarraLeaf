@@ -11,7 +11,7 @@ export type UseSaveActionResult = {
 };
 
 export type UseSavedGameResult = {
-    result: SavedGameMetadata[] | [],
+    results: SavedGameMetadata[] | [],
     error: Error | null,
     isLoading: boolean,
     refetch: () => void,
@@ -94,6 +94,41 @@ export function useSaveAction(): UseSaveActionResult {
 }
 
 export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResult | null {
-    return null;
+    const [results, setResults] = React.useState<SavedGameMetadata[]>([]);
+    const [error, setError] = React.useState<Error | null>(null);
+    const [isLoading, setLoading] = React.useState<boolean>(false);
+
+    const taskRef = React.useRef<Promise<void> | null>(null);
+
+    const load = async () => {
+        setLoading(true);
+        setError(null);
+
+        const res = await window[NarraLeafMainWorldProperty].game.save.list()
+        if (!res.success) {
+            throw new Error(res.error);
+        }
+
+        setResults(res.data);
+    };
+
+    const refetch = () => {
+        const currentTask = taskRef.current ?? Promise.resolve();
+        const nextTask = currentTask.then(() => load());
+
+        taskRef.current = nextTask;
+        return nextTask;
+    };
+
+    React.useEffect(() => {
+        refetch()
+    }, deps);
+
+    return {
+        results,
+        error,
+        isLoading,
+        refetch,
+    }
 }
 

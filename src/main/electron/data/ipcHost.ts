@@ -1,5 +1,5 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
-import {IpcEvents, RequestStatus, VoidRequestStatus} from "@core/ipc/events";
+import {IpcEvents, RequestStatus} from "@core/ipc/events";
 import {AppEventToken} from "@/main/electron/app/app";
 import {AppWindow} from "@/main/electron/app/appWindow";
 import {ipcMain} from "electron";
@@ -119,7 +119,7 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         });
     }
 
-    public failed(err: unknown): VoidRequestStatus {
+    public failed<T>(err: unknown): RequestStatus<T> {
         return {
             success: false,
             error: err instanceof Error ? err.message : String(err),
@@ -127,8 +127,8 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
     }
 
     public success<T>(data: T): RequestStatus<T>;
-    public success(): VoidRequestStatus;
-    public success(data?: any): RequestStatus<any> | VoidRequestStatus {
+    public success(): RequestStatus<void>;
+    public success<T = undefined>(data?: T extends undefined ? never : T): RequestStatus<T extends undefined ? void : T> {
         if (data !== undefined) {
             return {
                 success: true,
@@ -137,6 +137,7 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         }
         return {
             success: true,
+            data: undefined as any,
         };
     }
 

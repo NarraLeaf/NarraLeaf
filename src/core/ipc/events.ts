@@ -1,6 +1,7 @@
 import {IPCMessageType, IPCType} from "@core/ipc/ipc";
 import {PlatformInfo} from "@/utils/pure/os";
 import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
+import {CrashReport} from "@/main/electron/app/app";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
@@ -11,16 +12,16 @@ export enum IpcEvent {
     game_save_delete = "game.save.delete",
 }
 
-export type VoidRequestStatus = {
-    success: boolean;
-    error?: string;
-};
-
+export type VoidRequestStatus = RequestStatus<void>;
 export type RequestStatus<T> = {
     success: true;
     data: T;
     error?: never;
-} | VoidRequestStatus;
+} |{
+    success: false;
+    data?: never;
+    error?: string;
+};
 
 export type IpcEvents = {
     [IpcEvent.getPlatform]: {
@@ -30,6 +31,7 @@ export type IpcEvents = {
         response: {
             platform: PlatformInfo;
             isPackaged: boolean;
+            crashReport: CrashReport | null;
         };
     };
     [IpcEvent.app_terminate]: {

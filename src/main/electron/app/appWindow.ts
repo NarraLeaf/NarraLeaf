@@ -126,14 +126,17 @@ export class AppWindow {
             return {
                 platform: Platform.getInfo(process),
                 isPackaged: this.app.electronApp.isPackaged,
+                crashReport: this.app.getCrashReport(),
             };
         });
         this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
             if (err) {
                 console.error("The App is terminating due to an error:");
                 console.error(err);
+                this.app.crash(err);
+            } else {
+                this.app.quit();
             }
-            this.app.electronApp.quit();
         });
         this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type, id}) => {
             return this.ipc.tryUse(() => this.app.saveGameData(gameData as SavedGame, type, id));
@@ -154,10 +157,23 @@ export class AppWindow {
         this.win.on("close", () => {
             this.emit("close");
         });
+        this.win.webContents.on("render-process-gone", (event, details) => {
+            if (!details.reason || details.reason === "clean-exit") {
+                return;
+            }
+            this.app.crash(this.crashReason(
+                details.reason,
+                `Exit Code: ${details.exitCode}`
+            ));
+        });
     }
 
     private emit<K extends StringKeyOf<WindowEvents>>(event: K, ...args: WindowEvents[K]) {
         this.events.emit(event, ...args as any);
+    }
+
+    private crashReason(type: string, detail: string): string {
+        return `[${type}] ${detail}`;
     }
 }
 
