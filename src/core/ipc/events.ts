@@ -49,6 +49,7 @@ export type IpcEvents = {
             gameData: Record<string, any>;
             id: string;
             type: SaveType;
+            preview?: string;
         },
         response: VoidRequestStatus;
     };

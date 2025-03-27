@@ -138,8 +138,8 @@ export class AppWindow {
                 this.app.quit();
             }
         });
-        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type, id}) => {
-            return this.ipc.tryUse(() => this.app.saveGameData(gameData as SavedGame, type, id));
+        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type, id, preview}) => {
+            return this.ipc.tryUse(() => this.app.saveGameData(gameData as SavedGame, type, id, preview));
         });
         this.ipc.onRequest(this, IpcEvent.game_save_read, async ({id}) => {
             return this.ipc.tryUse(() => this.app.readGameData(id));

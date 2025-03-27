@@ -73,11 +73,18 @@ export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
 }
 
 export function useSaveAction(): UseSaveActionResult {
+    const {game} = useGame();
     const currentSaved = useCurrentSavedRef();
 
     async function save(name: string): Promise<void> {
         if (currentSaved.current) {
-            await window[NarraLeafMainWorldProperty].game.save.save(currentSaved.current, name);
+            let preview: undefined | string = undefined;
+            try {
+                preview = await game.getLiveGame().capturePng()
+            } catch (e) {
+                console.error(e);
+            }
+            await window[NarraLeafMainWorldProperty].game.save.save(currentSaved.current, name, preview);
         }
     }
 

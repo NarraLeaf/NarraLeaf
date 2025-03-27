@@ -230,7 +230,7 @@ export class App {
         return app.getPath("userData");
     }
 
-    public async saveGameData(data: SavedGame, type: SaveType, id: string): Promise<void> {
+    public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
         const metadata = this.getSavedGameMetadata(data, type, id);
         return this.saveStorage.set(metadata.id, type, metadata, data);
     }
@@ -287,12 +287,13 @@ export class App {
         });
     }
 
-    private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string): SavedGameMetadata {
+    private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string, preview?: string): SavedGameMetadata {
         return {
             created: save.meta.created,
             updated: Date.now(),
             id,
             type,
+            capture: preview,
         };
     }
 

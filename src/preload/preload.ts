@@ -22,8 +22,8 @@ const APIs: Window["NarraLeaf"] = {
     },
     game: {
         save: {
-            save(gameData: Record<string, any>, id: string): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save, id});
+            save(gameData: Record<string, any>, id: string, preview?: string): Promise<Response<IpcEvent.game_save_save>> {
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save, id, preview});
             },
             quickSave(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
                 const id = generateId();

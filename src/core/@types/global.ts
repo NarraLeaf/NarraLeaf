@@ -18,7 +18,7 @@ declare global {
             };
             game: {
                 save: {
-                    save(gameData: SavedGame, id: string): Promise<RequestStatus<void>>;
+                    save(gameData: SavedGame, id: string, preview?: string): Promise<RequestStatus<void>>;
                     quickSave(gameData: SavedGame): Promise<RequestStatus<void>>;
                     createRecovery(gameData: SavedGame): Promise<RequestStatus<void>>;
                     read(id: string): Promise<RequestStatus<SavedGame>>;
