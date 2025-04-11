@@ -26,3 +26,7 @@ dist
 
 # IDEA ignores
 .idea
+
+# NarraLeaf Ignore
+temp
+.narraleaf
