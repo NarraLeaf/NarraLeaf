@@ -27,10 +27,10 @@ async function render(
         throw new CriticalRendererProcessError("Cannot access Window object in the renderer process");
     }
     if (!window[NarraLeafMainWorldProperty]) {
-        throw new CriticalRendererProcessError("Cannot access NarraLeaf API in the renderer process");
+        window.close();
     }
     if (!lib.meta.story) {
-        throw new Error("Story not found in the meta object");
+        window[NarraLeafMainWorldProperty].app.terminate(new Error("Story not found in the meta object"));
     }
 
     const appInfo: AppInfo = await window[NarraLeafMainWorldProperty].getPlatform();

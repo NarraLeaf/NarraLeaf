@@ -19,7 +19,7 @@ export type UseSavedGameResult = {
 
 export function useCurrentSaved(): SavedGame | null {
     const [flush] = useFlush();
-    const {game} = useGame();
+    const game = useGame();
 
     const liveGame = game.getLiveGame();
 
@@ -46,7 +46,7 @@ export function useCurrentSaved(): SavedGame | null {
 }
 
 export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
-    const {game} = useGame();
+    const game = useGame();
     const liveGame = game.getLiveGame();
     const ref = React.useRef<SavedGame | null>(null);
 
@@ -73,7 +73,7 @@ export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
 }
 
 export function useSaveAction(): UseSaveActionResult {
-    const {game} = useGame();
+    const game = useGame();
     const currentSaved = useCurrentSavedRef();
 
     async function save(name: string): Promise<void> {

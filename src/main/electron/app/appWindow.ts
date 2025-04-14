@@ -89,11 +89,14 @@ export class AppWindow {
     }
 
     public toggleDevTools() {
-        if (this.win.webContents.isDevToolsOpened()) {
-            this.win.webContents.closeDevTools();
-        }
         if (this.config.devTools) {
-            this.win.webContents.openDevTools();
+            if (this.win.webContents.isDevToolsOpened()) {
+                this.win.webContents.closeDevTools();
+            } else {
+                this.win.webContents.openDevTools();
+            }
+        } else {
+            console.log("[Main] Warning: Trying to toggle dev tools with devTools disabled.");
         }
     }
 
@@ -131,8 +134,11 @@ export class AppWindow {
         });
         this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
             if (err) {
-                console.error("The App is terminating due to an error:");
-                console.error(err);
+                const timestamp = new Date().toISOString();
+                console.error("[Main] ERROR");
+                console.error("[Main] ERROR The App is terminating due to an error:");
+                console.error("[Main] ERROR " + err);
+                console.error("[Main] ERROR App Crashed at " + timestamp);
                 this.app.crash(err);
             } else {
                 this.app.quit();
