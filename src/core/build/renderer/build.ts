@@ -34,6 +34,7 @@ export async function buildRenderer(
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
     await Fs.createDir(buildDir);
+    await Fs.createDir(outputDir);
     await createStructure([
         rendererAppStructure,
     ], rendererProject, buildDir);
@@ -86,6 +87,7 @@ export async function watchRenderer(
     const logr = App.createLogger(rendererProject.project.app);
 
     await Fs.createDir(buildTempDir);
+    await Fs.createDir(buildDistDir);
     await createStructure([
         rendererAppStructure,
     ], rendererProject, buildTempDir);
