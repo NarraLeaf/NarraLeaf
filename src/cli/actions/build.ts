@@ -28,9 +28,9 @@ export default async function build(this: Command, app: App, [path]: [string, Bu
         logr.info("Building main (2/3)");
         await project.buildMain();
 
-        // Pack App
-        logr.info("Packing App (3/3)");
-        await project.buildApp();
+        // Pack app
+        logr.info("Packing app (3/3)");
+        await project.buildApp(rendererProject);
 
         logr.info("Project built in", String(Date.now() - time), "ms");
     } catch (e) {

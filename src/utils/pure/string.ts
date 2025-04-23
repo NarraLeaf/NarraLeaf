@@ -1,5 +1,3 @@
-import path from "path";
-
 export function sliceString(str: string, n: number): string[] {
     return Array.from({length: Math.ceil(str.length / n)}, (_, i) => str.slice(i * n, (i + 1) * n));
 }
@@ -24,8 +22,8 @@ export function errorToStack(error: any): string {
     }
 }
 
-export function rest(p: string): string {
-    return p.endsWith(path.sep) ? p + `**${path.sep}*` : p + `${path.sep}**${path.sep}*`;
+export function normalize(p: string): string {
+    return p.replace(/\\/g, "/");
 }
 
 export function root(p: string, sep: string): string {
@@ -49,4 +47,18 @@ export function countDirectoryLevels(path: string): number {
 
 export function reverseDirectoryLevels(path: string): string {
     return "../".repeat(countDirectoryLevels(path));
+}
+
+export const sep = {
+    posix: "/",
+    win32: "\\"
+};
+
+export function generateId(length: number = 16): string {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
 }

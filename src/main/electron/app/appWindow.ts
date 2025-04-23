@@ -1,48 +1,25 @@
 import {App, AppEventToken} from "@/main/electron/app/app";
-import {BrowserWindow, WebPreferences} from "electron";
+import {BaseWindowConstructorOptions, BrowserWindow, WebPreferences} from "electron";
 import _ from "lodash";
 import {IPCHost} from "@/main/electron/data/ipcHost";
 import {IpcEvent, Namespace} from "@core/ipc/events";
 import {Platform} from "@/utils/pure/os";
+import {EventEmitter} from "events";
+import {StringKeyOf} from "narraleaf-react/dist/util/data";
+import {SavedGame} from "@core/game/save";
 
-export interface WindowConfig {
+export interface WindowConfig extends BaseWindowConstructorOptions {
     isolated: boolean;
-    /**
-     * https://www.electronjs.org/docs/latest/api/browser-window#setting-the-backgroundcolor-property
-     *
-     * Examples of valid `backgroundColor` values:
-     *
-     * * Hex
-     *   * #fff (shorthand RGB)
-     *   * #ffff (shorthand ARGB)
-     *   * #ffffff (RGB)
-     *   * #ffffffff (ARGB)
-     * * RGB
-     *   * `rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)`
-     *     * e.g. rgb(255, 255, 255)
-     * * RGBA
-     *   * `rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)`
-     *     * e.g. rgba(255, 255, 255, 1.0)
-     * * HSL
-     *   * `hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)`
-     *     * e.g. hsl(200, 20%, 50%)
-     * * HSLA
-     *   * `hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)`
-     *     * e.g. hsla(200, 20%, 50%, 0.5)
-     * * Color name
-     *   * Options are listed in SkParseColor.cpp
-     *   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
-     *     * e.g. `blueviolet` or `red`
-     */
-    backgroundColor: string;
-    width?: number;
-    height?: number;
     devTools?: boolean;
 }
 
 export interface AppWindowConfig {
     preload: string;
 }
+
+type WindowEvents = {
+    close: [];
+};
 
 export class AppWindow {
     public static readonly DefaultConfig: WindowConfig = {
@@ -54,6 +31,7 @@ export class AppWindow {
     public readonly appConfig: AppWindowConfig;
     public readonly win: BrowserWindow;
     public readonly ipc: IPCHost;
+    private events: EventEmitter<WindowEvents> = new EventEmitter<WindowEvents>();
 
     constructor(app: App, config: Partial<WindowConfig>, appConfig: AppWindowConfig) {
         this.app = app;
@@ -61,29 +39,11 @@ export class AppWindow {
         this.appConfig = appConfig;
         this.win = new BrowserWindow({
             webPreferences: this.getWebPreference(),
-            width: this.config.width,
-            height: this.config.height,
+            ...this.config,
         });
         this.ipc = new IPCHost(Namespace.NarraLeaf);
 
         this.prepare();
-    }
-
-    prepare() {
-        this.win.setBackgroundColor(this.config.backgroundColor);
-        this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
-            return {
-                platform: Platform.getInfo(process),
-                isPackaged: this.app.electronApp.isPackaged,
-            };
-        });
-        this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
-            if (err) {
-                console.error("The App is terminating due to an error:");
-                console.error(err);
-            }
-            this.app.electronApp.quit();
-        });
     }
 
     getWebPreference(): WebPreferences {
@@ -93,13 +53,14 @@ export class AppWindow {
         };
     }
 
-    onClosed(fn: () => void): AppEventToken {
-        this.win.on("closed", () => {
+    onClose(fn: () => void): AppEventToken {
+        const handler = () => {
             fn();
-        });
+        };
+        this.events.on("close", handler);
         return {
             cancel: () => {
-                this.win.removeListener("closed", fn);
+                this.events.removeListener("close", handler);
             }
         };
     }
@@ -128,7 +89,19 @@ export class AppWindow {
     }
 
     public toggleDevTools() {
-        this.win.webContents.toggleDevTools();
+        if (this.config.devTools) {
+            if (this.win.webContents.isDevToolsOpened()) {
+                this.win.webContents.closeDevTools();
+            } else {
+                this.win.webContents.openDevTools();
+            }
+        } else {
+            console.log("[Main] Warning: Trying to toggle dev tools with devTools disabled.");
+        }
+    }
+
+    public setIcon(icon: string) {
+        this.win.setIcon(icon);
     }
 
     async show(): Promise<void> {
@@ -141,6 +114,72 @@ export class AppWindow {
 
     async loadFile(file: string): Promise<void> {
         return this.win.loadFile(file);
+    }
+
+    public setTitle(title: string) {
+        this.win.setTitle(title);
+    }
+
+    public getTitle(): string {
+        return this.win.getTitle();
+    }
+
+    private prepare() {
+        this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
+            return {
+                platform: Platform.getInfo(process),
+                isPackaged: this.app.electronApp.isPackaged,
+                crashReport: this.app.getCrashReport(),
+            };
+        });
+        this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {
+            if (err) {
+                const timestamp = new Date().toISOString();
+                console.error("[Main] ERROR");
+                console.error("[Main] ERROR The App is terminating due to an error:");
+                console.error("[Main] ERROR " + err);
+                console.error("[Main] ERROR App Crashed at " + timestamp);
+                this.app.crash(err);
+            } else {
+                this.app.quit();
+            }
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_save, async ({gameData, type, id, preview}) => {
+            return this.ipc.tryUse(() => this.app.saveGameData(gameData as SavedGame, type, id, preview));
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_read, async ({id}) => {
+            return this.ipc.tryUse(() => this.app.readGameData(id));
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_list, async () => {
+            return this.ipc.tryUse(() => this.app.listGameData());
+        });
+        this.ipc.onRequest(this, IpcEvent.game_save_delete, async ({id}) => {
+            return this.ipc.tryUse(() => this.app.deleteGameData(id));
+        });
+        this.prepareEvents();
+    }
+
+    private prepareEvents() {
+        this.win.on("close", () => {
+            this.emit("close");
+        });
+        this.win.webContents.on("render-process-gone", (event, details) => {
+            if (!details.reason || details.reason === "clean-exit") {
+                return;
+            }
+            this.app.crash(this.crashReason(
+                details.reason,
+                `Exit Code: ${details.exitCode}`
+            ));
+        });
+    }
+
+    private emit<K extends StringKeyOf<WindowEvents>>(event: K, ...args: WindowEvents[K]) {
+        this.events.emit(event, ...args as any);
+    }
+
+    private crashReason(type: string, detail: string): string {
+        return `[${type}] ${detail}`;
     }
 }
 

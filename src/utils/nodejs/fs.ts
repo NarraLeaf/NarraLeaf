@@ -8,13 +8,26 @@ export type FsResult<T, OK extends true | false = true | false> = OK extends tru
     error: string
 };
 
+export type FileStat = {
+    name: string;
+    ext: string;
+};
+
 export class Fs {
     public static read(path: string, encoding: BufferEncoding = "utf-8"): Promise<FsResult<string>> {
         return this.wrap(fs.readFile(path, {encoding}));
     }
 
+    public static readRaw(path: string): Promise<FsResult<Buffer>> {
+        return this.wrap(fs.readFile(path));
+    }
+
     public static write(path: string, data: string, encoding: BufferEncoding = "utf-8"): Promise<FsResult<void>> {
         return this.wrap(fs.writeFile(path, data, {encoding}));
+    }
+
+    public static writeRaw(path: string, data: Buffer): Promise<FsResult<void>> {
+        return this.wrap(fs.writeFile(path, data));
     }
 
     public static append(path: string, data: string, encoding: BufferEncoding = "utf-8"): Promise<FsResult<void>> {
@@ -60,6 +73,21 @@ export class Fs {
                 .filter((file) => file.isFile() && (extSet.size === 0 || extSet.has(path.extname(file.name))))
                 .map((file) => path.join(dir, file.name));
         }));
+    }
+
+    public static listFiles(dir: string): Promise<FsResult<FileStat[]>> {
+        return this.wrap(fs.readdir(dir, {withFileTypes: true}).then((files) => {
+            return files
+                .filter((file) => file.isFile())
+                .map((file) => ({
+                    name: file.name,
+                    ext: path.extname(file.name),
+                }));
+        }));
+    }
+
+    public static deleteFile(path: string): Promise<FsResult<void>> {
+        return this.wrap(fs.unlink(path));
     }
 
     private static errorToString(error: unknown): string {

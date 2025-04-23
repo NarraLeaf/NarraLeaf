@@ -1,22 +1,39 @@
 import _ from "lodash";
 import {App} from "@/main/electron/app/app";
 import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
+import {StoreProvider} from "@/main/electron/app/save/storeProvider";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;
     devTools: boolean;
+    store?: StoreProvider;
 }
 
 export interface IWindowsConfig {
-
+    /**
+     * Application icon path relative to the project root
+     *
+     * should be a path to a .ico file
+     */
+    appIcon?: string;
 }
 
 export interface ILinuxConfig {
-
+    /**
+     * Application icon path relative to the project root
+     *
+     * should be a path to a .png file
+     */
+    appIcon?: string;
 }
 
 export interface IMacConfig {
-
+    /**
+     * Application icon path relative to the project root
+     *
+     * should be a path to a .icns file
+     */
+    appIcon?: string;
 }
 
 type PlatformConfigMap = {
@@ -34,14 +51,11 @@ export enum MainPlatform {
 export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
-        devTools: true
+        devTools: true,
     };
-    public static readonly DefaultWindowsConfig: IWindowsConfig = {
-    };
-    public static readonly DefaultLinuxConfig: ILinuxConfig = {
-    };
-    public static readonly DefaultMacConfig: IMacConfig = {
-    };
+    public static readonly DefaultWindowsConfig: IWindowsConfig = {};
+    public static readonly DefaultLinuxConfig: ILinuxConfig = {};
+    public static readonly DefaultMacConfig: IMacConfig = {};
     public static Platform = MainPlatform;
 
     public baseConfig: BaseAppConfig;

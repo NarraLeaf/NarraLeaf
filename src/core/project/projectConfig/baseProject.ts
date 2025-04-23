@@ -14,11 +14,13 @@ export type BaseProjectConfigZod = z.ZodObject<{
     main: z.ZodString;
     renderer: z.ZodObject<{
         baseDir: z.ZodString;
+        allowHTTP: z.ZodBoolean;
     }>;
     temp: z.ZodString;
     dev: z.ZodObject<{
         port: z.ZodNumber;
     }>;
+    resources: z.ZodString;
 }>;
 export type BaseProjectConfig = z.infer<BaseProjectConfigZod>;
 
@@ -62,11 +64,13 @@ export const BaseProjectStructure: DirStructureDefinition<{
                     main: z.string(),
                     renderer: z.object({
                         baseDir: z.string(),
+                        allowHTTP: z.boolean(),
                     }).partial(),
                     temp: z.string(),
                     dev: z.object({
                         port: z.number(),
                     }).partial(),
+                    resources: z.string(),
                 }).partial(),
             }),
         }

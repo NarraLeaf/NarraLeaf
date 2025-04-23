@@ -1,5 +1,5 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
-import {IpcEvents} from "@core/ipc/events";
+import {IpcEvents, RequestStatus} from "@core/ipc/events";
 import {AppEventToken} from "@/main/electron/app/app";
 import {AppWindow} from "@/main/electron/app/appWindow";
 import {ipcMain} from "electron";
@@ -117,5 +117,36 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         return IPCHost.handle(this.getEventName(key), win, async (data, resolve) => {
             resolve(await listener(data));
         });
+    }
+
+    public failed<T>(err: unknown): RequestStatus<T> {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+        };
+    }
+
+    public success<T>(data: T): RequestStatus<T>;
+    public success(): RequestStatus<void>;
+    public success<T = undefined>(data?: T extends undefined ? never : T): RequestStatus<T extends undefined ? void : T> {
+        if (data !== undefined) {
+            return {
+                success: true,
+                data,
+            };
+        }
+        return {
+            success: true,
+            data: undefined as any,
+        };
+    }
+
+    public async tryUse<T>(exec: () => T | Promise<T>): Promise<RequestStatus<T>> {
+        try {
+            const data = await exec();
+            return this.success(data);
+        } catch (err) {
+            return this.failed(err);
+        }
     }
 }

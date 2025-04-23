@@ -41,6 +41,7 @@ export interface IBaseBuildConfig {
 
 export interface IBaseTargetConfig {
     arch?: ArchType | ArchType[];
+    icon?: string;
 }
 
 export interface IWindowsBuildConfig extends IBaseTargetConfig {
@@ -124,7 +125,8 @@ export class WindowsConfig extends BuildTarget {
         return {
             signtoolOptions: {
                 sign: null,
-            }
+            },
+            icon: this.config.icon,
         };
     }
 
@@ -156,7 +158,9 @@ export class MacConfig extends BuildTarget {
     }
 
     toPlatformConfiguration(): MacConfiguration {
-        return {};
+        return {
+            icon: this.config.icon,
+        };
     }
 
     toTargetOptions(): TargetSpecificOptions {
@@ -176,12 +180,14 @@ export class LinuxConfig extends BuildTarget {
     toTargetConfiguration(): TargetConfiguration {
         return {
             target: MainPlatform.Linux,
-            arch: this.config.arch
+            arch: this.config.arch,
         };
     }
 
     toPlatformConfiguration(): LinuxConfiguration {
-        return {};
+        return {
+            icon: this.config.icon,
+        };
     }
 
     toTargetOptions(): TargetSpecificOptions {
