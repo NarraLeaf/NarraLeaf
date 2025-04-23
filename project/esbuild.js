@@ -4,7 +4,6 @@ const CssModulesPlugin = require('esbuild-css-modules-plugin');
 
 const external = [
   "babel-loader",
-  "commander",
   "electron",
   "electron-builder",
   "webpack",

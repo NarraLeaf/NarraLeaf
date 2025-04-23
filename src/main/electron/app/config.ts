@@ -11,7 +11,7 @@ export interface BaseAppConfig {
 
 export interface IWindowsConfig {
     /**
-     * Application icon
+     * Application icon path relative to the project root
      *
      * should be a path to a .ico file
      */
@@ -20,7 +20,7 @@ export interface IWindowsConfig {
 
 export interface ILinuxConfig {
     /**
-     * Application icon
+     * Application icon path relative to the project root
      *
      * should be a path to a .png file
      */
@@ -29,7 +29,7 @@ export interface ILinuxConfig {
 
 export interface IMacConfig {
     /**
-     * Application icon
+     * Application icon path relative to the project root
      *
      * should be a path to a .icns file
      */

@@ -208,7 +208,9 @@ export class App {
             throw new Error("Main window is already created");
         }
 
-        await this.fetchMetadata();
+        if (!this.isPackaged()) {
+            await this.fetchMetadata();
+        }
 
         const win = new AppWindow(this, config, {
             preload: this.getPreloadScript(),
@@ -303,7 +305,7 @@ export class App {
             if (path.isAbsolute(config.appIcon)) {
                 throw new Error("App icon path must be relative to the app directory");
             }
-            if (this.isPackaged()) {
+            if (!this.isPackaged()) {
                 win.setIcon(path.resolve(this.getMetadata().rootDir, config.appIcon));
             } else {
                 win.setIcon(path.resolve(this.getAppPath(), "../", config.appIcon));
