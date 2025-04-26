@@ -1,5 +1,5 @@
 import path from "path";
-import {app, Menu, protocol} from "electron";
+import {app, dialog, Menu, protocol} from "electron";
 import {AppConfig} from "@/main/electron/app/config";
 import {EventEmitter} from "events";
 import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
@@ -27,6 +27,7 @@ import {LocalFile} from "@/main/electron/app/save/localFile";
 import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
 import {StoreProvider} from "@/main/electron/app/save/storeProvider";
 import {FsFlag} from "@/main/electron/data/fsLogger";
+import { translate } from "@/main/i18n/translate";
 
 type AppEvents = {
     "ready": [];
@@ -84,6 +85,7 @@ export class App {
     public mainWindow: AppWindow | null = null;
     public saveStorage: StoreProvider;
     public config: AppConfig;
+    public t: (key: string) => string;
     private hooks: {
         [K in HookEvents]?: Array<(...args: any[]) => void>;
     } = {};
@@ -97,6 +99,7 @@ export class App {
         this.config = config;
         this.electronApp = app;
         this.platform = Platform.getInfo(process);
+        this.t = translate(this);
 
         this.prepare();
 
@@ -338,6 +341,17 @@ export class App {
             await this.prepareCrashHelper();
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
+        });
+        process.on("unhandledRejection", async (reason) => {
+            if (this.isPackaged()) {
+                dialog.showErrorBox(this.t("app:crashed_critical_title"), this.t("app:crashed_critical_message") + "\n\n" + reason);
+                this.crash(this.crashReason(
+                    "MainProcessUnhandledRejection",
+                    reason instanceof Error ? reason.message : String(reason),
+                ));
+            } else {
+                console.error("Unhandled Rejection:", reason);
+            }
         });
     }
 
