@@ -4,12 +4,15 @@ import {SplashScreen} from "@/client/app/splash-screen/splash-screen";
 import {useCurrentSaved} from "@/client";
 import {AsyncTaskQueue} from "@/utils/pure/array";
 import {NarraLeafMainWorldProperty} from "@core/build/constants";
+import {PageConfig, Pages} from "@/client/app/app";
+import { Page } from "narraleaf-react";
+import merge from "lodash/merge";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
-const AppPlayer = ({story, children, lib, meta}: {
+const AppPlayer = ({story, pages, lib, meta}: {
     story: InstanceType<NarraLeafReact["Story"]>;
-    children: React.ReactNode;
+    pages: Pages;
     lib: NarraLeafReact;
     meta: Meta;
 }) => {
@@ -20,6 +23,13 @@ const AppPlayer = ({story, children, lib, meta}: {
         : null;
     const currentSaved = useCurrentSaved();
     const queue = useRef(new AsyncTaskQueue());
+
+    const pageStyles: PageConfig = {
+        style: {
+            position: "absolute",
+            inset: 0,
+        },
+    };
 
     useEffect(() => {
         if (currentSaved) {
@@ -40,7 +50,18 @@ const AppPlayer = ({story, children, lib, meta}: {
                     width="100%"
                     height="100%"
                 >
-                    {children}
+                    {Object.entries(pages).map(([key, page]) => {
+                        const PageComponent = page.registry.component;
+                        return (
+                            <Page
+                                key={key}
+                                id={key}
+                                {...merge({}, pageStyles, page.registry.config || {})}
+                            >
+                                <PageComponent />
+                            </Page>
+                        );
+                    })}
                 </lib.Player>
             </SplashScreen>
         </>
