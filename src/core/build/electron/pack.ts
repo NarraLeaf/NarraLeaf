@@ -22,8 +22,17 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
     const {default: builder, Platform} = await import("electron-builder");
     const distDir = project.fs.resolve(project.config.build.dist);
     const enableFastPack = project.config.build.dev;
+    const logr = project.app.createLogger();
 
     const entryFile = path.join(TempNamespace.MainBuild, MainOutputFileName);
+
+    logr.info("Renderer build", project.getTempDir(TempNamespace.RendererBuild))
+        .info("Main build", project.getTempDir(TempNamespace.MainBuild))
+        .info("Entry file", entryFile)
+        .info("Public directory", rendererProject.getPublicDir())
+        .info("Resources directory", project.config.resources)
+        .info("License directory", project.getTempDir(TempNamespace.License))
+        .info("Dist directory", distDir);
 
     const config: Configuration = {
         target: BuildTarget.createTarget(project.config.build.targets),
@@ -49,6 +58,7 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
                 to: TempNamespace.Public,
             },
             "package.json",
+            "narraleaf.config.js",
             rest(normalize(project.config.resources), sep.posix),
         ],
         extraMetadata: {

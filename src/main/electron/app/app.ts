@@ -162,6 +162,14 @@ export class App {
             : this.metadata?.publicDir ?? path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), TempNamespace.Public);
     }
 
+    /**
+     * Returns the build directory of the app
+     * 
+     * For example, under development mode, it returns the directory of the `.narraleaf` folder which contains `app-dev`  
+     * Under production mode, it returns the directory of the app.asar file which contains `app-build` and `package.json`
+     * 
+     * The structure of the build directory
+     */
     public getAppPath(): string {
         const appDir = this.electronApp.getAppPath();
 

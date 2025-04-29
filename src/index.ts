@@ -27,5 +27,4 @@
  * @license: MPL-2.0
  */
 export * from "@/main/electron/index";
-export * from "@/types";
 export * from "@/core/core";
