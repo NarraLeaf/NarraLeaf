@@ -18,7 +18,7 @@ async function render(
     },
     lib: {
         NarraLeafReact: NarraLeafReact;
-        App: React.ComponentClass<React.PropsWithChildren<{}>>;
+        App: React.FunctionComponent<{ children: React.ReactNode }>;
         pages: React.ReactNode[];
         meta: Meta;
     },
