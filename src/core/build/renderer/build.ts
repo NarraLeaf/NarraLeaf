@@ -1,16 +1,16 @@
-import {RendererProject} from "@core/project/renderer/rendererProject";
-import {Project} from "@core/project/project";
-import {createStructure} from "@core/build/renderer/prepare";
-import {createRendererAppStructure, RendererHTMLEntryPoint} from "@core/build/renderer/tempSrc";
-import {WebpackConfig, WebpackMode} from "@core/build/webpack";
+import { RendererProject } from "@core/project/renderer/rendererProject";
+import { Project } from "@core/project/project";
+import { createStructure } from "@core/build/renderer/prepare";
+import { createRendererAppStructure, RendererHTMLEntryPoint } from "@core/build/renderer/tempSrc";
+import { WebpackConfig, WebpackMode } from "@core/build/webpack";
 import path from "path";
-import {Babel} from "@core/build/renderer/babel";
-import {StyleSheet} from "@core/build/renderer/stylesheet";
+import { Babel } from "@core/build/renderer/babel";
+import { StyleSheet } from "@core/build/renderer/stylesheet";
 import webpack from "webpack";
-import {RendererOutputFileName, RendererOutputHTMLFileName} from "@core/build/constants";
-import {Fs} from "@/utils/nodejs/fs";
-import {App} from "@/cli/app";
-import {getFileTree} from "@/utils/nodejs/string";
+import { RendererOutputFileName, RendererOutputHTMLFileName } from "@core/build/constants";
+import { Fs } from "@/utils/nodejs/fs";
+import { App } from "@/cli/app";
+import { getFileTree } from "@/utils/nodejs/string";
 
 export type RendererBuildResult = {
     dir: string;
@@ -22,7 +22,7 @@ export type RendererBuildWatchToken = {
 };
 
 export async function buildRenderer(
-    {rendererProject}: {
+    { rendererProject }: {
         rendererProject: RendererProject;
     }
 ): Promise<RendererBuildResult> {
@@ -38,9 +38,6 @@ export async function buildRenderer(
     await createStructure([
         rendererAppStructure,
     ], rendererProject, buildDir);
-    await createStructure([
-        RendererHTMLEntryPoint,
-    ], rendererProject, outputDir, false);
 
     const webpackConfig = new WebpackConfig({
         mode: packMode,
@@ -55,13 +52,21 @@ export async function buildRenderer(
     const config = webpackConfig.getConfiguration();
 
     await new Promise<void>((resolve, reject) => {
-        webpack(config, (err, stats) => {
+        webpack(config, async (err, stats) => {
             if (err) {
                 reject(err);
             } else if (stats) {
                 console.log(stats.toString({
                     colors: true,
                 }));
+
+                await createStructure([
+                    RendererHTMLEntryPoint,
+                ], rendererProject, outputDir, false);
+                if (!(await Fs.isFileExists(outputDir + path.sep + "index.html"))) {
+                    throw new Error("Renderer build failed");
+                }
+
                 resolve();
             }
         });
@@ -74,7 +79,7 @@ export async function buildRenderer(
 }
 
 export async function watchRenderer(
-    {rendererProject, onRebuild}: {
+    { rendererProject, onRebuild }: {
         rendererProject: RendererProject;
         onRebuild?: () => void;
     }
@@ -91,9 +96,7 @@ export async function watchRenderer(
     await createStructure([
         rendererAppStructure,
     ], rendererProject, buildTempDir);
-    await createStructure([
-        RendererHTMLEntryPoint,
-    ], rendererProject, buildDistDir, true);
+
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
@@ -114,27 +117,33 @@ export async function watchRenderer(
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
 
-    compiler.watch({}, (err, stats) => {
+    compiler.watch({}, async (err, stats) => {
         if (err) {
             logr
                 .error("Renderer build failed")
                 .error(err);
-        } else if (stats) {
-            if (initialBuild) {
-                logr.info("Initial build of renderer process finished", stats.toString({
-                    colors: true,
-                }));
-                initialBuild = false;
-                initialBuildResolve();
-                return;
-            }
-            logr.info("Renderer built", stats.toString({
+        }
+        if (!stats) return;
+        if (initialBuild) {
+            logr.info("Initial build of renderer process finished", stats.toString({
                 colors: true,
             }));
-            if (onRebuild) {
-                onRebuild();
-            }
+
+            await createStructure([
+                RendererHTMLEntryPoint,
+            ], rendererProject, buildDistDir, true);
+
+            initialBuild = false;
+            initialBuildResolve();
+            return;
         }
+        logr.info("Renderer built", stats.toString({
+            colors: true,
+        }));
+        if (onRebuild) {
+            onRebuild();
+        }
+
     });
 
     await new Promise<void>(resolve => {

@@ -7,6 +7,7 @@ export const NarraLeafMainWorldProperty = "NarraLeaf" as const;
 export const PreloadFileName = "preload.js";
 export const AppProtocol = "app" as const;
 export const AppPublicHostName = "public";
+export const RendererHomePage = "home";
 export enum AppHost {
     Public = "public",
     Root = "root",

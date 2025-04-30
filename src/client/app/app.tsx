@@ -10,6 +10,18 @@ import AppProviders from "@/client/app/providers/app-providers";
 import {AppConfig} from "@/client/app/client/app";
 
 type NarraLeafReact = typeof import("narraleaf-react");
+export type Pages = {
+    [key: string]: {
+        name: string;
+        registry: PageRegistry;
+    }
+};
+export type PageConfig = Partial<React.ComponentProps<NarraLeafReact["Page"]>>;
+
+interface PageRegistry {
+    component: React.FunctionComponent;
+    config?: PageConfig;
+}
 
 async function render(
     root: {
@@ -18,8 +30,8 @@ async function render(
     },
     lib: {
         NarraLeafReact: NarraLeafReact;
-        App: React.ComponentClass<React.PropsWithChildren<{}>>;
-        pages: React.ReactNode[];
+        App: React.FunctionComponent<{ children: React.ReactNode }>;
+        pages: Pages;
         meta: Meta;
     },
 ): Promise<void> {
@@ -49,8 +61,7 @@ async function render(
                 <lib.NarraLeafReact.GameProviders>
                     <AppProviders appConfig={appConfig}>
                         <lib.App>
-                            <AppPlayer meta={lib.meta} story={lib.meta.story} lib={lib.NarraLeafReact}>
-                                {...lib.pages}
+                            <AppPlayer meta={lib.meta} story={lib.meta.story} lib={lib.NarraLeafReact} pages={lib.pages}>
                             </AppPlayer>
                         </lib.App>
                     </AppProviders>
