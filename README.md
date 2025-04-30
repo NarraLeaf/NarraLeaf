@@ -116,6 +116,7 @@ The structure of the renderer directory cannot be changed. The renderer director
 - `app.(tsx|jsx)`: The main entry file for the renderer process. This file is used to render the app and manage the router.
 - `/public/`: The public directory for the renderer process. This directory is used to store the static assets and resources. You can access these assets directly from the renderer process using relative URL. Example: `src="/images/img1.png"`.
 - `/pages/`: The pages directory for the renderer process. This directory is used to store the pages of the app.
+- `/pages/home.tsx`: The home page of the app. This is the default page that will be shown when the app is opened.
 
 Below is an example of the renderer directory structure:
 

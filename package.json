@@ -1,6 +1,6 @@
 {
   "name": "narraleaf",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Create your visual novel with Electron and React",
   "bin": "./dist/cli.cjs",
   "main": "dist/index.mjs",

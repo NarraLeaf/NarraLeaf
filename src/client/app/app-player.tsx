@@ -1,11 +1,11 @@
 import React, {useEffect, useRef} from "react";
 import {Meta} from "@/client/app/types";
 import {SplashScreen} from "@/client/app/splash-screen/splash-screen";
-import {useCurrentSaved} from "@/client";
+import {useApp, useCurrentSaved} from "@/client";
 import {AsyncTaskQueue} from "@/utils/pure/array";
-import {NarraLeafMainWorldProperty} from "@core/build/constants";
+import {NarraLeafMainWorldProperty, RendererHomePage} from "@core/build/constants";
 import {PageConfig, Pages} from "@/client/app/app";
-import { Page } from "narraleaf-react";
+import { Page, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
 
 type NarraLeafReact = typeof import("narraleaf-react");
@@ -23,6 +23,9 @@ const AppPlayer = ({story, pages, lib, meta}: {
         : null;
     const currentSaved = useCurrentSaved();
     const queue = useRef(new AsyncTaskQueue());
+    const router = useRouter();
+    const game = useGame();
+    const {app} = useApp();
 
     const pageStyles: PageConfig = {
         style: {
@@ -39,13 +42,18 @@ const AppPlayer = ({story, pages, lib, meta}: {
         }
     }, [currentSaved]);
 
+    useEffect(() => {
+        router.push(RendererHomePage);
+    }, []);
+
     return (
         <>
             <SplashScreen splashScreens={splashScreens}>
                 <lib.Player
                     story={story}
-                    onReady={({liveGame}) => {
-                        liveGame.newGame();
+                    onReady={() => {
+                        app.setRouter(router);
+                        app.setGame(game);
                     }}
                     width="100%"
                     height="100%"
