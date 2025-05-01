@@ -49,7 +49,7 @@ export async function buildMain(
     })
         .useModule(new Babel(false))
         .useNodeModule(project.fs.resolve("node_modules"));
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(project.app);
 
     await new Promise<void>((resolve, reject) => {
         webpack(config, (err, stats) => {
@@ -106,7 +106,7 @@ export async function watchMain(
     })
         .useModule(new Babel(false))
         .useNodeModule(project.fs.resolve("node_modules"));
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(project.app);
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
 

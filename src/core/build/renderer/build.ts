@@ -49,7 +49,7 @@ export async function buildRenderer(
         .useModule(new Babel(true))
         .useModule(new StyleSheet())
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(rendererProject.project.app);
 
     await new Promise<void>((resolve, reject) => {
         webpack(config, async (err, stats) => {
@@ -97,7 +97,6 @@ export async function watchRenderer(
         rendererAppStructure,
     ], rendererProject, buildTempDir);
 
-
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
         entry: appEntry,
@@ -113,7 +112,7 @@ export async function watchRenderer(
         .useModule(new StyleSheet())
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
 
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(rendererProject.project.app);
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
 
@@ -143,7 +142,6 @@ export async function watchRenderer(
         if (onRebuild) {
             onRebuild();
         }
-
     });
 
     await new Promise<void>(resolve => {
