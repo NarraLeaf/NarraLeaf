@@ -7,10 +7,12 @@ import {NarraLeafMainWorldProperty, RendererHomePage} from "@core/build/constant
 import {PageConfig, Pages} from "@/client/app/app";
 import { Page, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
+import {useSplashScreen} from "@/client/app/providers/splash-screen-provider";
+import {useGameFlow} from "@/client/app/providers/game-state-provider";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
-const AppPlayer = ({story, pages, lib, meta}: {
+const AppPlayerContent = ({story, pages, lib, meta}: {
     story: InstanceType<NarraLeafReact["Story"]>;
     pages: Pages;
     lib: NarraLeafReact;
@@ -26,6 +28,8 @@ const AppPlayer = ({story, pages, lib, meta}: {
     const router = useRouter();
     const game = useGame();
     const {app} = useApp();
+    const {isFinished} = useSplashScreen();
+    const {setGameFlow} = useGameFlow();
 
     const pageStyles: PageConfig = {
         style: {
@@ -46,33 +50,68 @@ const AppPlayer = ({story, pages, lib, meta}: {
         router.push(RendererHomePage);
     }, []);
 
+    useEffect(() => {
+        app.setGameStateCallback((state) => {
+            setGameFlow(state);
+        });
+    }, [app, setGameFlow]);
+
+    // Get layout component if it exists
+    const layoutPage = pages["layout"];
+    const LayoutComponent = layoutPage?.registry.component as React.ComponentType<{ children: React.ReactNode }> | undefined;
+
+    const playerContent = (
+        <lib.Player
+            story={story}
+            onReady={() => {
+                app.setRouter(router);
+                app.setGame(game);
+            }}
+            onEnd={() => {
+                app.setGamePlaying(false);
+            }}
+            width="100%"
+            height="100%"
+        >
+            {Object.entries(pages).map(([key, page]) => {
+                if (key === "layout") return null;
+                const PageComponent = page.registry.component;
+                return (
+                    <Page
+                        key={key}
+                        id={key}
+                        {...merge({}, pageStyles, page.registry.config || {})}
+                    >
+                        <PageComponent />
+                    </Page>
+                );
+            })}
+        </lib.Player>
+    );
+
+    const content = LayoutComponent && isFinished ? (
+        <LayoutComponent>
+            {playerContent}
+        </LayoutComponent>
+    ) : playerContent;
+
     return (
         <>
             <SplashScreen splashScreens={splashScreens}>
-                <lib.Player
-                    story={story}
-                    onReady={() => {
-                        app.setRouter(router);
-                        app.setGame(game);
-                    }}
-                    width="100%"
-                    height="100%"
-                >
-                    {Object.entries(pages).map(([key, page]) => {
-                        const PageComponent = page.registry.component;
-                        return (
-                            <Page
-                                key={key}
-                                id={key}
-                                {...merge({}, pageStyles, page.registry.config || {})}
-                            >
-                                <PageComponent />
-                            </Page>
-                        );
-                    })}
-                </lib.Player>
+                {content}
             </SplashScreen>
         </>
+    );
+}
+
+const AppPlayer = (props: {
+    story: InstanceType<NarraLeafReact["Story"]>;
+    pages: Pages;
+    lib: NarraLeafReact;
+    meta: Meta;
+}) => {
+    return (
+        <AppPlayerContent {...props} />
     );
 }
 

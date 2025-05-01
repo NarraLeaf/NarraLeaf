@@ -13,6 +13,7 @@ export class App {
     public readonly appInfo: AppInfo;
     public router: Router | null = null;
     public game: Game | null = null;
+    private gameStateCallback: ((state: { isPlaying: boolean }) => void) | null = null;
 
     constructor(config: AppConfig) {
         this.appInfo = config.appInfo;
@@ -47,6 +48,17 @@ export class App {
 
         this.router.clear().cleanHistory();
         this.game.getLiveGame().newGame();
+        this.setGamePlaying(true);
+    }
+
+    setGameStateCallback(callback: (state: { isPlaying: boolean }) => void) {
+        this.gameStateCallback = callback;
+    }
+
+    setGamePlaying(isPlaying: boolean) {
+        if (this.gameStateCallback) {
+            this.gameStateCallback({ isPlaying });
+        }
     }
 }
 
