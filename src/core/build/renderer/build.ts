@@ -90,6 +90,7 @@ export async function watchRenderer(
     const buildDistDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuild);
     const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
     const logr = App.createLogger(rendererProject.project.app);
+    const usePostcss = (await rendererProject.project.fs.isFileExists("postcss.config.js")).ok;
 
     await Fs.createDir(buildTempDir);
     await Fs.createDir(buildDistDir);
@@ -109,7 +110,7 @@ export async function watchRenderer(
         }
     })
         .useModule(new Babel(true))
-        .useModule(new StyleSheet())
+        .useModule(new StyleSheet(usePostcss))
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
 
     const config = webpackConfig.getConfiguration(rendererProject.project.app);
