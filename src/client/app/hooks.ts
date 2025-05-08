@@ -1,6 +1,6 @@
 import {useCurrentSaved, useCurrentSavedRef, useSaveAction, useSavedGames} from "@/client/app/hooks/game-save";
 import {useApp} from "@/client/app/providers/app";
-import {useGameFlow} from "@/client/app/providers/game-state-provider";
+import {useGamePlayback} from "@/client/app/providers/game-state-provider";
 
 export {
     useCurrentSaved,
@@ -8,5 +8,5 @@ export {
     useSaveAction,
     useSavedGames,
     useApp,
-    useGameFlow,
+    useGamePlayback,
 };

@@ -1,32 +1,32 @@
 import React, {createContext, useContext, useState} from "react";
 
-interface GameFlow {
+export interface GamePlaybackState {
     isPlaying: boolean;
 }
 
-interface GameFlowContextType {
-    gameFlow: GameFlow;
-    setGameFlow: (flow: GameFlow) => void;
-}
+type GamePlaybackContextType = {
+    gamePlaybackState: GamePlaybackState;
+    setGamePlaybackState: (state: GamePlaybackState | ((prevState: GamePlaybackState) => GamePlaybackState)) => void;
+};
 
-const GameFlowContext = createContext<GameFlowContextType | null>(null);
+const GamePlaybackContext = createContext<GamePlaybackContextType | null>(null);
 
-export function GameFlowProvider({children}: { children: React.ReactNode }) {
-    const [gameFlow, setGameFlow] = useState<GameFlow>({
+export function GamePlaybackProvider({children}: { children: React.ReactNode }) {
+    const [gamePlaybackState, setGamePlaybackState] = useState<GamePlaybackState>({
         isPlaying: false
     });
 
     return (
-        <GameFlowContext.Provider value={{gameFlow, setGameFlow}}>
+        <GamePlaybackContext.Provider value={{gamePlaybackState, setGamePlaybackState}}>
             {children}
-        </GameFlowContext.Provider>
+        </GamePlaybackContext.Provider>
     );
 }
 
-export function useGameFlow() {
-    const context = useContext(GameFlowContext);
+export function useGamePlayback() {
+    const context = useContext(GamePlaybackContext);
     if (!context) {
-        throw new Error("useGameFlow must be used within a GameFlowProvider");
+        throw new Error("useGamePlayback must be used within a GamePlaybackProvider");
     }
     return context;
 } 

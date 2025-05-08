@@ -14,7 +14,14 @@ export type SplashScreenDefinition = {
     splashScreen: React.ReactNode;
 };
 
+/**
+ * @deprecated Use `GameMetadata` instead
+ */
 export type Meta = {
+    story: import("narraleaf-react").Story;
+    splashScreen?: SplashScreenDefinition | SplashScreenDefinition[];
+};
+export type GameMetadata = {
     story: import("narraleaf-react").Story;
     splashScreen?: SplashScreenDefinition | SplashScreenDefinition[];
 };

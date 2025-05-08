@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from "react";
-import {Meta} from "@/client/app/types";
+import {GameMetadata} from "@/client/app/types";
 import {SplashScreen} from "@/client/app/splash-screen/splash-screen";
 import {useApp, useCurrentSaved} from "@/client";
 import {AsyncTaskQueue} from "@/utils/pure/array";
@@ -8,21 +8,21 @@ import {PageConfig, Pages} from "@/client/app/app";
 import { Page, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
 import {useSplashScreen} from "@/client/app/providers/splash-screen-provider";
-import {useGameFlow} from "@/client/app/providers/game-state-provider";
+import {useGamePlayback} from "@/client/app/providers/game-state-provider";
 import { throttle } from "./utils/data";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
-const AppPlayerContent = ({story, pages, lib, meta}: {
+const AppPlayerContent = ({story, pages, lib, metadata}: {
     story: InstanceType<NarraLeafReact["Story"]>;
     pages: Pages;
     lib: NarraLeafReact;
-    meta: Meta;
+    metadata: GameMetadata;
 }) => {
-    const splashScreens = meta.splashScreen
-        ? Array.isArray(meta.splashScreen)
-            ? meta.splashScreen
-            : [meta.splashScreen]
+    const splashScreens = metadata.splashScreen
+        ? Array.isArray(metadata.splashScreen)
+            ? metadata.splashScreen
+            : [metadata.splashScreen]
         : null;
     const currentSaved = useCurrentSaved();
     const queue = useRef(new AsyncTaskQueue());
@@ -30,7 +30,7 @@ const AppPlayerContent = ({story, pages, lib, meta}: {
     const game = useGame();
     const {app} = useApp();
     const {isFinished} = useSplashScreen();
-    const {setGameFlow} = useGameFlow();
+    const {setGamePlaybackState} = useGamePlayback();
 
     const pageStyles: PageConfig = {
         style: {
@@ -38,6 +38,10 @@ const AppPlayerContent = ({story, pages, lib, meta}: {
             inset: 0,
         },
     };
+
+    // Get layout component if it exists
+    const {layout, stage, ...stagePages} = pages;
+    const LayoutComponent = layout?.registry.component as React.ComponentType<{ children: React.ReactNode }> | undefined;
 
     useEffect(() => {
         if (currentSaved) {
@@ -55,17 +59,25 @@ const AppPlayerContent = ({story, pages, lib, meta}: {
 
     useEffect(() => {
         router.push(RendererHomePage);
+
+        if (stage) {
+            const StageComponentConstructor = stage.registry.component;
+            game.configure({
+                stage: (
+                    <StageComponentConstructor />
+                ),
+            });
+        }
     }, []);
 
     useEffect(() => {
         app.setGameStateCallback((state) => {
-            setGameFlow(state);
+            setGamePlaybackState((prevState) => ({
+                ...prevState,
+                ...state,
+            }));
         });
-    }, [app, setGameFlow]);
-
-    // Get layout component if it exists
-    const layoutPage = pages["layout"];
-    const LayoutComponent = layoutPage?.registry.component as React.ComponentType<{ children: React.ReactNode }> | undefined;
+    }, [app, setGamePlaybackState]);
 
     const playerContent = (
         <lib.Player
@@ -80,8 +92,7 @@ const AppPlayerContent = ({story, pages, lib, meta}: {
             width="100%"
             height="100%"
         >
-            {Object.entries(pages).map(([key, page]) => {
-                if (key === "layout") return null;
+            {Object.entries(stagePages).map(([key, page]) => {
                 const PageComponent = page.registry.component;
                 return (
                     <Page
@@ -115,7 +126,7 @@ const AppPlayer = (props: {
     story: InstanceType<NarraLeafReact["Story"]>;
     pages: Pages;
     lib: NarraLeafReact;
-    meta: Meta;
+    metadata: GameMetadata;
 }) => {
     return (
         <AppPlayerContent {...props} />

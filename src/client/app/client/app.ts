@@ -2,6 +2,7 @@ import {AppInfo} from "@core/@types/global";
 import {CrashReport} from "@/main/electron/app/app";
 import {Game} from "narraleaf-react";
 import { CriticalRendererProcessError } from "@/main/error/criticalError";
+import { GamePlaybackState } from "../providers/game-state-provider";
 
 export interface AppConfig {
     appInfo: AppInfo;
@@ -55,10 +56,14 @@ export class App {
         this.gameStateCallback = callback;
     }
 
-    setGamePlaying(isPlaying: boolean) {
+    dispatchGameState(state: GamePlaybackState) {
         if (this.gameStateCallback) {
-            this.gameStateCallback({ isPlaying });
+            this.gameStateCallback(state);
         }
+    }
+
+    setGamePlaying(isPlaying: boolean) {
+        this.dispatchGameState({ isPlaying });
     }
 }
 

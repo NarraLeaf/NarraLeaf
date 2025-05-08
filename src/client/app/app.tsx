@@ -5,7 +5,7 @@ import {AppInfo} from "@core/@types/global";
 import {ErrorBoundary} from "@/client/app/errorHandling/error-boundary";
 import ErrorFallback from "@/client/app/errorHandling/error-fallback";
 import {AppPlayer} from "@/client";
-import {Meta} from "@/client/app/types";
+import {GameMetadata, Meta} from "@/client/app/types";
 import AppProviders from "@/client/app/providers/app-providers";
 import {AppConfig} from "@/client/app/client/app";
 
@@ -32,7 +32,7 @@ async function render(
         NarraLeafReact: NarraLeafReact;
         App: React.FunctionComponent<{ children: React.ReactNode }>;
         pages: Pages;
-        meta: Meta;
+        metadata: GameMetadata;
     },
 ): Promise<void> {
     if (!window) {
@@ -41,7 +41,7 @@ async function render(
     if (!window[NarraLeafMainWorldProperty]) {
         window.close();
     }
-    if (!lib.meta.story) {
+    if (!lib.metadata.story) {
         window[NarraLeafMainWorldProperty].app.terminate(new Error("Story not found in the meta object"));
     }
 
@@ -61,7 +61,7 @@ async function render(
                 <lib.NarraLeafReact.GameProviders>
                     <AppProviders appConfig={appConfig}>
                         <lib.App>
-                            <AppPlayer meta={lib.meta} story={lib.meta.story} lib={lib.NarraLeafReact} pages={lib.pages}>
+                            <AppPlayer metadata={lib.metadata} story={lib.metadata.story} lib={lib.NarraLeafReact} pages={lib.pages}>
                             </AppPlayer>
                         </lib.App>
                     </AppProviders>
