@@ -7,6 +7,7 @@ export interface BaseAppConfig {
     forceSandbox: boolean;
     devTools: boolean;
     store?: StoreProvider;
+    recoveryCreationInterval: number;
 }
 
 export interface IWindowsConfig {
@@ -52,6 +53,7 @@ export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
         devTools: true,
+        recoveryCreationInterval: 1000,
     };
     public static readonly DefaultWindowsConfig: IWindowsConfig = {};
     public static readonly DefaultLinuxConfig: ILinuxConfig = {};

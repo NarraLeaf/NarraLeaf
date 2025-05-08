@@ -1,7 +1,8 @@
-import {IPCMessageType, IPCType} from "@core/ipc/ipc";
-import {PlatformInfo} from "@/utils/pure/os";
-import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
-import {CrashReport} from "@/main/electron/app/app";
+import { CrashReport } from "@/main/electron/app/app";
+import { PlatformInfo } from "@/utils/pure/os";
+import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
+import { IPCMessageType, IPCType } from "@core/ipc/ipc";
+import { ClientAppConfiguration } from "../@types/global";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
@@ -32,6 +33,7 @@ export type IpcEvents = {
             platform: PlatformInfo;
             isPackaged: boolean;
             crashReport: CrashReport | null;
+            config: ClientAppConfiguration;
         };
     };
     [IpcEvent.app_terminate]: {

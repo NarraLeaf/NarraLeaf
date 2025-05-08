@@ -3,10 +3,15 @@ import {SavedGame, SavedGameMetadata} from "@core/game/save";
 import {RequestStatus} from "@core/ipc/events";
 import {CrashReport} from "@/main/electron/app/app";
 
+export interface ClientAppConfiguration {
+    recoveryCreationInterval: number;
+}
+
 export type AppInfo = {
     platform: PlatformInfo;
     isPackaged: boolean;
     crashReport: CrashReport | null;
+    config: ClientAppConfiguration;
 };
 
 declare global {

@@ -1,13 +1,13 @@
-import {App, AppEventToken} from "@/main/electron/app/app";
-import {BaseWindowConstructorOptions, BrowserWindow, WebPreferences} from "electron";
+import { ClientAppConfiguration } from "@/core/@types/global";
+import { App, AppEventToken } from "@/main/electron/app/app";
+import { IPCHost } from "@/main/electron/data/ipcHost";
+import { Platform } from "@/utils/pure/os";
+import { SavedGame } from "@core/game/save";
+import { IpcEvent, Namespace } from "@core/ipc/events";
+import { BaseWindowConstructorOptions, BrowserWindow, WebPreferences } from "electron";
+import { EventEmitter } from "events";
 import _ from "lodash";
-import {IPCHost} from "@/main/electron/data/ipcHost";
-import {IpcEvent, Namespace} from "@core/ipc/events";
-import {Platform} from "@/utils/pure/os";
-import {EventEmitter} from "events";
-import {StringKeyOf} from "narraleaf-react/dist/util/data";
-import {SavedGame} from "@core/game/save";
-
+import { StringKeyOf } from "narraleaf-react/dist/util/data";
 export interface WindowConfig extends BaseWindowConstructorOptions {
     isolated: boolean;
     devTools?: boolean;
@@ -124,12 +124,19 @@ export class AppWindow {
         return this.win.getTitle();
     }
 
+    public getClientAppConfig(): ClientAppConfiguration {
+        return {
+            recoveryCreationInterval: this.app.getConfig().recoveryCreationInterval,
+        };
+    }
+
     private prepare() {
         this.ipc.onRequest(this, IpcEvent.getPlatform, async (_data) => {
             return {
                 platform: Platform.getInfo(process),
                 isPackaged: this.app.electronApp.isPackaged,
                 crashReport: this.app.getCrashReport(),
+                config: this.getClientAppConfig(),
             };
         });
         this.ipc.onMessage(this, IpcEvent.app_terminate, async ({err}) => {

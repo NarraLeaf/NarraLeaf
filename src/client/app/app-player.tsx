@@ -9,6 +9,7 @@ import { Page, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
 import {useSplashScreen} from "@/client/app/providers/splash-screen-provider";
 import {useGameFlow} from "@/client/app/providers/game-state-provider";
+import { throttle } from "./utils/data";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
@@ -40,9 +41,15 @@ const AppPlayerContent = ({story, pages, lib, meta}: {
 
     useEffect(() => {
         if (currentSaved) {
-            queue.current.clear().push(async () => {
-                await window[NarraLeafMainWorldProperty].game.save.createRecovery(currentSaved);
-            });
+            const handler = () => {
+                queue.current.clear().push(async () => {
+                    await window[NarraLeafMainWorldProperty].game.save.createRecovery(currentSaved);
+                });
+            };
+            const throttledHandler = throttle(handler, app.appInfo.config.recoveryCreationInterval);
+
+            throttledHandler();
+            return () => throttledHandler.cleanup();
         }
     }, [currentSaved]);
 
