@@ -1,20 +1,30 @@
-import {AppInfo} from "@core/@types/global";
-import {CrashReport} from "@/main/electron/app/app";
-import {Game} from "narraleaf-react";
+import { AppInfo } from "@core/@types/global";
+import { CrashReport } from "@/main/electron/app/app";
+import { Game } from "narraleaf-react";
 import { CriticalRendererProcessError } from "@/main/error/criticalError";
 import { GamePlaybackState } from "../providers/game-state-provider";
+import { EventEmitter } from "events";
+import { EventToken } from "../types";
 
 export interface AppConfig {
     appInfo: AppInfo;
-}
+};
+type AppEvents = {
+    "clientEvent:app.stateChanged": [GamePlaybackState];
+};
 
 type Router = ReturnType<typeof import("narraleaf-react")["useRouter"]>;
 
 export class App {
+    static readonly DefaultGamePlaybackState: GamePlaybackState = {
+        isPlaying: false
+    };
+
+    public readonly events = new EventEmitter<AppEvents>();
     public readonly appInfo: AppInfo;
     public router: Router | null = null;
     public game: Game | null = null;
-    private gameStateCallback: ((state: { isPlaying: boolean }) => void) | null = null;
+    public playbackState: GamePlaybackState = { ...App.DefaultGamePlaybackState };
 
     constructor(config: AppConfig) {
         this.appInfo = config.appInfo;
@@ -49,21 +59,25 @@ export class App {
 
         this.router.clear().cleanHistory();
         this.game.getLiveGame().newGame();
-        this.setGamePlaying(true);
+        this.dispatchState({ isPlaying: true });
     }
 
-    setGameStateCallback(callback: (state: { isPlaying: boolean }) => void) {
-        this.gameStateCallback = callback;
+    public onStateChanged(callback: (state: GamePlaybackState) => void): EventToken {
+        this.events.on("clientEvent:app.stateChanged", callback);
+        return {
+            cancel: () => {
+                this.events.off("clientEvent:app.stateChanged", callback);
+            }
+        };
     }
 
-    dispatchGameState(state: GamePlaybackState) {
-        if (this.gameStateCallback) {
-            this.gameStateCallback(state);
-        }
+    public dispatchState(state: Partial<GamePlaybackState>) {
+        this.playbackState = { ...this.playbackState, ...state };
+        this.events.emit("clientEvent:app.stateChanged", this.playbackState);
     }
 
-    setGamePlaying(isPlaying: boolean) {
-        this.dispatchGameState({ isPlaying });
+    public getState(): GamePlaybackState {
+        return this.playbackState;
     }
 }
 

@@ -1,19 +1,42 @@
-import React, {useEffect, useRef} from "react";
-import {GameMetadata} from "@/client/app/types";
-import {SplashScreen} from "@/client/app/splash-screen/splash-screen";
-import {useApp, useCurrentSaved} from "@/client";
-import {AsyncTaskQueue} from "@/utils/pure/array";
-import {NarraLeafMainWorldProperty, RendererHomePage} from "@core/build/constants";
-import {PageConfig, Pages} from "@/client/app/app";
-import { Page, useGame, useRouter } from "narraleaf-react";
+import React, { useEffect, useRef } from "react";
+import { GameMetadata } from "@/client/app/types";
+import { SplashScreen } from "@/client/app/splash-screen/splash-screen";
+import { useApp, useCurrentSaved } from "@/client";
+import { AsyncTaskQueue } from "@/utils/pure/array";
+import { NarraLeafMainWorldProperty, RendererHomePage } from "@core/build/constants";
+import { PageConfig, Pages } from "@/client/app/app";
+import { Page, Stage, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
-import {useSplashScreen} from "@/client/app/providers/splash-screen-provider";
-import {useGamePlayback} from "@/client/app/providers/game-state-provider";
-import { throttle } from "./utils/data";
+import { useSplashScreen } from "@/client/app/providers/splash-screen-provider";
+import { useGamePlayback } from "@/client/app/providers/game-state-provider";
+import { isValidImageUrl, throttle } from "./utils/data";
 
 type NarraLeafReact = typeof import("narraleaf-react");
 
-const AppPlayerContent = ({story, pages, lib, metadata}: {
+const GameStageProxy = ({ backgroundImage, children }: { backgroundImage: string | undefined, children: React.ReactNode }) => {
+    const { isPlaying } = useGamePlayback();
+
+    console.debug("[NarraLeaf Client] GameStageProxy", isPlaying);
+
+    if (isPlaying) {
+        return (
+            <>
+                {children}
+            </>
+        )
+    }
+
+    return (
+        <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
+            style={{ backgroundImage: backgroundImage ? `url('${backgroundImage}')` : undefined }}
+        >
+            {children}
+        </div>
+    );
+}
+
+const AppPlayerContent = ({ story, pages, lib, metadata }: {
     story: InstanceType<NarraLeafReact["Story"]>;
     pages: Pages;
     lib: NarraLeafReact;
@@ -28,9 +51,9 @@ const AppPlayerContent = ({story, pages, lib, metadata}: {
     const queue = useRef(new AsyncTaskQueue());
     const router = useRouter();
     const game = useGame();
-    const {app} = useApp();
-    const {isFinished} = useSplashScreen();
-    const {setGamePlaybackState} = useGamePlayback();
+    const app = useApp();
+    const { isPlaying } = useGamePlayback();
+    const { isFinished } = useSplashScreen();
 
     const pageStyles: PageConfig = {
         style: {
@@ -40,7 +63,7 @@ const AppPlayerContent = ({story, pages, lib, metadata}: {
     };
 
     // Get layout component if it exists
-    const {layout, stage, ...stagePages} = pages;
+    const { layout, ...stagePages } = pages;
     const LayoutComponent = layout?.registry.component as React.ComponentType<{ children: React.ReactNode }> | undefined;
 
     useEffect(() => {
@@ -60,35 +83,41 @@ const AppPlayerContent = ({story, pages, lib, metadata}: {
     useEffect(() => {
         router.push(RendererHomePage);
 
-        if (stage) {
-            const StageComponentConstructor = stage.registry.component;
-            game.configure({
-                stage: (
-                    <StageComponentConstructor />
-                ),
-            });
-        }
+        console.debug("[NarraLeaf Client] stagePages", stagePages);
     }, []);
 
     useEffect(() => {
-        app.setGameStateCallback((state) => {
-            setGamePlaybackState((prevState) => ({
-                ...prevState,
-                ...state,
-            }));
+        if (metadata.backgroundImage && !isValidImageUrl(metadata.backgroundImage)) {
+            console.error(`Invalid background image URL: ${metadata.backgroundImage}`);
+        }
+        const backgroundImage = metadata.backgroundImage && isValidImageUrl(metadata.backgroundImage)
+            ? metadata.backgroundImage
+            : undefined;
+
+        game.configure({
+            stage: (
+                <Stage className="inset-0 w-full h-full" key="stage">
+                    <GameStageProxy backgroundImage={backgroundImage}>
+                        {metadata.stage}
+                    </GameStageProxy>
+                </Stage>
+            ),
         });
-    }, [app, setGamePlaybackState]);
+    }, [isPlaying]);
+
+    const handleEnd = () => {
+        app.dispatchState({ isPlaying: false });
+    };
+    const handleReady = () => {
+        app.setRouter(router);
+        app.setGame(game);
+    };
 
     const playerContent = (
         <lib.Player
             story={story}
-            onReady={() => {
-                app.setRouter(router);
-                app.setGame(game);
-            }}
-            onEnd={() => {
-                app.setGamePlaying(false);
-            }}
+            onReady={handleReady}
+            onEnd={handleEnd}
             width="100%"
             height="100%"
         >
@@ -133,5 +162,5 @@ const AppPlayer = (props: {
     );
 }
 
-export {AppPlayer};
+export { AppPlayer };
 

@@ -27,3 +27,16 @@ export function throttle(func: () => void, limit: number): ThrottledFunction {
 
     return throttled;
 }
+
+export const isValidImageUrl = (url: string): boolean => {
+    if (url.startsWith('./') || url.startsWith('../') || url.startsWith('/')) {
+        return true;
+    }
+    
+    try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+        return false;
+    }
+};

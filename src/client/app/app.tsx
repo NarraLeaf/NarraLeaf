@@ -45,11 +45,15 @@ async function render(
         window[NarraLeafMainWorldProperty].app.terminate(new Error("Story not found in the meta object"));
     }
 
+    const reactMainVersion = React.version.split(".")[0];
     const appInfo: AppInfo = await window[NarraLeafMainWorldProperty].getPlatform();
     const appConfig: AppConfig = {
         appInfo,
     };
 
+    if (reactMainVersion !== "19") {
+        window[NarraLeafMainWorldProperty].app.terminate(new Error("React 19 is required to run NarraLeaf, you are using React " + reactMainVersion));
+    }
     if (!appInfo.isPackaged) {
         console.log("NarraLeaf is Running in development mode");
         console.log("AppInfo received", appInfo);
@@ -61,8 +65,12 @@ async function render(
                 <lib.NarraLeafReact.GameProviders>
                     <AppProviders appConfig={appConfig}>
                         <lib.App>
-                            <AppPlayer metadata={lib.metadata} story={lib.metadata.story} lib={lib.NarraLeafReact} pages={lib.pages}>
-                            </AppPlayer>
+                            <AppPlayer
+                                metadata={lib.metadata}
+                                story={lib.metadata.story}
+                                lib={lib.NarraLeafReact}
+                                pages={lib.pages}
+                            />
                         </lib.App>
                     </AppProviders>
                 </lib.NarraLeafReact.GameProviders>

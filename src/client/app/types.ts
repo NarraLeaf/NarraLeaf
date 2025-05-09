@@ -13,6 +13,9 @@ export type SplashScreenDefinition = {
     duration: number;
     splashScreen: React.ReactNode;
 };
+export type EventToken = {
+    cancel(): void;
+};
 
 /**
  * @deprecated Use `GameMetadata` instead
@@ -24,6 +27,32 @@ export type Meta = {
 export type GameMetadata = {
     story: import("narraleaf-react").Story;
     splashScreen?: SplashScreenDefinition | SplashScreenDefinition[];
+    /**
+     * The stage to display when the game is running
+     * 
+     * @example
+     * ```tsx
+     * export const metadata: GameMetadata = {
+     *   stage: (
+     *     <div className="...">
+     *       <QuickMenu />
+     *     </div>
+     *   ),
+     * }
+     * ```
+     */
+    stage?: React.ReactNode;
+    /**
+     * The url of the background image to display in the main menu
+     * 
+     * @example
+     * ```tsx
+     * export const metadata: GameMetadata = {
+     *   backgroundImage: "/your-image.jpg",
+     * }
+     * ```
+     */
+    backgroundImage?: string;
 };
 
 export {Pages} from "@/client/app/app";
