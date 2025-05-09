@@ -107,6 +107,7 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
 
     const handleEnd = () => {
         app.dispatchState({ isPlaying: false });
+        router.push(RendererHomePage);
     };
     const handleReady = () => {
         app.setRouter(router);
