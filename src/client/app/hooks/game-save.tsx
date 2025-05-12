@@ -1,4 +1,4 @@
-import {SavedGame, SavedGameMetadata} from "@core/game/save";
+import {SavedGame, SavedGameMetadata} from "@/client/app/types";
 import {useFlush} from "@/client/app/utils/flush";
 import {LiveGame, useGame} from "narraleaf-react";
 import React, {useEffect} from "react";

@@ -57,3 +57,5 @@ export type GameMetadata = {
 
 export {Pages} from "@/client/app/app";
 export type {PageConfig} from "@/client/app/app";
+export type {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
+export type {UseSavedGameResult, UseSaveActionResult} from "@/client/app/hooks/game-save";
