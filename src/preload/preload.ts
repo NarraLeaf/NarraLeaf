@@ -19,6 +19,12 @@ const APIs: Window["NarraLeaf"] = {
                 err: err instanceof Error ? err.message : err,
             });
         },
+        requestMain(event: string, payload: any): Promise<Response<IpcEvent.app_event_request_main>> {
+            return ipcClient.invoke(IpcEvent.app_event_request_main, {
+                event,
+                payload,
+            });
+        },
     },
     game: {
         save: {

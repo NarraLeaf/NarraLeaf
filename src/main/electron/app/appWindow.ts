@@ -31,6 +31,7 @@ export class AppWindow {
     public readonly appConfig: AppWindowConfig;
     public readonly win: BrowserWindow;
     public readonly ipc: IPCHost;
+    public readonly eventHandlers: Record<string, ((payload: any) => Promise<any> | any) | undefined> = {};
     private events: EventEmitter<WindowEvents> = new EventEmitter<WindowEvents>();
 
     constructor(app: App, config: Partial<WindowConfig>, appConfig: AppWindowConfig) {
@@ -63,6 +64,30 @@ export class AppWindow {
                 this.events.removeListener("close", handler);
             }
         };
+    }
+
+    public onEvent<Request, Response>(event: string, fn: (payload: Request) => Promise<Response> | Response): AppEventToken {
+        if (this.eventHandlers[event]) {
+            console.warn(`[Main] Warning: Event ${event} already registered. Overriding.`);
+        }
+        this.eventHandlers[event] = fn;
+        return {
+            cancel: () => {
+                this.eventHandlers[event] = undefined;
+            }
+        };
+    }
+
+    public isFullScreen(): boolean {
+        return this.win.isFullScreen();
+    }
+
+    public enterFullScreen() {
+        this.win.setFullScreen(true);
+    }
+
+    public exitFullScreen() {
+        this.win.setFullScreen(false);
     }
 
     public getWebContents() {
@@ -162,6 +187,19 @@ export class AppWindow {
         });
         this.ipc.onRequest(this, IpcEvent.game_save_delete, async ({id}) => {
             return this.ipc.tryUse(() => this.app.deleteGameData(id));
+        });
+        this.ipc.onRequest(this, IpcEvent.app_event_request_main, async ({event, payload}) => {
+            if (this.eventHandlers[event]) {
+                try {
+                    return {
+                        success: true,
+                        data: await this.eventHandlers[event](payload),
+                    };
+                } catch (error) {
+                    return {success: false, error: error instanceof Error ? error.message : String(error)};
+                }
+            }
+            return {success: false, error: `Event ${event} not found`};
         });
         this.prepareEvents();
     }

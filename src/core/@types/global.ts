@@ -20,6 +20,7 @@ declare global {
             getPlatform(): Promise<AppInfo>;
             app: {
                 terminate(err: string | Error | null): void;
+                requestMain<Request, Response>(event: string, ...args: Response extends void ? [payload?: Request] : [payload: Request]): Promise<RequestStatus<Response>>;
             };
             game: {
                 save: {
