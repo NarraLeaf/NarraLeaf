@@ -58,8 +58,12 @@ export class App {
         }
 
         this.router.clear().cleanHistory();
-        this.game.getLiveGame().newGame();
-        this.dispatchState({ isPlaying: true });
+        this.game.getLiveGame()
+            .newGame()
+            .waitForRouterExit().promise
+            .then(() => {
+                this.dispatchState({ isPlaying: true });
+            });
     }
 
     public onStateChanged(callback: (state: GamePlaybackState) => void): EventToken {
