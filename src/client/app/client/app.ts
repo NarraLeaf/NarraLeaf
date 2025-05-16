@@ -5,6 +5,7 @@ import { CriticalRendererProcessError } from "@/main/error/criticalError";
 import { GamePlaybackState } from "../providers/game-state-provider";
 import { EventEmitter } from "events";
 import { EventToken } from "../types";
+import { RendererHomePage } from "@/core/build/constants";
 
 export interface AppConfig {
     appInfo: AppInfo;
@@ -52,7 +53,7 @@ export class App {
         return this.game;
     }
 
-    newGame(): void {
+    public newGame(): void {
         if (!this.game || !this.router) {
             throw new CriticalRendererProcessError("Game or router not mounted");
         }
@@ -64,6 +65,16 @@ export class App {
             .then(() => {
                 this.dispatchState({ isPlaying: true });
             });
+    }
+
+    public exitGame(): void {
+        if (!this.game || !this.router) {
+            throw new CriticalRendererProcessError("Game or router not mounted");
+        }
+
+        this.game.getLiveGame().reset();
+        this.dispatchState({ isPlaying: false });
+        this.router.clear().cleanHistory().push(RendererHomePage);
     }
 
     public onStateChanged(callback: (state: GamePlaybackState) => void): EventToken {
