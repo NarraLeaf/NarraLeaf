@@ -28,6 +28,7 @@ import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
 import {StoreProvider} from "@/main/electron/app/save/storeProvider";
 import {FsFlag} from "@/main/electron/data/fsLogger";
 import { translate } from "@/main/i18n/translate";
+import { JsonStore } from "../data/jsonStore";
 
 type AppEvents = {
     "ready": [];
@@ -59,6 +60,7 @@ export type AppMeta = {
 export enum AppDataNamespace {
     save = "msg_storage",
     flags = "app_flags",
+    json = "json_storage",
 }
 
 enum HookEvents {
@@ -243,8 +245,15 @@ export class App {
         return app.getPath("userData");
     }
 
+    public createJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
+        return new JsonStore<T>({
+            dir: path.join(this.getUserDataDir(), AppDataNamespace.json),
+            name,
+        });
+    }
+
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
-        const metadata = this.getSavedGameMetadata(data, type, id);
+        const metadata = this.getSavedGameMetadata(data, type, id, preview);
         return this.saveStorage.set(metadata.id, type, metadata, data);
     }
 
