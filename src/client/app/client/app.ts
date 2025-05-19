@@ -5,7 +5,7 @@ import { CriticalRendererProcessError } from "@/main/error/criticalError";
 import { GamePlaybackState } from "../providers/game-state-provider";
 import { EventEmitter } from "events";
 import { EventToken } from "../types";
-import { RendererHomePage } from "@/core/build/constants";
+import { NarraLeafMainWorldProperty, RendererHomePage } from "@/core/build/constants";
 
 export interface AppConfig {
     appInfo: AppInfo;
@@ -53,18 +53,38 @@ export class App {
         return this.game;
     }
 
-    public newGame(): void {
+    public async newGame(): Promise<void> {
         if (!this.game || !this.router) {
             throw new CriticalRendererProcessError("Game or router not mounted");
         }
 
         this.router.clear().cleanHistory();
-        this.game.getLiveGame()
+        await this.game.getLiveGame()
             .newGame()
-            .waitForRouterExit().promise
-            .then(() => {
-                this.dispatchState({ isPlaying: true });
-            });
+            .waitForRouterExit().promise;
+
+        this.dispatchState({ isPlaying: true });
+    }
+
+    public async loadGame(id: string): Promise<void> {
+        if (!this.game || !this.router) {
+            throw new CriticalRendererProcessError("Game or router not mounted");
+        }
+
+        const savedGame = await window[NarraLeafMainWorldProperty].game.save.read(id);
+        if (!savedGame.success) {
+            throw new CriticalRendererProcessError("Failed to load game: " + savedGame.error);
+        }
+
+        this.router.clear().cleanHistory();
+        await this.game.getLiveGame()
+            .newGame()
+            .waitForRouterExit().promise;
+
+        this.dispatchState({ isPlaying: true });
+        this.game.getLiveGame()!.getGameState()?.events.once("event:state.onRender", () => {
+            this.game!.getLiveGame()!.deserialize(savedGame.data);
+        });
     }
 
     public exitGame(): void {

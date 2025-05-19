@@ -1,7 +1,7 @@
 import {IPCClient} from "@/preload/data/ipcClient";
 import {IpcEvent, IpcEvents, Namespace} from "@core/ipc/events";
 import {contextBridge} from "electron";
-import {NarraLeafMainWorldProperty} from "@core/build/constants";
+import {NarraLeafMainWorldProperty, QuickSaveId} from "@core/build/constants";
 import {SaveType} from "@core/game/save";
 import {generateId} from "@/utils/pure/string";
 
@@ -32,8 +32,7 @@ const APIs: Window["NarraLeaf"] = {
                 return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save, id, preview});
             },
             quickSave(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
-                const id = generateId();
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.QuickSave, id});
+                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.QuickSave, id: QuickSaveId});
             },
             createRecovery(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
                 const id = generateId();

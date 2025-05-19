@@ -13,3 +13,4 @@ export enum AppHost {
     Root = "root",
     Renderer = "renderer",
 }
+export const QuickSaveId = "quick-save" as const;

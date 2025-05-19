@@ -2,12 +2,14 @@ import { SavedGame, SavedGameMetadata } from "@/client/app/types";
 import { useFlush } from "@/client/app/utils/flush";
 import { LiveGame, useGame } from "narraleaf-react";
 import React, { useEffect } from "react";
-import { NarraLeafMainWorldProperty } from "@core/build/constants";
+import { NarraLeafMainWorldProperty, QuickSaveId } from "@core/build/constants";
 import { safeClone } from "@/utils/pure/object";
 
 export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;
+    read: (id: string) => Promise<SavedGame>;
     quickSave: () => Promise<void>;
+    quickRead: () => Promise<SavedGame>;
 };
 
 export type UseSavedGameResult = {
@@ -76,7 +78,7 @@ export function useSaveAction(): UseSaveActionResult {
     const game = useGame();
 
     async function save(name: string): Promise<void> {
-        const data = safeClone(game.getLiveGame().serialize());
+        const data = game.getLiveGame().serialize();
 
         let preview: undefined | string = undefined;
         try {
@@ -87,14 +89,32 @@ export function useSaveAction(): UseSaveActionResult {
         await window[NarraLeafMainWorldProperty].game.save.save(data, name, preview);
     }
 
+    async function read(id: string): Promise<SavedGame> {
+        const res = await window[NarraLeafMainWorldProperty].game.save.read(id);
+        if (!res.success) {
+            throw new Error(res.error);
+        }
+        return res.data;
+    }
+
     async function quickSave(): Promise<void> {
-        const data = safeClone(game.getLiveGame().serialize());
+        const data = game.getLiveGame().serialize();
         await window[NarraLeafMainWorldProperty].game.save.quickSave(data);
+    }
+
+    async function quickRead(): Promise<SavedGame> {
+        const res = await window[NarraLeafMainWorldProperty].game.save.read(QuickSaveId);
+        if (!res.success) {
+            throw new Error(res.error);
+        }
+        return res.data;
     }
 
     return {
         save,
+        read,
         quickSave,
+        quickRead,
     };
 }
 
