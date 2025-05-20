@@ -53,7 +53,7 @@ export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
         devTools: true,
-        recoveryCreationInterval: 1000,
+        recoveryCreationInterval: 5000,
     };
     public static readonly DefaultWindowsConfig: IWindowsConfig = {};
     public static readonly DefaultLinuxConfig: ILinuxConfig = {};

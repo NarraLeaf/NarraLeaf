@@ -11,28 +11,87 @@ import { useSplashScreen } from "@/client/app/providers/splash-screen-provider";
 import { useGamePlayback } from "@/client/app/providers/game-state-provider";
 import { isValidImageUrl, throttle } from "./utils/data";
 
+// Add new hook for background image preloading
+const useBackgroundImagePreload = (backgroundImage: string | undefined) => {
+    const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+
+    useEffect(() => {
+        if (!backgroundImage || !isValidImageUrl(backgroundImage)) {
+            return;
+        }
+
+        // Check if image is already in cache
+        if (imageCache.current.has(backgroundImage)) {
+            return;
+        }
+
+        // Preload image
+        const img = new Image();
+        img.src = backgroundImage;
+        
+        img.onload = () => {
+            imageCache.current.set(backgroundImage, img);
+        };
+        
+        img.onerror = () => {
+            console.error(`Failed to preload background image: ${backgroundImage}`);
+            imageCache.current.delete(backgroundImage);
+        };
+
+        return () => {
+            img.onload = null;
+            img.onerror = null;
+        };
+    }, [backgroundImage]);
+
+    return imageCache;
+};
+
 type NarraLeafReact = typeof import("narraleaf-react");
 
 const GameStageProxy = ({ backgroundImage, children }: { backgroundImage: string | undefined, children: React.ReactNode }) => {
     const { isPlaying } = useGamePlayback();
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const imageCache = useBackgroundImagePreload(backgroundImage);
 
     useEffect(() => {
-        if (backgroundImage) {
-            const img = new Image();
-            img.src = backgroundImage;
-            
-            img.onload = () => {
-                setIsImageLoaded(true);
-                setImageError(false);
-            };
-            
-            img.onerror = () => {
-                console.error(`Failed to load background image: ${backgroundImage}`);
-                setImageError(true);
-            };
+        if (!backgroundImage) {
+            setIsImageLoaded(false);
+            setImageError(false);
+            return;
         }
+
+        // Check if image is already in cache
+        const cachedImage = imageCache.current.get(backgroundImage);
+        if (cachedImage) {
+            setIsImageLoaded(true);
+            setImageError(false);
+            return;
+        }
+
+        // Create new image and cache it
+        const img = new Image();
+        img.src = backgroundImage;
+        
+        img.onload = () => {
+            imageCache.current.set(backgroundImage, img);
+            setIsImageLoaded(true);
+            setImageError(false);
+        };
+        
+        img.onerror = () => {
+            console.error(`Failed to load background image: ${backgroundImage}`);
+            setImageError(true);
+            setIsImageLoaded(false);
+            imageCache.current.delete(backgroundImage);
+        };
+
+        // Cleanup function
+        return () => {
+            img.onload = null;
+            img.onerror = null;
+        };
     }, [backgroundImage]);
 
     console.debug("[NarraLeaf Client] GameStageProxy", isPlaying);
@@ -47,7 +106,7 @@ const GameStageProxy = ({ backgroundImage, children }: { backgroundImage: string
 
     return (
         <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full transition-opacity duration-300"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
             style={{ 
                 backgroundImage: backgroundImage && !imageError ? `url('${backgroundImage}')` : undefined,
                 opacity: isImageLoaded ? 1 : 0
@@ -76,6 +135,12 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
     const app = useApp();
     const { isPlaying } = useGamePlayback();
     const { isFinished } = useSplashScreen();
+
+    // Start preloading background image during splash screen
+    const backgroundImage = metadata.backgroundImage && isValidImageUrl(metadata.backgroundImage)
+        ? metadata.backgroundImage
+        : undefined;
+    useBackgroundImagePreload(backgroundImage);
 
     const pageStyles: PageConfig = {
         style: {
