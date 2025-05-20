@@ -9,7 +9,7 @@ export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;
     read: (id: string) => Promise<SavedGame>;
     quickSave: () => Promise<void>;
-    quickRead: () => Promise<SavedGame>;
+    quickRead: () => Promise<SavedGame | null>;
 };
 
 export type UseSavedGameResult = {
@@ -82,7 +82,7 @@ export function useSaveAction(): UseSaveActionResult {
 
         let preview: undefined | string = undefined;
         try {
-            preview = await game.getLiveGame().capturePng()
+            preview = await game.getLiveGame().captureJpeg()
         } catch (e) {
             console.error(e);
         }
@@ -102,10 +102,10 @@ export function useSaveAction(): UseSaveActionResult {
         await window[NarraLeafMainWorldProperty].game.save.quickSave(data);
     }
 
-    async function quickRead(): Promise<SavedGame> {
+    async function quickRead(): Promise<SavedGame | null> {
         const res = await window[NarraLeafMainWorldProperty].game.save.read(QuickSaveId);
         if (!res.success) {
-            throw new Error(res.error);
+            return null;
         }
         return res.data;
     }

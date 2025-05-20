@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GameMetadata } from "@/client/app/types";
 import { SplashScreen } from "@/client/app/splash-screen/splash-screen";
 import { useApp, useCurrentSaved } from "@/client";
@@ -15,6 +15,25 @@ type NarraLeafReact = typeof import("narraleaf-react");
 
 const GameStageProxy = ({ backgroundImage, children }: { backgroundImage: string | undefined, children: React.ReactNode }) => {
     const { isPlaying } = useGamePlayback();
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        if (backgroundImage) {
+            const img = new Image();
+            img.src = backgroundImage;
+            
+            img.onload = () => {
+                setIsImageLoaded(true);
+                setImageError(false);
+            };
+            
+            img.onerror = () => {
+                console.error(`Failed to load background image: ${backgroundImage}`);
+                setImageError(true);
+            };
+        }
+    }, [backgroundImage]);
 
     console.debug("[NarraLeaf Client] GameStageProxy", isPlaying);
 
@@ -28,8 +47,11 @@ const GameStageProxy = ({ backgroundImage, children }: { backgroundImage: string
 
     return (
         <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
-            style={{ backgroundImage: backgroundImage ? `url('${backgroundImage}')` : undefined }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full transition-opacity duration-300"
+            style={{ 
+                backgroundImage: backgroundImage && !imageError ? `url('${backgroundImage}')` : undefined,
+                opacity: isImageLoaded ? 1 : 0
+            }}
         >
             {children}
         </div>
