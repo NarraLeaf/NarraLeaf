@@ -1,6 +1,6 @@
 import {Project} from "@core/project/project";
 import type {Configuration} from "electron-builder";
-import {BuildTarget} from "@core/build/electron/target";
+import {PlatformBuildTarget} from "@core/build/electron/target";
 import path from "path";
 import {MainOutputFileName} from "@core/build/constants";
 import {TempNamespace} from "@core/constants/tempNamespace";
@@ -35,7 +35,7 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
         .info("Dist directory", distDir);
 
     const config: Configuration = {
-        target: BuildTarget.createTarget(project.config.build.targets),
+        target: PlatformBuildTarget.createTarget(project.config.build.targets),
         compression: enableFastPack ? "store" : "maximum",
         appId: project.config.build.appId,
         productName: project.config.build.productName,
@@ -74,7 +74,7 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
         extraResources: [
             rest(normalize(project.config.resources), sep.posix),
         ],
-        ...BuildTarget.createCommonConfig(project.config.build.targets),
+        ...PlatformBuildTarget.createCommonConfig(project.config.build.targets),
     };
 
     await writeLicense(project, project.getTempDir(TempNamespace.License));
