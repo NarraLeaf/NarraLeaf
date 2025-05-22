@@ -26,6 +26,7 @@ import {StringKeyOf} from "narraleaf-react/dist/util/data";
 import {LocalFile} from "@/main/electron/app/save/localFile";
 import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
 import {StoreProvider} from "@/main/electron/app/save/storeProvider";
+import { SavedGameResult } from "../../../core/game/SavedGameResult";
 import {FsFlag} from "@/main/electron/data/fsLogger";
 import { translate } from "@/main/i18n/translate";
 import { JsonStore } from "../data/jsonStore";
@@ -110,6 +111,7 @@ export class App {
         // important: must be called after `prepare`
         this.saveStorage = this.getConfig().store || new LocalFile({
             dir: path.join(this.getUserDataDir(), AppDataNamespace.save),
+            forceDelete: this.getConfig().deleteCorruptedSaves,
         });
     }
 
@@ -257,7 +259,7 @@ export class App {
         return this.saveStorage.set(metadata.id, type, metadata, data);
     }
 
-    public async readGameData(id: string): Promise<SavedGame> {
+    public async readGameData(id: string): Promise<SavedGameResult | null> {
         return this.saveStorage.get(id);
     }
 

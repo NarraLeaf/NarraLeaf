@@ -8,6 +8,7 @@ export interface BaseAppConfig {
     devTools: boolean;
     store?: StoreProvider;
     recoveryCreationInterval: number;
+    deleteCorruptedSaves: boolean;
 }
 
 export interface IWindowsConfig {
@@ -54,6 +55,7 @@ export class AppConfig {
         forceSandbox: false,
         devTools: true,
         recoveryCreationInterval: 5000,
+        deleteCorruptedSaves: false,
     };
     public static readonly DefaultWindowsConfig: IWindowsConfig = {};
     public static readonly DefaultLinuxConfig: ILinuxConfig = {};

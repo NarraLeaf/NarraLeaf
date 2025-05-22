@@ -1,13 +1,15 @@
 import path from "path";
-import {Fs} from "@/utils/nodejs/fs";
-import {Metadata} from "@/main/electron/app/save/metadata";
-import {StoreProvider} from "@/main/electron/app/save/storeProvider";
-import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
+import { Fs } from "@/utils/nodejs/fs";
+import { Metadata } from "@/main/electron/app/save/metadata";
+import { StoreProvider } from "@/main/electron/app/save/storeProvider";
+import { SavedGameResult } from "../../../../core/game/SavedGameResult";
+import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
 
 export type StorageConfig = {
     dir: string;
     maxRecoveries?: number;
     maxTemporary?: number;
+    forceDelete?: boolean;
 };
 
 export class LocalFile extends StoreProvider {
@@ -15,25 +17,48 @@ export class LocalFile extends StoreProvider {
     private static DefaultConfig = {
         maxRecoveries: 5,
         maxTemporary: 1,
+        forceDelete: false,
     };
+
+    static isUnknown(metadata: SavedGameMetadata | { id: string, isUnknown: true }): metadata is { id: string, isUnknown: true } {
+        return "isUnknown" in metadata && metadata.isUnknown;
+    }
 
     constructor(public readonly config: StorageConfig) {
         super();
     }
 
-    async get(name: string): Promise<SavedGame> {
+    async get(name: string): Promise<SavedGameResult | null> {
         await this.prepareDir();
 
         const path = this.resolve(name);
         const handle = await Metadata.read<SavedGameMetadata, SavedGame>(path);
-        const result = await handle.readContent();
+        const metadataResult = await handle.readMetaData();
+
+        if (!metadataResult.ok) {
+            console.error(`[Main: LocalFile StoreProvider] Failed to read metadata for save game ${name} (error type: ${metadataResult.errorType}).`, metadataResult.error);
+            await handle.close();
+            return null;
+        }
+
+        const contentResult = await handle.readContent();
+        if (!contentResult.ok) {
+            console.error(`[Main: LocalFile StoreProvider] Failed to read content for save game ${name} (error type: ${contentResult.errorType}).`, contentResult.error);
+            await handle.close();
+            return {
+                metadata: metadataResult.content,
+            };
+        }
 
         await handle.close();
 
-        return result as SavedGame;
+        return {
+            savedGame: contentResult.content,
+            metadata: metadataResult.content,
+        };
     }
 
-    async metadata(name: string): Promise<SavedGameMetadata> {
+    async metadata(name: string): Promise<SavedGameMetadata | null> {
         await this.prepareDir();
 
         const path = this.resolve(name);
@@ -42,7 +67,12 @@ export class LocalFile extends StoreProvider {
 
         await handle.close();
 
-        return result as SavedGameMetadata;
+        if (!result.ok) {
+            console.error(`[Main: LocalFile StoreProvider] Failed to read metadata for save game ${name} (error type: ${result.errorType}).`, result.error);
+            return null;
+        }
+
+        return result.content;
     }
 
     async set(name: string, type: SaveType, metadata: SavedGameMetadata, data: SavedGame): Promise<void> {
@@ -62,10 +92,11 @@ export class LocalFile extends StoreProvider {
         await this.prepareDir();
         await this.fullCleanup();
 
-        return this.rawList();
+        const result = await this.rawList();
+        return result.filter((v) => !LocalFile.isUnknown(v)) as SavedGameMetadata[];
     }
 
-    async rawList(): Promise<SavedGameMetadata[]> {
+    async rawList(): Promise<(SavedGameMetadata | { id: string, isUnknown: true })[]> {
         const result = await Fs.listFiles(this.config.dir);
         if (!result.ok) {
             throw new Error(result.error);
@@ -75,7 +106,11 @@ export class LocalFile extends StoreProvider {
 
         return Promise.all(files.map(async (stat) => {
             const name = path.basename(stat.name, "." + LocalFile.EXT);
-            return await this.metadata(name);
+            const metadata = await this.metadata(name);
+            if (!metadata) {
+                return { id: name, isUnknown: true };
+            }
+            return metadata;
         }));
     }
 
@@ -105,7 +140,29 @@ export class LocalFile extends StoreProvider {
     }
 
     private async cleanupOldSaves(type: SaveType, max: number): Promise<void> {
-        const saves = (await this.rawList()).filter(v => v.type === type);
+        const list = await this.rawList();
+        if (this.config.forceDelete) {
+            const invalid = list.filter(LocalFile.isUnknown);
+            if (invalid.length > 0) {
+                const errors: string[] = [];
+                console.error(`[Main: LocalFile StoreProvider] Found ${invalid.length} invalid saves.`, invalid);
+
+                await Promise.all(invalid.map(async (v) => {
+                    const res = await Fs.deleteFile(this.resolve(v.id));
+                    if (!res.ok) {
+                        errors.push(res.error);
+                    } else {
+                        console.log(`[Main: LocalFile StoreProvider] Deleted invalid save ${v.id}`);
+                    }
+                }));
+
+                if (errors.length > 0) {
+                    console.error(`[Main: LocalFile StoreProvider] Failed to delete ${errors.length} invalid saves: \n    ${errors.join("\n    ")}`);
+                }
+            }
+        }
+
+        const saves = list.filter(v => !LocalFile.isUnknown(v) && v.type === type) as SavedGameMetadata[];
         const removing = [];
         const sorted = saves.sort((a, b) =>
             (b.updated || 0) - (a.updated || 0));

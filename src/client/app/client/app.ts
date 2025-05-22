@@ -76,6 +76,11 @@ export class App {
             throw new CriticalRendererProcessError("Failed to load game: " + savedGame.error);
         }
 
+        if (!savedGame.data || !("savedGame" in savedGame.data)) {
+            throw new Error("Failed to load game, saved game is corrupted");
+        }
+        const data = savedGame.data;
+
         this.router.clear().cleanHistory();
         await this.game.getLiveGame()
             .newGame()
@@ -83,7 +88,7 @@ export class App {
 
         this.dispatchState({ isPlaying: true });
         this.game.getLiveGame()!.getGameState()?.events.once("event:state.onRender", () => {
-            this.game!.getLiveGame()!.deserialize(savedGame.data);
+            this.game!.getLiveGame()!.deserialize(data.savedGame);
         });
     }
 

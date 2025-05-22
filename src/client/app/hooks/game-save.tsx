@@ -7,7 +7,7 @@ import { safeClone } from "@/utils/pure/object";
 
 export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;
-    read: (id: string) => Promise<SavedGame>;
+    read: (id: string) => Promise<SavedGame | null>;
     quickSave: () => Promise<void>;
     quickRead: () => Promise<SavedGame | null>;
 };
@@ -89,12 +89,15 @@ export function useSaveAction(): UseSaveActionResult {
         await window[NarraLeafMainWorldProperty].game.save.save(data, name, preview);
     }
 
-    async function read(id: string): Promise<SavedGame> {
+    async function read(id: string): Promise<SavedGame | null> {
         const res = await window[NarraLeafMainWorldProperty].game.save.read(id);
         if (!res.success) {
             throw new Error(res.error);
         }
-        return res.data;
+        if (!res.data || !("savedGame" in res.data)) {
+            return null;
+        }
+        return res.data.savedGame;
     }
 
     async function quickSave(): Promise<void> {
@@ -107,7 +110,10 @@ export function useSaveAction(): UseSaveActionResult {
         if (!res.success) {
             return null;
         }
-        return res.data;
+        if (!res.data || !("savedGame" in res.data)) {
+            return null;
+        }
+        return res.data.savedGame;
     }
 
     return {
@@ -160,10 +166,13 @@ export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResu
     }
 }
 
-export async function readGame(id: string): Promise<SavedGame> {
+export async function readGame(id: string): Promise<SavedGame | null> {
     const res = await window[NarraLeafMainWorldProperty].game.save.read(id);
     if (!res.success) {
         throw new Error(res.error);
     }
-    return res.data;
+    if (!res.data || !("savedGame" in res.data)) {
+        return null;
+    }
+    return res.data.savedGame;
 }

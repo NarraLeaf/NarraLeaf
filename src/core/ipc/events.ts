@@ -3,6 +3,7 @@ import { PlatformInfo } from "@/utils/pure/os";
 import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
 import { IPCMessageType, IPCType } from "@core/ipc/ipc";
 import { ClientAppConfiguration } from "../@types/global";
+import { SavedGameResult } from "@/core/game/SavedGameResult";
 
 export enum IpcEvent {
     getPlatform = "getPlatform",
@@ -62,7 +63,7 @@ export type IpcEvents = {
         data: {
             id: string;
         },
-        response: RequestStatus<SavedGame>;
+        response: RequestStatus<SavedGameResult | null>;
     };
     [IpcEvent.game_save_list]: {
         type: IPCMessageType.request,
