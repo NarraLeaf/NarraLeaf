@@ -60,7 +60,12 @@ export class LocalFile extends StoreProvider {
 
     async list(): Promise<SavedGameMetadata[]> {
         await this.prepareDir();
+        await this.fullCleanup();
 
+        return this.rawList();
+    }
+
+    async rawList(): Promise<SavedGameMetadata[]> {
         const result = await Fs.listFiles(this.config.dir);
         if (!result.ok) {
             throw new Error(result.error);
@@ -96,7 +101,11 @@ export class LocalFile extends StoreProvider {
         const path = this.resolve(metadata.id);
         await Metadata.write<SavedGameMetadata, SavedGame>(path, metadata, data);
 
-        const saves = (await this.list()).filter(v => v.type === type);
+        await this.cleanupOldSaves(type, max);
+    }
+
+    private async cleanupOldSaves(type: SaveType, max: number): Promise<void> {
+        const saves = (await this.rawList()).filter(v => v.type === type);
         const removing = [];
         const sorted = saves.sort((a, b) =>
             (b.updated || 0) - (a.updated || 0));
@@ -113,6 +122,11 @@ export class LocalFile extends StoreProvider {
                 throw new Error(res.error);
             }
         }
+    }
+
+    private async fullCleanup(): Promise<void> {
+        await this.cleanupOldSaves(SaveType.QuickSave, this.config.maxTemporary || LocalFile.DefaultConfig.maxTemporary);
+        await this.cleanupOldSaves(SaveType.Recovery, this.config.maxRecoveries || LocalFile.DefaultConfig.maxRecoveries);
     }
 
     private async prepareDir(): Promise<void> {

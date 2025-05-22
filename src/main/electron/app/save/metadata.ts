@@ -21,20 +21,24 @@ export class Metadata {
     public static HEADER_SIZE = 4;
 
     public static async read<Metadata extends Record<string, any>, Content extends Record<string, any>>(src: string): Promise<MetadataHandle<Metadata, Content>> {
-        const handle = await fs.open(src, 'r');
-        const metadata = await this.readMetaData<Metadata>(handle);
+        try {
+            const handle = await fs.open(src, 'r');
+            const metadata = await this.readMetaData<Metadata>(handle);
 
-        return {
-            readContent: async () => {
-                return await this.readContent<Content>(handle);
-            },
-            readMetaData: async () => {
-                return metadata;
-            },
-            close: async () => {
-                await handle.close();
-            }
-        };
+            return {
+                readContent: async () => {
+                    return await this.readContent<Content>(handle);
+                },
+                readMetaData: async () => {
+                    return metadata;
+                },
+                close: async () => {
+                    await handle.close();
+                }
+            };
+        } catch (error) {
+            throw new Error(`Failed to read metadata from file. Error: ${error}. File: ${src}`);
+        }
     }
 
     public static async write<Metadata extends Record<string, any>, Content extends Record<string, any>>(src: string, metadata: Metadata, content: Content): Promise<void> {
