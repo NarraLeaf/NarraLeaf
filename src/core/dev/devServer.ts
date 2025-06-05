@@ -100,8 +100,12 @@ export class DevServer {
     }
 
     async restart(): Promise<void> {
+        const project = this.renderer.project;
+        const logr = project.app.createLogger();
         if (!this.electronToken) {
-            throw new Error("Dev server is not running when trying to restart");
+            // throw new Error("Dev server is not running when trying to restart");
+            logr.warn("Dev server is not running when trying to restart");
+            return;
         }
 
         await this.electronToken.restart();

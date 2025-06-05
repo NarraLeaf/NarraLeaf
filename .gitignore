@@ -30,3 +30,4 @@ dist
 # NarraLeaf Ignore
 temp
 .narraleaf
+package-lock.json
