@@ -318,6 +318,8 @@ export class App {
             id,
             type,
             capture: preview,
+            lastSentence: save.meta.lastSentence,
+            lastSpeaker: save.meta.lastSpeaker,
         };
     }
 

@@ -6,6 +6,8 @@ export interface SavedGameMetadata {
     id: string;
     type: SaveType;
     capture?: string;
+    lastSentence: string | null;
+    lastSpeaker: string | null;
 }
 
 export enum SaveType {
