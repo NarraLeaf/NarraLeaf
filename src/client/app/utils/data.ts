@@ -1,32 +1,32 @@
-
-type ThrottledFunction = ((...args: any[]) => void) & {
+type ThrottledFunction<T> = ((...args: T[]) => void) & {
     cleanup: () => void;
 };
-export function throttle(func: () => void, limit: number): ThrottledFunction {
-    let inThrottle: boolean;
+
+export function throttle<T>(func: (...args: T[]) => void, limit: number): ThrottledFunction<T> {
+    let inThrottle = false;
     let timeoutId: NodeJS.Timeout | null = null;
 
-    const throttled = function () {
+    const throttled = function (...args: T[]) {
         if (!inThrottle) {
-            func();
+            func(...args);
             inThrottle = true;
             timeoutId = setTimeout(() => {
                 inThrottle = false;
-                timeoutId = null;
             }, limit);
         }
     };
 
-    throttled.cleanup = function() {
+    throttled.cleanup = function () {
         if (timeoutId) {
             clearTimeout(timeoutId);
             timeoutId = null;
-            inThrottle = false;
         }
+        inThrottle = false;
     };
 
     return throttled;
 }
+
 
 export const isValidImageUrl = (url: string): boolean => {
     if (url.startsWith('./') || url.startsWith('../') || url.startsWith('/')) {

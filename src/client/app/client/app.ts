@@ -53,6 +53,10 @@ export class App {
         return this.game;
     }
 
+    public crash(error: Error | string | null | undefined = null): void {
+        window[NarraLeafMainWorldProperty].app.terminate(error);
+    }
+
     public async newGame(): Promise<void> {
         if (!this.game || !this.router) {
             throw new CriticalRendererProcessError("Game or router not mounted");

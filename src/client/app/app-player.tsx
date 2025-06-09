@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GameMetadata } from "@/client/app/types";
 import { SplashScreen } from "@/client/app/splash-screen/splash-screen";
 import { useApp, useCurrentSaved } from "@/client";
 import { AsyncTaskQueue } from "@/utils/pure/array";
 import { NarraLeafMainWorldProperty, RendererHomePage } from "@core/build/constants";
 import { PageConfig, Pages } from "@/client/app/app";
-import { Page, Stage, useGame, useRouter } from "narraleaf-react";
+import { Page, SavedGame, Stage, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
 import { useSplashScreen } from "@/client/app/providers/splash-screen-provider";
 import { useGamePlayback } from "@/client/app/providers/game-state-provider";
@@ -149,21 +149,25 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
         },
     };
 
+    const [throttledSaveHandler] = useState(() => 
+        throttle(async (savedGame: SavedGame) => {
+            queue.current.clear().push(async () => {
+                await window[NarraLeafMainWorldProperty].game.save.createRecovery(savedGame);
+            });
+        }, app.appInfo.config.recoveryCreationInterval)
+    );
+
+    const createRecovery = useCallback((savedGame: SavedGame) => {
+        throttledSaveHandler(savedGame);
+    }, [throttledSaveHandler]);
+
     // Get layout component if it exists
     const { layout, ...stagePages } = pages;
     const LayoutComponent = layout?.registry.component as React.ComponentType<{ children: React.ReactNode }> | undefined;
 
     useEffect(() => {
         if (currentSaved) {
-            const handler = () => {
-                queue.current.clear().push(async () => {
-                    await window[NarraLeafMainWorldProperty].game.save.createRecovery(currentSaved);
-                });
-            };
-            const throttledHandler = throttle(handler, app.appInfo.config.recoveryCreationInterval);
-
-            throttledHandler();
-            return () => throttledHandler.cleanup();
+            createRecovery(currentSaved);
         }
     }, [currentSaved]);
 
