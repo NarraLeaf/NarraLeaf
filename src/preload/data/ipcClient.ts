@@ -1,24 +1,24 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
-import {IpcEvents} from "@core/ipc/events";
-import {AppEventToken} from "@/main/electron/app/app";
+import {IPCEvents} from "@core/ipc/events";
+import {AppEventToken} from "@/main/app/app";
 import {ipcRenderer} from "electron";
 import {MayPromise} from "@/utils/types";
 
-export class IPCClient extends IPC<IpcEvents, IPCType.Client> {
+export class IPCClient extends IPC<IPCEvents, IPCType.Client> {
     constructor(namespace: string) {
         super(IPCType.Client, namespace);
     }
 
-    invoke<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(key: K, data: IpcEvents[K]["data"]): Promise<Exclude<IpcEvents[K]["response"], never>> {
+    invoke<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(key: K, data: IPCEvents[K]["data"]): Promise<Exclude<IPCEvents[K]["response"], never>> {
         return ipcRenderer.invoke(this.getEventName(key), data);
     }
 
-    send<K extends keyof OnlyMessage<IpcEvents, IPCType.Host>>(key: K, data: IpcEvents[K]["data"]): void {
+    send<K extends keyof OnlyMessage<IPCEvents, IPCType.Host>>(key: K, data: IPCEvents[K]["data"]): void {
         return ipcRenderer.send(this.getEventName(key), data);
     }
 
-    onMessage<K extends keyof OnlyMessage<IpcEvents, IPCType.Host>>(key: K, listener: (data: IpcEvents[K]["data"]) => void): AppEventToken {
-        const listenerFn = (_event: Electron.IpcRendererEvent, data: IpcEvents[K]["data"]) => {
+    onMessage<K extends keyof OnlyMessage<IPCEvents, IPCType.Host>>(key: K, listener: (data: IPCEvents[K]["data"]) => void): AppEventToken {
+        const listenerFn = (_event: Electron.IpcRendererEvent, data: IPCEvents[K]["data"]) => {
             listener(data);
         };
         ipcRenderer.on(this.getEventName(key), listenerFn);
@@ -29,11 +29,11 @@ export class IPCClient extends IPC<IpcEvents, IPCType.Client> {
         };
     }
 
-    onRequest<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(
+    onRequest<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(
         key: K,
-        listener: (data: IpcEvents[K]["data"]) => MayPromise<Exclude<IpcEvents[K]["response"], never>>
+        listener: (data: IPCEvents[K]["data"]) => MayPromise<Exclude<IPCEvents[K]["response"], never>>
     ): AppEventToken {
-        const listenerFn = async (_event: Electron.IpcRendererEvent, data: IpcEvents[K]["data"]) => {
+        const listenerFn = async (_event: Electron.IpcRendererEvent, data: IPCEvents[K]["data"]) => {
             const response = await listener(data);
             ipcRenderer.send(this.getEventName(key, SubNamespace.Reply), response);
         };

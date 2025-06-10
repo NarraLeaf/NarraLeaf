@@ -1,7 +1,7 @@
 import {PlatformBuildTarget} from "./base";
 import {TargetConfiguration, TargetSpecificOptions, LinuxConfiguration, CompressionLevel} from "electron-builder";
 import {IBaseTargetConfig} from "./types";
-import {MainPlatform} from "@/main/electron/app/config";
+import {MainPlatform} from "@/main/app/config";
 
 export enum LinuxBuildTarget {
     AppImage = "AppImage",

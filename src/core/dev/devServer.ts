@@ -1,7 +1,7 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {ElectronDevServerToken} from "@core/dev/electron";
 import {Server, WSEventType} from "@/utils/nodejs/websocket";
-import {AppMeta} from "@/main/electron/app/app";
+import {AppMeta} from "@/main/app/app";
 
 export type DevServerToken = {
     close(): Promise<void>;

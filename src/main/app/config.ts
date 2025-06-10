@@ -1,14 +1,13 @@
 import _ from "lodash";
-import {App} from "@/main/electron/app/app";
+import {App} from "@/main/app/app";
 import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
-import {StoreProvider} from "@/main/electron/app/save/storeProvider";
+import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;
-    devTools: boolean;
-    store?: StoreProvider;
     recoveryCreationInterval: number;
     deleteCorruptedSaves: boolean;
+    store?: StoreProvider;
 }
 
 export interface IWindowsConfig {
@@ -53,7 +52,6 @@ export enum MainPlatform {
 export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
-        devTools: true,
         recoveryCreationInterval: 5000,
         deleteCorruptedSaves: false,
     };
@@ -113,3 +111,5 @@ export class AppConfig {
         return _.defaultsDeep(this.baseConfig, this.platformConfigs[mainPlatform]);
     }
 }
+
+export const AppLifeCycleViolationTimeout = 5000;

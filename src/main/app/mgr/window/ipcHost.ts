@@ -1,24 +1,27 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
-import {IpcEvents, RequestStatus} from "@core/ipc/events";
-import {AppEventToken} from "@/main/electron/app/app";
-import {AppWindow} from "@/main/electron/app/appWindow";
+import {IPCEvents, RequestStatus} from "@core/ipc/events";
+import {AppEventToken} from "@/main/app/app";
 import {ipcMain} from "electron";
 
-export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
+export interface IPCWindow {
+    getWebContents(): Electron.WebContents;
+}
+
+export class IPCHost extends IPC<IPCEvents, IPCType.Host> {
     private static handling: Record<string, boolean> = {};
     private static events: {
         [key: string]: Array<{
             handler: (data: any, resolve: (response: Exclude<any, never>) => void) => void,
-            win: AppWindow
+            win: IPCWindow
         }>
     } = {};
 
-    static handle<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(
+    static handle<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(
         namespace: string,
-        win: AppWindow,
+        win: IPCWindow,
         listener: (
-            data: IpcEvents[K]["data"],
-            resolve: (response: Exclude<IpcEvents[K]["response"], never>) => void
+            data: IPCEvents[K]["data"],
+            resolve: (response: Exclude<IPCEvents[K]["response"], never>) => void
         ) => Promise<void>
     ): AppEventToken {
         if (!IPCHost.handling[namespace]) {
@@ -47,14 +50,14 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         };
     }
 
-    static off<K extends keyof OnlyMessage<IpcEvents, IPCType.Host>>(namespace: string, listener: (data: IpcEvents[K]["data"]) => void): void {
+    static off<K extends keyof OnlyMessage<IPCEvents, IPCType.Host>>(namespace: string, listener: (data: IPCEvents[K]["data"]) => void): void {
         const index = IPCHost.events[namespace].findIndex(listenerObj => listenerObj.handler === listener);
         if (index !== -1) {
             IPCHost.events[namespace].splice(index, 1);
         }
     }
 
-    static emitHandler<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(win: AppWindow, namespace: string, data: IpcEvents[K]["data"]): Promise<IpcEvents[K]["response"]> {
+    static emitHandler<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(win: IPCWindow, namespace: string, data: IPCEvents[K]["data"]): Promise<IPCEvents[K]["response"]> {
         return new Promise(resolve => {
 
             for (const listener of IPCHost.events[namespace]) {
@@ -62,7 +65,7 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
                     continue;
                 }
                 console.info(`[IPC] Invoking listener for ${namespace}`);
-                listener.handler(data, (data: IpcEvents[K]["response"]) => {
+                listener.handler(data, (data: IPCEvents[K]["response"]) => {
                     resolve(data);
                 });
                 return;
@@ -76,10 +79,14 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         super(IPCType.Host, namespace);
     }
 
-    invoke<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(win: AppWindow, key: K, data: IpcEvents[K]["data"]): Promise<Exclude<IpcEvents[K]["response"], never>> {
+    invoke<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(
+        win: IPCWindow,
+        key: K,
+        data: IPCEvents[K]["data"]
+    ): Promise<Exclude<IPCEvents[K]["response"], never>> {
         win.getWebContents().send(this.getEventName(key), data);
         return new Promise(resolve => {
-            const handler = (event: Electron.IpcMainEvent, response: Exclude<IpcEvents[K]["response"], never>) => {
+            const handler = (event: Electron.IpcMainEvent, response: Exclude<IPCEvents[K]["response"], never>) => {
                 if (event.sender !== win.getWebContents()) {
                     return;
                 }
@@ -90,12 +97,20 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         });
     }
 
-    send<K extends keyof OnlyMessage<IpcEvents, IPCType.Host>>(win: AppWindow, key: K, data: IpcEvents[K]["data"]): void {
+    send<K extends keyof OnlyMessage<IPCEvents, IPCType.Host>>(
+        win: IPCWindow,
+        key: K,
+        data: IPCEvents[K]["data"]
+    ): void {
         return win.getWebContents().send(this.getEventName(key), data);
     }
 
-    onMessage<K extends keyof OnlyMessage<IpcEvents, IPCType.Host>>(win: AppWindow, key: K, listener: (data: IpcEvents[K]["data"]) => void): AppEventToken {
-        const listenerFn = (event: Electron.IpcMainEvent, data: IpcEvents[K]["data"]) => {
+    onMessage<K extends keyof OnlyMessage<IPCEvents, IPCType.Host>>(
+        win: IPCWindow,
+        key: K,
+        listener: (data: IPCEvents[K]["data"]) => void
+    ): AppEventToken {
+        const listenerFn = (event: Electron.IpcMainEvent, data: IPCEvents[K]["data"]) => {
             if (event.sender !== win.getWebContents()) {
                 return;
             }
@@ -109,10 +124,10 @@ export class IPCHost extends IPC<IpcEvents, IPCType.Host> {
         };
     }
 
-    onRequest<K extends keyof OnlyRequest<IpcEvents, IPCType.Host>>(
-        win: AppWindow,
+    onRequest<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(
+        win: IPCWindow,
         key: K,
-        listener: (data: IpcEvents[K]["data"]) => Promise<Exclude<IpcEvents[K]["response"], never>>
+        listener: (data: IPCEvents[K]["data"]) => Promise<Exclude<IPCEvents[K]["response"], never>>
     ): AppEventToken {
         return IPCHost.handle(this.getEventName(key), win, async (data, resolve) => {
             resolve(await listener(data));

@@ -1,26 +1,26 @@
 import {IPCClient} from "@/preload/data/ipcClient";
-import {IpcEvent, IpcEvents, Namespace} from "@core/ipc/events";
+import {IPCEventType, IPCEvents, Namespace} from "@core/ipc/events";
 import {contextBridge} from "electron";
 import {NarraLeafMainWorldProperty, QuickSaveId} from "@core/build/constants";
 import {SaveType} from "@core/game/save";
 import {generateId} from "@/utils/pure/string";
 
-type Response<K extends keyof IpcEvents> = IpcEvents[K]["response"];
+type Response<K extends keyof IPCEvents> = IPCEvents[K]["response"];
 
 const ipcClient = new IPCClient(Namespace.NarraLeaf)
 
 const APIs: Window["NarraLeaf"] = {
-    getPlatform(): Promise<Response<IpcEvent.getPlatform>> {
-        return ipcClient.invoke(IpcEvent.getPlatform, {});
+    getPlatform(): Promise<Response<IPCEventType.getPlatform>> {
+        return ipcClient.invoke(IPCEventType.getPlatform, {});
     },
     app: {
         terminate(err: string | Error | null): void {
-            ipcClient.send(IpcEvent.app_terminate, {
+            ipcClient.send(IPCEventType.appTerminate, {
                 err: err instanceof Error ? err.message : err,
             });
         },
-        requestMain(event: string, payload: any): Promise<Response<IpcEvent.app_event_request_main>> {
-            return ipcClient.invoke(IpcEvent.app_event_request_main, {
+        requestMain(event: string, payload: any): Promise<Response<IPCEventType.appRequestMainEvent>> {
+            return ipcClient.invoke(IPCEventType.appRequestMainEvent, {
                 event,
                 payload,
             });
@@ -28,21 +28,21 @@ const APIs: Window["NarraLeaf"] = {
     },
     game: {
         save: {
-            save(gameData: Record<string, any>, id: string, preview?: string): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Save, id, preview});
+            save(gameData: Record<string, any>, id: string, preview?: string): Promise<Response<IPCEventType.gameSaveGame>> {
+                return ipcClient.invoke(IPCEventType.gameSaveGame, {gameData, type: SaveType.Save, id, preview});
             },
-            quickSave(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.QuickSave, id: QuickSaveId});
+            quickSave(gameData: Record<string, any>): Promise<Response<IPCEventType.gameSaveGame>> {
+                return ipcClient.invoke(IPCEventType.gameSaveGame, {gameData, type: SaveType.QuickSave, id: QuickSaveId});
             },
-            createRecovery(gameData: Record<string, any>): Promise<Response<IpcEvent.game_save_save>> {
+            createRecovery(gameData: Record<string, any>): Promise<Response<IPCEventType.gameSaveGame>> {
                 const id = generateId();
-                return ipcClient.invoke(IpcEvent.game_save_save, {gameData, type: SaveType.Recovery, id});
+                return ipcClient.invoke(IPCEventType.gameSaveGame, {gameData, type: SaveType.Recovery, id});
             },
-            read(id: string): Promise<Response<IpcEvent.game_save_read>> {
-                return ipcClient.invoke(IpcEvent.game_save_read, {id});
+            read(id: string): Promise<Response<IPCEventType.gameReadGame>> {
+                return ipcClient.invoke(IPCEventType.gameReadGame, {id});
             },
-            list(): Promise<Response<IpcEvent.game_save_list>> {
-                return ipcClient.invoke(IpcEvent.game_save_list, {});
+            list(): Promise<Response<IPCEventType.gameListGame>> {
+                return ipcClient.invoke(IPCEventType.gameListGame, {});
             },
         },
     },

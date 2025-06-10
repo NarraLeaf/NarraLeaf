@@ -1,8 +1,8 @@
 import path from "path";
 import {app, dialog, Menu, protocol} from "electron";
-import {AppConfig} from "@/main/electron/app/config";
+import {AppConfig} from "@/main/app/config";
 import {EventEmitter} from "events";
-import {AppWindow, WindowConfig} from "@/main/electron/app/appWindow";
+import {AppWindow, WindowConfig} from "@/main/app/mgr/window/appWindow";
 import {
     AppHost,
     AppProtocol,
@@ -23,13 +23,15 @@ import {normalizePath} from "@/utils/nodejs/string";
 import {Fs} from "@/utils/nodejs/fs";
 import {getMimeType} from "@/utils/nodejs/os";
 import {StringKeyOf} from "narraleaf-react/dist/util/data";
-import {LocalFile} from "@/main/electron/app/save/localFile";
+import {LocalFile} from "@/main/app/mgr/storage/fileSystem/localFile";
 import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
-import {StoreProvider} from "@/main/electron/app/save/storeProvider";
-import { SavedGameResult } from "../../../core/game/SavedGameResult";
+import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
+import { SavedGameResult } from "../../core/game/SavedGameResult";
 import {FsFlag} from "@/main/electron/data/fsLogger";
 import { translate } from "@/main/i18n/translate";
-import { JsonStore } from "../data/jsonStore";
+import { JsonStore } from "../electron/data/jsonStore";
+import { HookCallback, Hooks } from "../utils/data";
+import { Logger } from "../utils/logger";
 
 type AppEvents = {
     "ready": [];
@@ -64,10 +66,14 @@ export enum AppDataNamespace {
     json = "json_storage",
 }
 
-enum HookEvents {
+export enum HookEvents {
     AfterReady = "afterReady",
     AfterMainWindowClose = "afterMainWindowClose",
     OnTerminate = "onTerminate",
+}
+
+export interface AppDependency {
+
 }
 
 export class App {
@@ -77,9 +83,12 @@ export class App {
     public static Events = {
         Ready: "ready"
     } as const;
+    
     public readonly electronApp: Electron.App;
+    public readonly platform: PlatformInfo = Platform.getInfo(process);
     public readonly events: EventEmitter<AppEvents> = new EventEmitter();
-    public readonly platform: PlatformInfo;
+    public readonly logger: Logger = new Logger("MainProcess");
+
     public devState: {
         wsClient: Client<DevServerEvents> | null
     } = {
@@ -89,9 +98,8 @@ export class App {
     public saveStorage: StoreProvider;
     public config: AppConfig;
     public t: (key: string) => string;
-    private hooks: {
-        [K in HookEvents]?: Array<(...args: any[]) => void>;
-    } = {};
+
+    public readonly hooks: Hooks = new Hooks();
     private assets: LocalAssets = new LocalAssets();
     private metadata: AppMeta | null = null;
     private schedules: Array<() => void> = [];
@@ -101,7 +109,6 @@ export class App {
     constructor(config: AppConfig) {
         this.config = config;
         this.electronApp = app;
-        this.platform = Platform.getInfo(process);
         this.t = translate(this);
 
         this.prepare();
@@ -358,11 +365,13 @@ export class App {
         this
             .prepareMenu()
             .prepareWebAssets();
+
         this.electronApp.whenReady().then(async () => {
             await this.prepareCrashHelper();
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
         });
+        
         process.on("unhandledRejection", async (reason) => {
             if (this.isPackaged()) {
                 dialog.showErrorBox(this.t("app:crashed_critical_title"), this.t("app:crashed_critical_message") + "\n\n" + reason);
@@ -496,36 +505,20 @@ export class App {
         return this;
     }
 
-    private hook(event: HookEvents, fn: (...args: any[]) => void): AppEventToken {
-        if (!this.hooks[event]) {
-            this.hooks[event] = [];
-        }
-        this.hooks[event]?.push(fn);
-
-        return {
-            cancel: () => {
-                this.hooks[event] = this.hooks[event]?.filter((f) => f !== fn);
-            }
-        };
+    public hook(event: HookEvents, fn: HookCallback): AppEventToken {
+        return this.hooks.hook(event, fn);
     }
 
-    private onceHook(event: HookEvents, fn: (...args: any[]) => void): AppEventToken {
-        const token = this.hook(event, (...args) => {
-            token.cancel();
-            fn(...args);
-        });
-
-        return token;
+    public onceHook(event: HookEvents, fn: HookCallback): AppEventToken {
+        return this.hooks.onceHook(event, fn);
     }
 
-    private unhook(event: HookEvents, fn: (...args: any[]) => void): void {
-        this.hooks[event] = this.hooks[event]?.filter((f) => f !== fn);
+    public unhook(event: HookEvents, fn: HookCallback): void {
+        this.hooks.unhook(event, fn);
     }
 
-    private emitHook(event: HookEvents, ...args: any[]): void {
-        this.hooks[event]?.forEach((fn) => {
-            fn(...args);
-        });
+    public emitHook(event: HookEvents): void {
+        this.hooks.trigger(event);
     }
 
     private async fetchMetadata() {

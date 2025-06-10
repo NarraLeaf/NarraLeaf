@@ -1,8 +1,8 @@
 import path from "path";
 import { Fs } from "@/utils/nodejs/fs";
-import { Metadata } from "@/main/electron/app/save/metadata";
-import { StoreProvider } from "@/main/electron/app/save/storeProvider";
-import { SavedGameResult } from "../../../../core/game/SavedGameResult";
+import { Metadata } from "@/main/app/mgr/storage/fileSystem/localFileMetadata";
+import { StoreProvider } from "@/main/app/mgr/storage/storeProvider";
+import { SavedGameResult } from "@core/game/SavedGameResult";
 import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
 
 export type StorageConfig = {

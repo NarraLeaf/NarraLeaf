@@ -1,5 +1,5 @@
 import { Configuration, PlatformSpecificBuildOptions, TargetConfiguration, TargetSpecificOptions } from "electron-builder";
-import { MainPlatform } from "@/main/electron/app/config";
+import { MainPlatform } from "@/main/app/config";
 
 export enum ArchType {
     x64 = "x64",

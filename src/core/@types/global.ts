@@ -1,7 +1,7 @@
 import {PlatformInfo} from "@/utils/pure/os";
 import {SavedGame, SavedGameMetadata} from "@core/game/save";
 import {RequestStatus} from "@core/ipc/events";
-import {CrashReport} from "@/main/electron/app/app";
+import {CrashReport} from "@/main/app/app";
 import { SavedGameResult } from "@/core/game/SavedGameResult";
 
 export interface ClientAppConfiguration {
