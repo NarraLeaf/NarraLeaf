@@ -14,6 +14,9 @@ export class WindowManager {
         private metadata: AppMeta | null
     ) {}
 
+    public initialize(): void {
+    }
+
     public async launchMainWindow(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
         const win = this.createMainWindow(config);
         await win.loadFile(this.app.getEntryFile());

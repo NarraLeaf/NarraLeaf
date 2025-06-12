@@ -2,10 +2,11 @@ import path from "path";
 import { App } from "../app";
 import { StoreProvider } from "./storage/storeProvider";
 import { LocalFile } from "./storage/fileSystem/localFile";
-import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGameMetadata, SaveType } from "@core/game/save";
 import { SavedGameResult } from "@core/game/SavedGameResult";
 import { AppDataNamespace } from "../app";
 import { JsonStore } from "../../electron/data/jsonStore";
+import type { SavedGame } from "narraleaf-react";
 
 export class StorageManager {
     private saveStorage: StoreProvider;
@@ -48,13 +49,10 @@ export class StorageManager {
 
     private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string, preview?: string): SavedGameMetadata {
         return {
-            created: save.meta.created,
-            updated: Date.now(),
+            ...save.meta,
             id,
             type,
             capture: preview,
-            lastSentence: save.meta.lastSentence,
-            lastSpeaker: save.meta.lastSpeaker,
         };
     }
 } 

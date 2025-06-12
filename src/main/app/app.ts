@@ -24,14 +24,21 @@ import {Fs} from "@/utils/nodejs/fs";
 import {getMimeType} from "@/utils/nodejs/os";
 import {StringKeyOf} from "narraleaf-react/dist/util/data";
 import {LocalFile} from "@/main/app/mgr/storage/fileSystem/localFile";
-import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
+import {SavedGameMetadata, SaveType} from "@core/game/save";
 import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
 import { SavedGameResult } from "../../core/game/SavedGameResult";
-import {FsFlag} from "@/main/electron/data/fsLogger";
+import {FsFlag} from "@/utils/fsLogger";
 import { translate } from "@/main/i18n/translate";
 import { JsonStore } from "../electron/data/jsonStore";
 import { HookCallback, Hooks } from "../utils/data";
 import { Logger } from "../utils/logger";
+import { CrashManager } from "./mgr/crashManager";
+import { DevToolManager } from "./mgr/devToolManager";
+import { ProtocolManager } from "./mgr/protocolManager";
+import { StorageManager } from "./mgr/storageManager";
+import { WindowManager } from "./mgr/windowManager";
+import type {SavedGame} from "narraleaf-react";
+import { MenuManager } from "./mgr/menuManager";
 
 type AppEvents = {
     "ready": [];
@@ -72,8 +79,13 @@ export enum HookEvents {
     OnTerminate = "onTerminate",
 }
 
-export interface AppDependency {
-
+export interface AppDependecy {
+    crashManager: CrashManager;
+    devToolManager: DevToolManager;
+    menuManager: MenuManager;
+    protocolManager: ProtocolManager;
+    storageManager: StorageManager;
+    windowManager: WindowManager;
 }
 
 export class App {
@@ -87,39 +99,37 @@ export class App {
     public readonly electronApp: Electron.App;
     public readonly platform: PlatformInfo = Platform.getInfo(process);
     public readonly events: EventEmitter<AppEvents> = new EventEmitter();
-    public readonly logger: Logger = new Logger("MainProcess");
 
-    public devState: {
-        wsClient: Client<DevServerEvents> | null
-    } = {
-        wsClient: null,
-    };
-    public mainWindow: AppWindow | null = null;
-    public saveStorage: StoreProvider;
     public config: AppConfig;
     public t: (key: string) => string;
 
     public readonly hooks: Hooks = new Hooks();
-    private assets: LocalAssets = new LocalAssets();
-    private metadata: AppMeta | null = null;
-    private schedules: Array<() => void> = [];
-    private flags: AppFsFlags;
-    private crashReport: CrashReport | null = null;
+    public readonly logger: Logger = new Logger("MainProcess");
 
-    constructor(config: AppConfig) {
+    public readonly crashManager: CrashManager;
+    public readonly devToolManager: DevToolManager;
+    public readonly menuManager: MenuManager;
+    public readonly protocolManager: ProtocolManager;
+    public readonly storageManager: StorageManager;
+    public readonly windowManager: WindowManager;
+
+    constructor(
+        config: AppConfig,
+        dependency: AppDependecy
+    ) {
         this.config = config;
+
+        this.crashManager = dependency.crashManager;
+        this.devToolManager = dependency.devToolManager;
+        this.menuManager = dependency.menuManager;
+        this.protocolManager = dependency.protocolManager;
+        this.storageManager = dependency.storageManager;
+        this.windowManager = dependency.windowManager;
+
         this.electronApp = app;
         this.t = translate(this);
 
         this.prepare();
-
-        this.flags = this.getFsFlags();
-
-        // important: must be called after `prepare`
-        this.saveStorage = this.getConfig().store || new LocalFile({
-            dir: path.join(this.getUserDataDir(), AppDataNamespace.save),
-            forceDelete: this.getConfig().deleteCorruptedSaves,
-        });
     }
 
     public onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
@@ -135,18 +145,12 @@ export class App {
         };
     }
 
-    createWindow(config: Partial<WindowConfig>): AppWindow {
-        return new AppWindow(this, config, {
-            preload: this.getPreloadScript(),
-        });
-    }
-
     getConfig() {
         return this.config.getConfig(this.platform);
     }
 
     public getCrashReport(): CrashReport | null {
-        return this.crashReport;
+        return this.crashManager.getCrashReport();
     }
 
     public getPreloadScript(): string {
@@ -166,11 +170,12 @@ export class App {
     }
 
     public getPublicDir(): string {
+        const metadata = this.devToolManager.tryGetMetadata();
         const appDir = this.getAppPath();
 
         return this.electronApp.isPackaged
             ? path.resolve(appDir, TempNamespace.Public)
-            : this.metadata?.publicDir ?? path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), TempNamespace.Public);
+            : metadata?.publicDir ?? path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), TempNamespace.Public);
     }
 
     /**
@@ -210,40 +215,19 @@ export class App {
      * If the reason is not provided, the crash will be considered critical
      */
     public crash(reason?: string, {disableRecovery = false}: {disableRecovery?: boolean} = {}): void {
-        if (!reason) {
-            this.flags.crash.flagSync({
-                isCritical: true,
-            });
-        } else {
-            this.flags.crash.flagSync({
-                isCritical: false,
-                timestamp: Date.now(),
-                reason,
-                recoveryDisabled: disableRecovery,
-            });
-        }
-        this.electronApp.quit();
+        this.crashManager.crash(reason, {disableRecovery});
     }
 
     public async launchApp(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
-        if (this.mainWindow) {
+        if (this.windowManager.getMainWindow()) {
             throw new Error("Main window is already created");
         }
 
         if (!this.isPackaged()) {
-            await this.fetchMetadata();
+            await this.devToolManager.fetchMetadata();
         }
 
-        const win = new AppWindow(this, config, {
-            preload: this.getPreloadScript(),
-        });
-        this.prepareMainWindow(win);
-        await win.loadFile(this.getEntryFile());
-        await win.show();
-
-        this.mainWindow = win;
-
-        return win;
+        return await this.windowManager.launchMainWindow(config);
     }
 
     public isPackaged(): boolean {
@@ -262,92 +246,23 @@ export class App {
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
-        const metadata = this.getSavedGameMetadata(data, type, id, preview);
-        return this.saveStorage.set(metadata.id, type, metadata, data);
+        return this.storageManager.saveGameData(data, type, id, preview);
     }
 
     public async readGameData(id: string): Promise<SavedGameResult | null> {
-        return this.saveStorage.get(id);
+        return this.storageManager.readGameData(id);
     }
 
     public async listGameData(): Promise<SavedGameMetadata[]> {
-        return await this.saveStorage.list();
+        return await this.storageManager.listGameData();
     }
 
     public async deleteGameData(id: string): Promise<void> {
-        return this.saveStorage.delete(id);
-    }
-
-    private crashReason(type: string, detail: string): string {
-        return `[${type}] ${detail}`;
-    }
-
-    private getFsFlags(): AppFsFlags {
-        const baseDir = path.resolve(this.getUserDataDir(), AppDataNamespace.flags);
-        return {
-            crash: new FsFlag(path.join(baseDir, "crash")),
-        };
-    }
-
-    private async consumeCrashReport(): Promise<CrashReport | null> {
-        const isCrashed = await this.flags.crash.hasFlag();
-        if (!isCrashed) {
-            return null;
-        }
-
-        const result = await this.flags.crash.readFlag();
-        await this.flags.crash.unflag();
-        return result;
+        return this.storageManager.deleteGameData(id);
     }
 
     private async prepareCrashHelper() {
-        const report = await this.consumeCrashReport();
-        if (report) {
-            this.crashReport = report;
-        }
-
-        if (this.devState.wsClient) {
-            console.log("[Main] Found crash report", this.crashReport);
-        }
-
-        process.on("uncaughtException", (err) => {
-            this.crash(this.crashReason(
-                "MainProcessUncaughtException",
-                err.message,
-            ));
-        });
-    }
-
-    private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string, preview?: string): SavedGameMetadata {
-        return {
-            created: save.meta.created,
-            updated: Date.now(),
-            id,
-            type,
-            capture: preview,
-            lastSentence: save.meta.lastSentence,
-            lastSpeaker: save.meta.lastSpeaker,
-        };
-    }
-
-    private prepareMainWindow(win: AppWindow): this {
-        const config = this.getConfig();
-        if (config.appIcon) {
-            if (path.isAbsolute(config.appIcon)) {
-                throw new Error("App icon path must be relative to the app directory");
-            }
-            if (!this.isPackaged()) {
-                win.setIcon(path.resolve(this.getMetadata().rootDir, config.appIcon));
-            } else {
-                win.setIcon(path.resolve(this.getAppPath(), "../", config.appIcon));
-            }
-        }
-
-        win.onClose(() => {
-            this.emitHook(HookEvents.AfterMainWindowClose);
-        });
-
-        return this;
+        await this.crashManager.initialize();
     }
 
     private prepare() {
@@ -359,150 +274,18 @@ export class App {
             this.electronApp.enableSandbox();
         }
         if (!this.electronApp.isPackaged) {
-            this.prepareDevMode();
+            this.devToolManager.initialize();
         }
-
-        this
-            .prepareMenu()
-            .prepareWebAssets();
+        this.protocolManager.initializeProtocol();
+        this.menuManager.initialize();
+        this.windowManager.initialize();
 
         this.electronApp.whenReady().then(async () => {
-            await this.prepareCrashHelper();
+            await this.crashManager.initialize();
+
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
         });
-        
-        process.on("unhandledRejection", async (reason) => {
-            if (this.isPackaged()) {
-                dialog.showErrorBox(this.t("app:crashed_critical_title"), this.t("app:crashed_critical_message") + "\n\n" + reason);
-                this.crash(this.crashReason(
-                    "MainProcessUnhandledRejection",
-                    reason instanceof Error ? reason.message : String(reason),
-                ));
-            } else {
-                console.error("Unhandled Rejection:", reason);
-            }
-        });
-    }
-
-    private prepareDevMode(): this {
-        this.devState.wsClient = Client.construct<DevServerEvents>("localhost",
-            process.env[ENV_DEV_SERVER_PORT] ? Number(process.env[ENV_DEV_SERVER_PORT]) : DefaultDevServerPort
-        ).connect();
-
-        this.devState.wsClient.onMessage(DevServerEvent.RequestMainQuit, () => {
-            this.devState.wsClient!.close();
-            this.quit();
-        });
-        this.devState.wsClient.onMessage(DevServerEvent.RequestPageRefresh, () => {
-            if (this.mainWindow) {
-                this.mainWindow.reload();
-            } else {
-                console.log("Warning: Main window is not available when trying to refresh");
-            }
-        });
-
-        this.hook(HookEvents.AfterMainWindowClose, () => {
-            this.timeout(() => {
-                console.warn("[Main] Main window life cycle violation detected. " +
-                    "You should clean up all side effects and call app.quit() when the main window is closed. " +
-                    "This usually happens when you forget to add a listener to the onClose event of the main window. " +
-                    "Try use win.onClose(() => { app.quit(); }) to prevent this from happening.");
-                console.warn("[Main] LifeCycleViolationWarning will only be shown in development mode. In production mode, not quitting the app after the main window may have these unexpected consequences:");
-                console.warn("[Main] - The app may still be running in the background");
-                console.warn("[Main] - The app may still be consuming resources");
-                console.warn("[Main] - The app may still lock some resources");
-                console.warn(`[Main] Quitting the app...`);
-                this.quit();
-            }, App.Constants.AppLifeCycleViolationTimeout);
-        });
-
-        this.electronApp.setPath("userData", path.join(this.getAppPath(), "userData-dev"));
-
-        return this;
-    }
-
-    private prepareMenu(): this {
-        const menu = Menu.buildFromTemplate([] satisfies Electron.MenuItemConstructorOptions[]);
-        Menu.setApplicationMenu(menu);
-
-        return this;
-    }
-
-    private prepareWebAssets(): this {
-        protocol.registerSchemesAsPrivileged([
-            {scheme: AppProtocol, privileges: {standard: true, secure: true, supportFetchAPI: true, corsEnabled: true}},
-        ]);
-        this.assets.addRule({
-            include: (requested) => {
-                const url = new URL(requested);
-                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Public;
-            },
-            handler: (requested) => {
-                return {
-                    path: url.format({
-                        protocol: "file",
-                        pathname: normalizePath(path.join(this.getPublicDir(), new URL(requested).pathname)),
-                        slashes: true,
-                    }),
-                    noCache: false,
-                };
-            }
-        }).addRule({
-            include: (requested) => {
-                const url = new URL(requested);
-                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Root;
-            },
-            handler: (requested) => {
-                return {
-                    path: url.format({
-                        protocol: "file",
-                        pathname: normalizePath(path.join(this.getAppPath(), new URL(requested).pathname)),
-                        slashes: true,
-                    }),
-                    noCache: false,
-                };
-            }
-        }).addRule({
-            include: (requested) => {
-                const url = new URL(requested);
-                return url.protocol === AppProtocol + ":" && url.hostname === AppHost.Renderer;
-            },
-            handler: (requested): AssetResolved => {
-                return {
-                    path: url.format({
-                        protocol: "file",
-                        pathname: normalizePath(path.join(this.getRendererBuildDir(), new URL(requested).pathname)),
-                        slashes: true,
-                    }),
-                    noCache: true,
-                };
-            }
-        });
-        this.hook(HookEvents.AfterReady, () => {
-            protocol.handle(AppProtocol, async (request) => {
-                console.log("[Host] Requesting URL caught", request.url);
-
-                const newUrl = this.assets.resolve(request.url);
-                if (!newUrl) {
-                    console.log("[Host] 404 URL not resolved", request.url);
-                    return new Response(null, {
-                        status: 404,
-                        statusText: "Not Found",
-                    });
-                }
-
-                console.log("[Host] URL resolved to", newUrl.path, ...[newUrl.noCache ? ["(no cache)"] : []]);
-                const {data, mimeType} = await this.readFile(fileURLToPath(newUrl.path));
-                return new Response(data, {
-                    headers: new Headers({
-                        "Content-Type": mimeType,
-                        ...(newUrl.noCache ? {"Cache-Control": "no-cache"} : {}),
-                    }),
-                });
-            });
-        });
-        return this;
     }
 
     public hook(event: HookEvents, fn: HookCallback): AppEventToken {
@@ -519,18 +302,6 @@ export class App {
 
     public emitHook(event: HookEvents): void {
         this.hooks.trigger(event);
-    }
-
-    private async fetchMetadata() {
-        if (!this.devState.wsClient) {
-            throw new Error("Dev server is only available in development mode");
-        }
-        await this.devState.wsClient.forSocketToOpen();
-
-        const data = await this.devState.wsClient.fetch(DevServerEvent.FetchMetadata, {});
-        console.log("[Main] Fetching metadata");
-
-        this.metadata = data;
     }
 
     private async readFile(filePath: string): Promise<{
@@ -550,36 +321,7 @@ export class App {
         };
     }
 
-    private getMetadata(): AppMeta {
-        if (!this.metadata) {
-            throw new Error("Metadata is not available");
-        }
-
-        return this.metadata;
-    }
-
     private emit<K extends StringKeyOf<AppEvents>>(event: K, ...args: AppEvents[K]): void {
         this.events.emit(event, ...args as any);
-    }
-
-    private schedule(fn: () => void): {
-        cancel(): void;
-    } {
-        this.schedules.push(fn);
-        return {
-            cancel: () => {
-                this.schedules = this.schedules.filter((f) => f !== fn);
-                fn();
-            }
-        };
-    }
-
-    private timeout(fn: () => void, ms: number): VoidFunction {
-        const token = setTimeout(() => {
-            fn();
-        }, ms);
-        return () => {
-            clearTimeout(token);
-        };
     }
 }

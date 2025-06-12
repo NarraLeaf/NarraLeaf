@@ -6,12 +6,16 @@ import { ProtocolHandler, ProtocolManager as IProtocolManager } from "./protocol
 
 export class ProtocolManager implements IProtocolManager {
     private handlers: Map<string, ProtocolHandler> = new Map();
+    private initialized: boolean = false;
 
-    constructor(private app: App) {
-        this.initializeProtocol();
-    }
+    constructor(private app: App) {}
 
-    private initializeProtocol(): void {
+    public initializeProtocol(): void {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         this.setupFileSystemHandlers();
         this.setupProtocolHandler();
     }

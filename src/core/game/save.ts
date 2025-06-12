@@ -1,13 +1,9 @@
-export type {SavedGame} from "narraleaf-react";
+import type {SavedGameMetaData as NLRSavedGameMetaData} from "narraleaf-react";
 
-export interface SavedGameMetadata {
-    created: number;
-    updated: number;
+export interface SavedGameMetadata extends NLRSavedGameMetaData {
     id: string;
     type: SaveType;
     capture?: string;
-    lastSentence: string | null;
-    lastSpeaker: string | null;
 }
 
 export enum SaveType {
