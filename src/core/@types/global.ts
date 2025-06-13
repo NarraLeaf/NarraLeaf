@@ -1,8 +1,9 @@
-import {PlatformInfo} from "@/utils/pure/os";
-import {SavedGame, SavedGameMetadata} from "@core/game/save";
-import {RequestStatus} from "@core/ipc/events";
-import {CrashReport} from "@/main/app/app";
+import { PlatformInfo } from "@/utils/pure/os";
+import { SavedGameMetadata } from "@core/game/save";
+import { RequestStatus } from "@core/ipc/events";
 import { SavedGameResult } from "@/core/game/SavedGameResult";
+import { CrashReport } from "@/main/app/mgr/crashManager";
+import { SavedGame } from "narraleaf-react";
 
 export interface ClientAppConfiguration {
     recoveryCreationInterval: number;

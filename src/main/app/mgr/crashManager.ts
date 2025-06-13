@@ -23,7 +23,6 @@ export class CrashManager {
 
     constructor(
         private app: App,
-        private translate: (key: string) => string
     ) {
         this.crashFlag = new FsFlag(path.join(app.getUserDataDir(), AppDataNamespace.flags, "crash"));
     }
@@ -63,8 +62,8 @@ export class CrashManager {
         process.on("unhandledRejection", async (reason) => {
             if (this.app.isPackaged()) {
                 dialog.showErrorBox(
-                    this.translate("app:crashed_critical_title"),
-                    this.translate("app:crashed_critical_message") + "\n\n" + reason
+                    this.app.translationManager.translate("app:crashed_critical_title"),
+                    this.app.translationManager.translate("app:crashed_critical_message") + "\n\n" + reason
                 );
                 this.crash(this.formatCrashReason(
                     "MainProcessUnhandledRejection",

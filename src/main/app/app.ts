@@ -1,65 +1,41 @@
+// Node.js built-in modules
+import { EventEmitter } from "events";
 import path from "path";
-import {app, dialog, Menu, protocol} from "electron";
-import {AppConfig} from "@/main/app/config";
-import {EventEmitter} from "events";
-import {AppWindow, WindowConfig} from "@/main/app/mgr/window/appWindow";
-import {
-    AppHost,
-    AppProtocol,
-    DefaultDevServerPort,
-    ENV_DEV_SERVER_PORT,
-    PreloadFileName,
-    RendererOutputHTMLFileName
-} from "@core/build/constants";
-import {CriticalMainProcessError} from "@/main/error/criticalError";
-import {Platform, PlatformInfo, safeExecuteFn} from "@/utils/pure/os";
-import {DevTempNamespace, TempNamespace} from "@core/constants/tempNamespace";
-import {reverseDirectoryLevels} from "@/utils/pure/string";
-import {Client} from "@/utils/nodejs/websocket";
-import {DevServerEvent, DevServerEvents} from "@core/dev/devServer";
-import {AssetResolved, LocalAssets} from "@/main/electron/app/assets";
-import url, {fileURLToPath} from "url";
-import {normalizePath} from "@/utils/nodejs/string";
-import {Fs} from "@/utils/nodejs/fs";
-import {getMimeType} from "@/utils/nodejs/os";
-import {StringKeyOf} from "narraleaf-react/dist/util/data";
-import {LocalFile} from "@/main/app/mgr/storage/fileSystem/localFile";
-import {SavedGameMetadata, SaveType} from "@core/game/save";
-import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
-import { SavedGameResult } from "../../core/game/SavedGameResult";
-import {FsFlag} from "@/utils/fsLogger";
-import { translate } from "@/main/i18n/translate";
-import { JsonStore } from "../electron/data/jsonStore";
-import { HookCallback, Hooks } from "../utils/data";
-import { Logger } from "../utils/logger";
-import { CrashManager } from "./mgr/crashManager";
-import { DevToolManager } from "./mgr/devToolManager";
-import { ProtocolManager } from "./mgr/protocolManager";
-import { StorageManager } from "./mgr/storageManager";
-import { WindowManager } from "./mgr/windowManager";
-import type {SavedGame} from "narraleaf-react";
-import { MenuManager } from "./mgr/menuManager";
+
+// Electron
+import { app } from "electron";
+
+// NarraLeaf-React
+import type { StringKeyOf } from "narraleaf-react/dist/util/data";
+import type { SavedGame } from "narraleaf-react";
+
+// Core modules
+import { PreloadFileName, RendererOutputHTMLFileName } from "@core/build/constants";
+import { DevTempNamespace, TempNamespace } from "@core/constants/tempNamespace";
+import { SavedGameMetadata, SaveType } from "@core/game/save";
+import type { SavedGameResult } from "@core/game/SavedGameResult";
+
+// Local modules
+import { translate } from "@/main/app/mgr/translationManager";
+import { Platform, PlatformInfo, safeExecuteFn } from "@/utils/pure/os";
+import { reverseDirectoryLevels } from "@/utils/pure/string";
+import { JsonStore } from "@/main/utils/jsonStore";
+import { HookCallback, Hooks } from "@/main/utils/data";
+import { Logger } from "@/main/utils/logger";
+import { CriticalMainProcessError } from "@/main/utils/error";
+import { CrashReport } from "./mgr/crashManager";
+import { TranslationManager } from "@/main/app/mgr/translationManager";
+
+// App managers
+import { CrashManager, DevToolManager, MenuManager, ProtocolManager, StorageManager, WindowManager } from "./mgr/managers";
+
+// Type imports
+import type { AppEventToken } from "./types";
+import type { AppConfig } from "@/main/app/config";
+import type { AppWindow, WindowConfig } from "@/main/app/mgr/window/appWindow";
 
 type AppEvents = {
     "ready": [];
-};
-type AppFsFlags = {
-    crash: FsFlag<CrashReport>;
-};
-export type CrashReport = {
-    isCritical: true;
-    timestamp?: never;
-    reason?: never;
-    recoveryDisabled?: never;
-} | {
-    isCritical: false;
-    timestamp: number;
-    reason: string;
-    recoveryDisabled: boolean;
-};
-
-export type AppEventToken = {
-    cancel(): void;
 };
 
 export type AppMeta = {
@@ -86,6 +62,7 @@ export interface AppDependecy {
     protocolManager: ProtocolManager;
     storageManager: StorageManager;
     windowManager: WindowManager;
+    translationManager: TranslationManager;
 }
 
 export class App {
@@ -97,15 +74,13 @@ export class App {
     } as const;
     
     public readonly electronApp: Electron.App;
-    public readonly platform: PlatformInfo = Platform.getInfo(process);
-    public readonly events: EventEmitter<AppEvents> = new EventEmitter();
+    public readonly platform: PlatformInfo;
+    public readonly events: EventEmitter<AppEvents>;
+    public readonly config: AppConfig;
+    public readonly hooks: Hooks;
+    public readonly logger: Logger;
 
-    public config: AppConfig;
-    public t: (key: string) => string;
-
-    public readonly hooks: Hooks = new Hooks();
-    public readonly logger: Logger = new Logger("MainProcess");
-
+    public readonly translationManager: TranslationManager;
     public readonly crashManager: CrashManager;
     public readonly devToolManager: DevToolManager;
     public readonly menuManager: MenuManager;
@@ -113,21 +88,22 @@ export class App {
     public readonly storageManager: StorageManager;
     public readonly windowManager: WindowManager;
 
-    constructor(
-        config: AppConfig,
-        dependency: AppDependecy
-    ) {
+    constructor(config: AppConfig) {
         this.config = config;
-
-        this.crashManager = dependency.crashManager;
-        this.devToolManager = dependency.devToolManager;
-        this.menuManager = dependency.menuManager;
-        this.protocolManager = dependency.protocolManager;
-        this.storageManager = dependency.storageManager;
-        this.windowManager = dependency.windowManager;
-
         this.electronApp = app;
-        this.t = translate(this);
+        this.platform = Platform.getInfo(process);
+        this.logger = new Logger("MainProcess");
+        this.hooks = new Hooks();
+        this.events = new EventEmitter();
+
+        // Create managers after basic initialization
+        this.translationManager = new TranslationManager(this);
+        this.crashManager = new CrashManager(this);
+        this.devToolManager = new DevToolManager(this);
+        this.menuManager = new MenuManager(this);
+        this.protocolManager = new ProtocolManager(this);
+        this.storageManager = new StorageManager(this);
+        this.windowManager = new WindowManager(this);
 
         this.prepare();
     }
@@ -261,10 +237,6 @@ export class App {
         return this.storageManager.deleteGameData(id);
     }
 
-    private async prepareCrashHelper() {
-        await this.crashManager.initialize();
-    }
-
     private prepare() {
         const config = this.config.getConfig(this.platform);
         if (!this.electronApp && !app) {
@@ -302,23 +274,6 @@ export class App {
 
     public emitHook(event: HookEvents): void {
         this.hooks.trigger(event);
-    }
-
-    private async readFile(filePath: string): Promise<{
-        data: Buffer;
-        mimeType: string;
-    }> {
-        const data = await Fs.readRaw(filePath);
-        const mimeType = getMimeType(filePath);
-
-        if (!data.ok) {
-            throw new Error(data.error);
-        }
-
-        return {
-            data: data.data,
-            mimeType,
-        };
     }
 
     private emit<K extends StringKeyOf<AppEvents>>(event: K, ...args: AppEvents[K]): void {

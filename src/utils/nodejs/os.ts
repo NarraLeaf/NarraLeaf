@@ -1,5 +1,5 @@
 import {ChildProcess, spawn} from "child_process";
-import {AppEventToken} from "@/main/app/app";
+import { AppEventToken } from "@/main/app/types";
 import mime from "mime-types";
 import path from "path";
 

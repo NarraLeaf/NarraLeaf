@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { AppEventToken } from "@/main/app/app";
+import { AppEventToken } from "../../types";
 import { StringKeyOf } from "narraleaf-react/dist/util/data";
 
 type WindowEventTypes = {

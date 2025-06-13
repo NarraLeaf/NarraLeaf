@@ -24,6 +24,7 @@
   },
   "scripts": {
     "build": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias",
+    "build:dev": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias && node project/postbuild.js",
     "watch": "node project/esbuild.js --watch & tsc --emitDeclarationOnly --watch",
     "prepublishOnly": "yarn run build"
   },
@@ -86,6 +87,7 @@
     "electron-builder": "^25.1.8",
     "esbuild": "0.25.0",
     "esbuild-css-modules-plugin": "^3.1.4",
+    "fs-extra": "^11.3.0",
     "html-webpack-plugin": "^5.6.3",
     "motion": "^11.15.10",
     "narraleaf-react": "^0.6.0",

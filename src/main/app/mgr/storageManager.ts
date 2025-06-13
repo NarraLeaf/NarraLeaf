@@ -5,7 +5,7 @@ import { LocalFile } from "./storage/fileSystem/localFile";
 import { SavedGameMetadata, SaveType } from "@core/game/save";
 import { SavedGameResult } from "@core/game/SavedGameResult";
 import { AppDataNamespace } from "../app";
-import { JsonStore } from "../../electron/data/jsonStore";
+import { JsonStore } from "../../utils/jsonStore";
 import type { SavedGame } from "narraleaf-react";
 
 export class StorageManager {

@@ -1,6 +1,6 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
 import {IPCEvents} from "@core/ipc/events";
-import {AppEventToken} from "@/main/app/app";
+import { AppEventToken } from "@/main/app/types";
 import {ipcRenderer} from "electron";
 import {MayPromise} from "@/utils/types";
 

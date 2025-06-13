@@ -1,6 +1,6 @@
 import { Menu, MenuItemConstructorOptions } from "electron";
 import { App } from "../app";
-import { translate } from "@/main/i18n/translate";
+import { translate } from "@/main/app/mgr/translationManager";
 
 type MenuRole = MenuItemConstructorOptions['role'];
 type MenuItemType = MenuItemConstructorOptions['type'];

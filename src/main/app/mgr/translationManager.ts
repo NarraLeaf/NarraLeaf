@@ -1,4 +1,4 @@
-import { App } from "../electron";
+import { App } from "@/main/app/app";
 
 type TranslationDefinition = {
     headers: string[];
@@ -21,16 +21,46 @@ const AppTranslations: TranslationDefinition = {
     },
 }
 
-export function translate(app: App): (key: string) => string {
-    return (key: string) => {
-        const lang = app.electronApp.getPreferredSystemLanguages();
-        const langIndex = AppTranslations.headers.includes(lang[0]) ? AppTranslations.headers.indexOf(lang[0]) : 0;
+export class TranslationManager {
+    private app: App;
+    private currentLangIndex: number = 0;
+
+    constructor(app: App) {
+        this.app = app;
+    }
+
+    public initialize(): void {
+        this.updateLanguage();
+    }
+
+    private updateLanguage(): void {
+        const lang = this.app.electronApp.getPreferredSystemLanguages();
+        this.currentLangIndex = AppTranslations.headers.includes(lang[0]) 
+            ? AppTranslations.headers.indexOf(lang[0]) 
+            : 0;
+    }
+
+    public translate(key: string): string {
         const translation = AppTranslations.translations[key];
         if (translation) {
-            return translation[langIndex] || translation[0];
+            return translation[this.currentLangIndex] || translation[0];
         }
         return key; // Fallback to the key itself if no translation is found
     }
+
+    public getCurrentLanguage(): string {
+        return AppTranslations.headers[this.currentLangIndex];
+    }
+
+    public getAvailableLanguages(): string[] {
+        return [...AppTranslations.headers];
+    }
+}
+
+// For backward compatibility
+export function translate(app: App): (key: string) => string {
+    const manager = new TranslationManager(app);
+    return (key: string) => manager.translate(key);
 }
 
 

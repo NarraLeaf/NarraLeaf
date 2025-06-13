@@ -2,6 +2,7 @@ import _ from "lodash";
 import {App} from "@/main/app/app";
 import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
 import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
+import { CrashManager, DevToolManager, MenuManager, ProtocolManager, StorageManager, WindowManager } from "./mgr/managers";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;

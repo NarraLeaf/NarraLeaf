@@ -1,6 +1,6 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
 import {IPCEvents, RequestStatus} from "@core/ipc/events";
-import {AppEventToken} from "@/main/app/app";
+import { AppEventToken } from "../../types";
 import {ipcMain} from "electron";
 
 export interface IPCWindow {

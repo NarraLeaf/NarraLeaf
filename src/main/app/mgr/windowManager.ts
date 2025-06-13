@@ -11,7 +11,6 @@ export class WindowManager {
 
     constructor(
         private app: App,
-        private metadata: AppMeta | null
     ) {}
 
     public initialize(): void {
@@ -63,7 +62,9 @@ export class WindowManager {
                 throw new Error("App icon path must be relative to the app directory");
             }
             if (!this.app.isPackaged()) {
-                win.setIcon(path.resolve(this.metadata?.rootDir ?? "", config.appIcon));
+                const metadata = this.app.devToolManager.getMetadata();
+                
+                win.setIcon(path.resolve(metadata?.rootDir ?? "", config.appIcon));
             } else {
                 win.setIcon(path.resolve(this.app.getAppPath(), "../", config.appIcon));
             }

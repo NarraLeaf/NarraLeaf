@@ -1,5 +1,5 @@
 import {NarraLeafMainWorldProperty} from "@core/build/constants";
-import {CriticalRendererProcessError} from "@/main/error/criticalError";
+import {CriticalRendererProcessError} from "@/main/utils/error";
 import React from "react";
 import {AppInfo} from "@core/@types/global";
 import {ErrorBoundary} from "@/client/app/errorHandling/error-boundary";
