@@ -9,7 +9,11 @@ export abstract class IPCHandler<T extends IPCEventType> {
     abstract readonly type: IPCEvents[T]["type"];
     public abstract handle(window: WindowProxy, data: IPCEvents[T]["data"]): Promise<RequestStatus<EventResponse<T>>> | RequestStatus<EventResponse<T>>;
 
-    protected failed<T>(err: unknown): RequestStatus<T> {
+    protected failed(err: unknown): {
+        success: false;
+        data?: never;
+        error?: string;
+    } {
         return {
             success: false,
             error: err instanceof Error ? err.message : String(err),

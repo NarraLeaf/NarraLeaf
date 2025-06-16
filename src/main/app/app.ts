@@ -215,11 +215,18 @@ export class App {
         return app.getPath("userData");
     }
 
+    /* Json Store */
+
     public createJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        return new JsonStore<T>({
-            dir: path.join(this.getUserDataDir(), AppDataNamespace.json),
-            name,
-        });
+        return this.storageManager.createJsonStore<T>(name);
+    }
+
+    public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
+        return this.storageManager.createExposedJsonStore<T>(name);
+    }
+
+    public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
+        this.storageManager.exposeJsonStore(store);
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {

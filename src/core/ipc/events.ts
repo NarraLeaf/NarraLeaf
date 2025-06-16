@@ -9,6 +9,8 @@ export enum IPCEventType {
     getPlatform = "getPlatform",
     appTerminate = "app.terminate",
     appRequestMainEvent = "app.event.requestMain",
+    appGetJsonStore = "app.store.getJson",
+    appSaveJsonStore = "app.store.saveJson",
     gameSaveGame = "game.save.save",
     gameReadGame = "game.save.read",
     gameListGame = "game.save.list",
@@ -20,7 +22,7 @@ export type RequestStatus<T> = {
     success: true;
     data: T;
     error?: never;
-} |{
+} | {
     success: false;
     data?: never;
     error?: string;
@@ -46,6 +48,25 @@ export type IPCEvents = {
         },
         response: never;
     };
+
+    [IPCEventType.appGetJsonStore]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            name: string;
+        },
+        response: Record<string, any>;
+    };
+    [IPCEventType.appSaveJsonStore]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            name: string;
+            data: Record<string, any>;
+        },
+        response: void;
+    };
+
     [IPCEventType.gameSaveGame]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
