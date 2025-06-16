@@ -5,17 +5,22 @@ import { createReadStream } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { AssetResolved, AssetResolver, ProtocolHandler, ProtocolResponse, ProtocolRule, ProtocolScheme } from "./types";
+import { Logger } from "@/main/utils/logger";
+import { App } from "../../app";
 
 export class FileSystemHandler implements ProtocolHandler, AssetResolver {
     private rules: ProtocolRule[] = [];
+    private logger: Logger;
 
     constructor(
         public readonly scheme: string,
         public readonly privileges: ProtocolScheme["privileges"],
-        private readonly baseDir: string,
+        private readonly getBaseDir: () => string,
         private readonly hostname: string,
         private readonly noCache: boolean = false
-    ) {}
+    ) {
+        this.logger = new Logger("FileSystemHandler");
+    }
 
     addRule(rule: ProtocolRule): this {
         this.rules.push(rule);
@@ -48,6 +53,8 @@ export class FileSystemHandler implements ProtocolHandler, AssetResolver {
     async handle(request: Request): Promise<ProtocolResponse> {
         const resolved = this.resolve(request.url);
         if (!resolved) {
+            this.logger.error(`File not found: ${request.url}`);
+
             return {
                 statusCode: 404,
                 headers: {},
@@ -56,48 +63,35 @@ export class FileSystemHandler implements ProtocolHandler, AssetResolver {
         }
 
         const filePath = fileURLToPath(resolved.path);
-        const mimeType = getMimeType(filePath);
-        
-        // Create a readable stream from the file
-        const stream = createReadStream(filePath);
-        
-        // Convert Node.js stream to Web ReadableStream
-        const webStream = new ReadableStream({
-            start(controller) {
-                stream.on('data', (chunk) => {
-                    controller.enqueue(chunk);
-                });
-                
-                stream.on('end', () => {
-                    controller.close();
-                });
-                
-                stream.on('error', (error) => {
-                    controller.error(error);
-                });
-            },
-            cancel() {
-                stream.destroy();
-            }
-        });
 
-        return {
-            statusCode: 200,
-            headers: {
-                "Content-Type": mimeType,
-                ...((this.noCache || resolved.noCache) ? { 
-                    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-                    "Pragma": "no-cache",
-                    "Expires": "0"
-                } : {})
-            },
-            data: webStream
-        } as ProtocolResponse;
+        try {
+            const { data, mimeType } = await this.readFile(filePath);
+
+            return {
+                statusCode: 200,
+                headers: {
+                    "Content-Type": mimeType,
+                    ...((this.noCache || resolved.noCache) ? {
+                        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+                        "Pragma": "no-cache",
+                        "Expires": "0"
+                    } : {})
+                },
+                data: data
+            } as ProtocolResponse;
+        } catch (error) {
+            this.logger.error(`Error reading file: ${filePath} - ${error}`);
+            return {
+                statusCode: 500,
+                headers: {},
+                data: undefined
+            };
+        }
     }
 
     public formatFileUrl(requested: string): string {
         const url = new URL(requested);
-        return `file://${normalizePath(path.join(this.baseDir, url.pathname))}`;
+        return `file://${normalizePath(path.join(this.getBaseDir(), url.pathname))}`;
     }
 
     private async readFile(filePath: string): Promise<{ data: Buffer; mimeType: string }> {

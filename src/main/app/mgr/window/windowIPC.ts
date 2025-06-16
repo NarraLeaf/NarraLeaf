@@ -13,12 +13,13 @@ export class WindowIPC {
 
     public registerHandler<T extends IPCEventType>(window: WindowProxy, handler: IPCHandler<T>): void {
         if (handler.type === IPCMessageType.request) {
-            this.ipc.onRequest(window, handler.name, (data) => {
-                const handled = handler.handle(window, data);
-                if (handled instanceof Promise) {
+            this.ipc.onRequest<T>(window, handler.name, async (data) => {
+                try {
+                    const handled = await handler.handle(window, data);
                     return handled;
+                } catch (error) {
+                    return this.ipc.failed(error);
                 }
-                return Promise.resolve(handled);
             });
         } else {
             this.ipc.onMessage(window, handler.name, (data) => handler.handle(window, data));

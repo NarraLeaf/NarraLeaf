@@ -127,7 +127,7 @@ export class IPCHost extends IPC<IPCEvents, IPCType.Host> {
     onRequest<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(
         win: IPCWindow,
         key: K,
-        listener: (data: IPCEvents[K]["data"]) => Promise<Exclude<IPCEvents[K]["response"], never>>
+        listener: (data: IPCEvents[K]["data"]) => Promise<RequestStatus<Exclude<IPCEvents[K]["response"], never>>>
     ): AppEventToken {
         return IPCHost.handle(this.getEventName(key), win, async (data, resolve) => {
             resolve(await listener(data));

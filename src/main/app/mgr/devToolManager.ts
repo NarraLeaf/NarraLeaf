@@ -16,7 +16,7 @@ export class DevToolManager {
 
 
     public initialize(): void {
-        if (!this.app.isPackaged()) {
+        if (this.app.isPackaged()) {
             return;
         }
 
@@ -26,6 +26,7 @@ export class DevToolManager {
         this.initialized = true;
 
         this.setupDevServer();
+        this.setupDevServerHandlers();
         this.setupDevUserData();
     }
 
@@ -36,8 +37,6 @@ export class DevToolManager {
                 ? Number(process.env[ENV_DEV_SERVER_PORT]) 
                 : DefaultDevServerPort
         ).connect();
-
-        this.setupDevServerHandlers();
     }
 
     private setupDevServerHandlers(): void {

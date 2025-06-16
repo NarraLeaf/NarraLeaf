@@ -11,23 +11,21 @@ export class StyleSheet extends WebpackModule {
     }
 
     public getLoader(app: App) {
-        const nodeModulesDir = path.resolve(app.config.cliRoot, "node_modules");
-
         return [
             "style-loader",
             "css-loader",
             ...(this.usePostcss ? [{
-                loader: path.resolve(nodeModulesDir, "postcss-loader"),
+                loader: "postcss-loader",
                 options: {
                     postcssOptions: {
                         plugins: [
                             [
-                                path.resolve(nodeModulesDir, "tailwindcss"),
+                                "tailwindcss",
                                 {
                                     config: app.resolvePath("tailwind.config.js"),
                                 }
                             ],
-                            path.resolve(nodeModulesDir, "autoprefixer"),
+                            "autoprefixer",
                         ],
                     },
                 },

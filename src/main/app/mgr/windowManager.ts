@@ -5,6 +5,7 @@ import { AppMeta } from "../app";
 import { AppTerminateHandler } from "./window/handler/appAction";
 import { AppRequestMainEventHandler } from "./window/handler/appAction";
 import { GameSaveGameHandler, GameReadGameHandler, GameListGameHandler, GameDeleteGameHandler } from "./window/handler/gameSave";
+import { AppInfoHandler } from "./window/handler/appInfo";
 
 export class WindowManager {
     private mainWindow: AppWindow | null = null;
@@ -72,6 +73,7 @@ export class WindowManager {
     }
 
     private registerIPCHandlers(win: AppWindow): void {
+        win.registerIPCHandler(new AppInfoHandler());
         win.registerIPCHandler(new AppTerminateHandler());
         win.registerIPCHandler(new AppRequestMainEventHandler());
 

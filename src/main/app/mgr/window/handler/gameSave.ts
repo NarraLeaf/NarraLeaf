@@ -1,6 +1,6 @@
 import { IPCEventType, RequestStatus } from "@/core/ipc/events";
 import { IPCMessageType } from "@/core/ipc/ipc";
-import { SavedGame } from "@core/game/save";
+import { SavedGame } from "narraleaf-react";
 import { AppWindow } from "../appWindow";
 import { IPCHandler, IPCHandlerProps } from "./IPCHandler";
 

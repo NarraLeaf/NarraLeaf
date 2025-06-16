@@ -25,6 +25,7 @@ export async function buildMain(
     }
 ): Promise<MainBuildResult> {
     const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
+    const libNodeModules = path.resolve(project.app.config.cliRoot, "node_modules");
     const distDir = project.getTempDir(Project.TempNamespace.MainBuild);
     const packMode = project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
 
@@ -44,10 +45,18 @@ export async function buildMain(
                 ...Builtins,
                 "narraleaf",
             ],
-            target: "electron-main"
+            target: "electron-main",
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(project.fs.resolve('node_modules'))
+                ]
+            }
         }
     })
         .useModule(new Babel(false))
+        .useNodeModule(libNodeModules)
         .useNodeModule(project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration(project.app);
 
@@ -77,6 +86,7 @@ export async function watchMain(
     }
 ): Promise<MainBuildWatchToken> {
     const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
+    const libNodeModules = path.resolve(project.app.config.cliRoot, "node_modules");
     const distDir = project.getDevTempDir(Project.DevTempNamespace.MainBuild);
     const logr = App.createLogger(project.app);
 
@@ -101,10 +111,18 @@ export async function watchMain(
                 type: "filesystem",
                 cacheDirectory: project.getDevTempDir(Project.DevTempNamespace.MainBuildCache),
             },
-            devtool: "source-map"
+            devtool: "source-map",
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(project.fs.resolve('node_modules'))
+                ]
+            }
         }
     })
         .useModule(new Babel(false))
+        .useNodeModule(libNodeModules)
         .useNodeModule(project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration(project.app);
     const compiler = webpack(config);

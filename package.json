@@ -1,6 +1,6 @@
 {
   "name": "narraleaf",
-  "version": "0.0.7",
+  "version": "0.0.8-alpha.4",
   "description": "Create your visual novel with Electron and React",
   "bin": "./dist/cli.cjs",
   "main": "dist/index.mjs",
@@ -26,9 +26,8 @@
     "build": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias",
     "build:dev": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias && node project/postbuild.js",
     "watch": "node project/esbuild.js --watch & tsc --emitDeclarationOnly --watch",
-    "prepublishOnly": "yarn run build"
+    "prepublishOnly": "npm run build"
   },
-  "packageManager": "yarn@4.4.1",
   "keywords": [
     "react",
     "electron",
@@ -50,28 +49,34 @@
     "@swc/wasm": "^1.10.18",
     "@tailwindcss/postcss": "^4.1.5",
     "autoprefixer": "^10.4.17",
+    "babel-loader": "^9.2.1",
+    "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "css-loader": "^7.1.2",
     "ejs": "^3.1.10",
+    "html-webpack-plugin": "^5.6.3",
     "jsonc": "^2.0.0",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "msgpack-lite": "^0.1.26",
     "postcss": "^8.4.35",
-    "postcss-loader": "^8.1.1",
     "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.0",
     "uglify-js": "^3.19.3",
+    "webpack": "^5.98.0",
     "ws": "^8.18.1",
     "zod": "^3.24.2"
   },
+  "bundledDependencies": [
+    "postcss-loader"
+  ],
   "peerDependencies": {
-    "babel-loader": "^9.2.1",
-    "chalk": "^4.1.2",
     "electron": "^34.2.0",
-    "electron-builder": "^25.1.8",
-    "html-webpack-plugin": "^5.6.3",
-    "webpack": "^5.98.0"
+    "electron-builder": "^25.1.8"
+  },
+  "resolutions": {
+    "postcss-loader": "^8.1.1"
   },
   "devDependencies": {
     "@types/ejs": "^3.1.5",
@@ -81,22 +86,16 @@
     "@types/react": "^19.0.10",
     "@types/webpack-node-externals": "^3",
     "@types/ws": "^8",
-    "babel-loader": "^9.2.1",
-    "chalk": "^4.1.2",
-    "electron": "^34.5.1",
-    "electron-builder": "^25.1.8",
     "esbuild": "0.25.0",
     "esbuild-css-modules-plugin": "^3.1.4",
     "fs-extra": "^11.3.0",
-    "html-webpack-plugin": "^5.6.3",
     "motion": "^11.15.10",
     "narraleaf-react": "^0.6.0",
     "tsc-alias": "^1.8.10",
-    "typescript": "^5.3.0",
-    "webpack": "^5.99.5",
     "webpack-node-externals": "^3.0.0"
   },
   "files": [
-    "dist"
+    "dist",
+    "node_modules/postcss-loader"
   ]
 }

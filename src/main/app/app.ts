@@ -16,14 +16,13 @@ import { SavedGameMetadata, SaveType } from "@core/game/save";
 import type { SavedGameResult } from "@core/game/SavedGameResult";
 
 // Local modules
-import { translate } from "@/main/app/mgr/translationManager";
 import { Platform, PlatformInfo, safeExecuteFn } from "@/utils/pure/os";
 import { reverseDirectoryLevels } from "@/utils/pure/string";
 import { JsonStore } from "@/main/utils/jsonStore";
 import { HookCallback, Hooks } from "@/main/utils/data";
 import { Logger } from "@/main/utils/logger";
 import { CriticalMainProcessError } from "@/main/utils/error";
-import { CrashReport } from "./mgr/crashManager";
+import { CrashReport } from "@/main/app/mgr/crashManager";
 import { TranslationManager } from "@/main/app/mgr/translationManager";
 
 // App managers
@@ -87,6 +86,8 @@ export class App {
     public readonly protocolManager: ProtocolManager;
     public readonly storageManager: StorageManager;
     public readonly windowManager: WindowManager;
+
+    private initialized: boolean = false;
 
     constructor(config: AppConfig) {
         this.config = config;
@@ -195,12 +196,12 @@ export class App {
     }
 
     public async launchApp(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
-        if (this.windowManager.getMainWindow()) {
-            throw new Error("Main window is already created");
+        if (!this.initialized) {
+            throw new Error("App is not initialized");
         }
 
-        if (!this.isPackaged()) {
-            await this.devToolManager.fetchMetadata();
+        if (this.windowManager.getMainWindow()) {
+            throw new Error("Main window is already created");
         }
 
         return await this.windowManager.launchMainWindow(config);
@@ -237,7 +238,7 @@ export class App {
         return this.storageManager.deleteGameData(id);
     }
 
-    private prepare() {
+    private async prepare() {
         const config = this.config.getConfig(this.platform);
         if (!this.electronApp && !app) {
             throw new CriticalMainProcessError("Electron App is not available");
@@ -248,15 +249,22 @@ export class App {
         if (!this.electronApp.isPackaged) {
             this.devToolManager.initialize();
         }
-        this.protocolManager.initializeProtocol();
+
         this.menuManager.initialize();
         this.windowManager.initialize();
+        this.protocolManager.initialize();
 
         this.electronApp.whenReady().then(async () => {
             await this.crashManager.initialize();
+            if (!this.isPackaged()) {
+                await this.devToolManager.fetchMetadata();
+            }
+
+            this.initialized = true;
 
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
+
         });
     }
 

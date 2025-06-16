@@ -1,17 +1,22 @@
 import {IPCClient} from "@/preload/data/ipcClient";
-import {IPCEventType, IPCEvents, Namespace} from "@core/ipc/events";
+import {IPCEventType, IPCEvents, Namespace, RequestStatus} from "@core/ipc/events";
 import {contextBridge} from "electron";
 import {NarraLeafMainWorldProperty, QuickSaveId} from "@core/build/constants";
 import {SaveType} from "@core/game/save";
 import {generateId} from "@/utils/pure/string";
+import { AppInfo } from "@core/@types/global";
 
-type Response<K extends keyof IPCEvents> = IPCEvents[K]["response"];
+type Response<K extends keyof IPCEvents> = RequestStatus<IPCEvents[K]["response"]>;
 
 const ipcClient = new IPCClient(Namespace.NarraLeaf)
 
 const APIs: Window["NarraLeaf"] = {
-    getPlatform(): Promise<Response<IPCEventType.getPlatform>> {
-        return ipcClient.invoke(IPCEventType.getPlatform, {});
+    async getPlatform(): Promise<AppInfo> {
+        const result = await ipcClient.invoke(IPCEventType.getPlatform, {});
+        if (result.success) {
+            return result.data;
+        }
+        throw new Error(result.error);
     },
     app: {
         terminate(err: string | Error | null): void {

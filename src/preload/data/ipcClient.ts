@@ -1,5 +1,5 @@
 import {IPC, IPCType, OnlyMessage, OnlyRequest, SubNamespace} from "@core/ipc/ipc";
-import {IPCEvents} from "@core/ipc/events";
+import {IPCEvents, RequestStatus} from "@core/ipc/events";
 import { AppEventToken } from "@/main/app/types";
 import {ipcRenderer} from "electron";
 import {MayPromise} from "@/utils/types";
@@ -9,7 +9,7 @@ export class IPCClient extends IPC<IPCEvents, IPCType.Client> {
         super(IPCType.Client, namespace);
     }
 
-    invoke<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(key: K, data: IPCEvents[K]["data"]): Promise<Exclude<IPCEvents[K]["response"], never>> {
+    invoke<K extends keyof OnlyRequest<IPCEvents, IPCType.Host>>(key: K, data: IPCEvents[K]["data"]): Promise<RequestStatus<Exclude<IPCEvents[K]["response"], never>>> {
         return ipcRenderer.invoke(this.getEventName(key), data);
     }
 

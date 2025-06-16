@@ -58,5 +58,5 @@ export type GameMetadata = {
 export {Pages} from "@/client/app/app";
 export {SaveType} from "@core/game/save";
 export type {PageConfig} from "@/client/app/app";
-export type {SavedGame, SavedGameMetadata} from "@core/game/save";
+export type {SavedGame, SavedGameMetaData, SavedGameMetaData as SavedGameMetadata} from "narraleaf-react";
 export type {UseSavedGameResult, UseSaveActionResult} from "@/client/app/hooks/game-save";

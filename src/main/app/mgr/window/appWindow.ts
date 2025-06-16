@@ -8,6 +8,7 @@ import { WindowIPC } from "./windowIPC";
 import { WindowEventManager } from "./windowEvents";
 import { WindowProxy } from "./windowProxy";
 import { WindowUserHandlers } from "./windowUserHandlers";
+import { AppEventToken } from "../../types";
 
 export interface WindowConfig {
     isolated: boolean;
@@ -113,6 +114,21 @@ export class AppWindow extends WindowProxy {
     public getClientAppConfig(): ClientAppConfiguration {
         return {
             recoveryCreationInterval: this.getApp().getConfig().recoveryCreationInterval,
+        };
+    }
+
+    public onKeyUp(key: KeyboardEvent["key"], fn: (event: Electron.Event, input: Electron.Input) => void): AppEventToken {
+        const handler = (event: Electron.Event, input: Electron.Input) => {
+            if (input.type === "keyUp" && input.key === key) {
+                fn(event, input);
+            }
+        };
+
+        this.getWebContents().on("before-input-event", handler);
+        return {
+            cancel: () => {
+                this.getWebContents().removeListener("before-input-event", handler);
+            }
         };
     }
 

@@ -32,6 +32,7 @@ export async function buildRenderer(
     const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
     const appEntry = path.resolve(buildDir, rendererAppStructure.name);
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
+    const libNodeModules = path.resolve(rendererProject.project.app.config.cliRoot, "node_modules");
 
     await Fs.createDir(buildDir);
     await Fs.createDir(outputDir);
@@ -45,9 +46,19 @@ export async function buildRenderer(
         outputDir: outputDir,
         outputFilename: RendererOutputFileName,
         extensions: [".ts", ".tsx", ".js", ".jsx"],
+        extend: {
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(rendererProject.project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(rendererProject.project.fs.resolve('node_modules'))
+                ]
+            }
+        }
     })
         .useModule(new Babel(true))
         .useModule(new StyleSheet())
+        .useNodeModule(libNodeModules)
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
     const config = webpackConfig.getConfiguration(rendererProject.project.app);
 
@@ -91,7 +102,8 @@ export async function watchRenderer(
     const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
     const logr = App.createLogger(rendererProject.project.app);
     const usePostcss = (await rendererProject.project.fs.isFileExists("postcss.config.js")).ok;
-
+    const libNodeModules = path.resolve(rendererProject.project.app.config.cliRoot, "node_modules");
+    
     await Fs.createDir(buildTempDir);
     await Fs.createDir(buildDistDir);
     await createStructure([
@@ -107,10 +119,18 @@ export async function watchRenderer(
         extend: {
             cache: false,
             devtool: "source-map",
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(rendererProject.project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(rendererProject.project.fs.resolve('node_modules'))
+                ]
+            }
         }
     })
         .useModule(new Babel(true))
         .useModule(new StyleSheet(usePostcss))
+        .useNodeModule(libNodeModules)
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
 
     const config = webpackConfig.getConfiguration(rendererProject.project.app);

@@ -3,7 +3,8 @@ import { Fs } from "@/utils/nodejs/fs";
 import { Metadata } from "@/main/app/mgr/storage/fileSystem/localFileMetadata";
 import { StoreProvider } from "@/main/app/mgr/storage/storeProvider";
 import { SavedGameResult } from "@core/game/SavedGameResult";
-import { SavedGame, SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGame } from "narraleaf-react";
 
 export type StorageConfig = {
     dir: string;

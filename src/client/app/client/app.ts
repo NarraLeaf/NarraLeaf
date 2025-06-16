@@ -1,5 +1,5 @@
 import { AppInfo } from "@core/@types/global";
-import { CrashReport } from "@/main/app/app";
+import { CrashReport } from "@/main/app/types";
 import { Game } from "narraleaf-react";
 import { CriticalRendererProcessError } from "@/main/utils/error";
 import { GamePlaybackState } from "../providers/game-state-provider";

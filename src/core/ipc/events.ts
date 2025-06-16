@@ -1,5 +1,5 @@
 import type { SavedGameResult } from "@/core/game/SavedGameResult";
-import type { CrashReport } from "@/main/app/app";
+import type { CrashReport } from "@/main/app/mgr/crashManager";
 import type { PlatformInfo } from "@/utils/pure/os";
 import type { SavedGameMetadata, SaveType } from "@core/game/save";
 import type { IPCMessageType, IPCType } from "@core/ipc/ipc";
