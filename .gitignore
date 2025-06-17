@@ -31,3 +31,4 @@ dist
 temp
 .narraleaf
 package-lock.json
+dev.json
