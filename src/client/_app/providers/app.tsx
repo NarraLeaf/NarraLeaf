@@ -1,5 +1,5 @@
 import React, {ReactNode, useContext} from "react";
-import {App} from "@/client/app/client/app";
+import {App} from "@/client/_app/client/app";
 
 type ContextType = App;
 const context = React.createContext<ContextType | null>(null);

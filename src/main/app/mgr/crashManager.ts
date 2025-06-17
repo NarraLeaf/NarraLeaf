@@ -5,14 +5,8 @@ import path from "path";
 import { AppDataNamespace } from "../app";
 
 export type CrashReport = {
-    isCritical: true;
-    timestamp?: never;
-    reason?: never;
-    recoveryDisabled?: never;
-} | {
-    isCritical: false;
     timestamp: number;
-    reason: string;
+    reason: string | null;
     recoveryDisabled: boolean;
 };
 
@@ -80,18 +74,11 @@ export class CrashManager {
     }
 
     public crash(reason?: string, { disableRecovery = false }: { disableRecovery?: boolean } = {}): void {
-        if (!reason) {
-            this.crashFlag.flagSync({
-                isCritical: true,
-            });
-        } else {
-            this.crashFlag.flagSync({
-                isCritical: false,
-                timestamp: Date.now(),
-                reason,
-                recoveryDisabled: disableRecovery,
-            });
-        }
+        this.crashFlag.flagSync({
+            timestamp: Date.now(),
+            reason: reason ?? null,
+            recoveryDisabled: disableRecovery,
+        });
         app.quit();
     }
 

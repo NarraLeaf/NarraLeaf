@@ -55,8 +55,8 @@ export type GameMetadata = {
     backgroundImage?: string;
 };
 
-export {Pages} from "@/client/app/app";
+export {Pages} from "@/client/_app/app";
 export {SaveType} from "@core/game/save";
-export type {PageConfig} from "@/client/app/app";
+export type {PageConfig} from "@/client/_app/app";
 export type {SavedGame, SavedGameMetaData, SavedGameMetaData as SavedGameMetadata} from "narraleaf-react";
-export type {UseSavedGameResult, UseSaveActionResult} from "@/client/app/hooks/game-save";
+export type {UseSavedGameResult, UseSaveActionResult} from "@/client/_app/hooks/game-save";

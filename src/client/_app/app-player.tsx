@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { GameMetadata } from "@/client/app/types";
-import { SplashScreen } from "@/client/app/splash-screen/splash-screen";
+import { GameMetadata } from "@/client/_app/types";
+import { SplashScreen } from "@/client/_app/splash-screen/splash-screen";
 import { useApp, useCurrentSaved } from "@/client";
 import { AsyncTaskQueue } from "@/utils/pure/array";
 import { NarraLeafMainWorldProperty, RendererHomePage } from "@core/build/constants";
-import { PageConfig, Pages } from "@/client/app/app";
+import { PageConfig, Pages } from "@/client/_app/app";
 import { Page, SavedGame, Stage, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
-import { useSplashScreen } from "@/client/app/providers/splash-screen-provider";
-import { useGamePlayback } from "@/client/app/providers/game-state-provider";
+import { useSplashScreen } from "@/client/_app/providers/splash-screen-provider";
+import { useGamePlayback } from "@/client/_app/providers/game-state-provider";
 import { isValidImageUrl, throttle } from "./utils/data";
 
 // Add new hook for background image preloading

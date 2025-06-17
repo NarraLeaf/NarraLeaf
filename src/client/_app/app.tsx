@@ -2,12 +2,14 @@ import {NarraLeafMainWorldProperty} from "@core/build/constants";
 import {CriticalRendererProcessError} from "@/main/utils/error";
 import React from "react";
 import {AppInfo} from "@core/@types/global";
-import {ErrorBoundary} from "@/client/app/errorHandling/error-boundary";
-import ErrorFallback from "@/client/app/errorHandling/error-fallback";
+import {ErrorBoundary} from "@/client/_app/errorHandling/error-boundary";
+import ErrorFallback from "@/client/_app/errorHandling/error-fallback";
 import {AppPlayer} from "@/client";
-import {GameMetadata, Meta} from "@/client/app/types";
-import AppProviders from "@/client/app/providers/app-providers";
-import {AppConfig} from "@/client/app/client/app";
+import {GameMetadata, Meta} from "@/client/_app/types";
+import AppProviders from "@/client/_app/providers/app-providers";
+import {AppConfig} from "@/client/_app/client/app";
+
+
 
 type NarraLeafReact = typeof import("narraleaf-react");
 export type Pages = {

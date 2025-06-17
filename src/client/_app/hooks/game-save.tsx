@@ -1,5 +1,5 @@
-import { SavedGame, SavedGameMetadata } from "@/client/app/types";
-import { useFlush } from "@/client/app/utils/flush";
+import { SavedGame, SavedGameMetadata } from "@/client/_app/types";
+import { useFlush } from "@/client/_app/utils/flush";
 import { LiveGame, useGame } from "narraleaf-react";
 import React, { useEffect } from "react";
 import { NarraLeafMainWorldProperty, QuickSaveId } from "@core/build/constants";

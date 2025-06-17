@@ -13,22 +13,17 @@ function getName(path) {
     return nameWithoutExtension;
 }
 %>
-//// Import Dependencies ////
 /* import */ import React from "react";
 /* import */ import { createRoot } from "react-dom/client";
 /* import */ import { render } from "narraleaf/client";
 /* import */ import * as AppUserEntry from "<%= appPath %>";
 /* import */ import * as NarraLeafReact from "narraleaf-react";
-//// /////////////////// ////
 
 
-//// Import pages ////
 <% pages.forEach(function(page, index) { %>/* import */ // <%= page %>
 /* import */ import * as __NARRALEAF_IMPORTED_PAGE_<%= index %>_MODULE from "<%= page %>";<% }); %>
-//// //////////// ////
 
 
-//// Construct pages ////
 /**@type {import("narraleaf/client").Pages} */
 const pages = {<% pages.forEach(function(page, index) { %>
     // <%= page %>
@@ -40,10 +35,8 @@ const pages = {<% pages.forEach(function(page, index) { %>
         }
     }<%= index < pages.length - 1 ? ',' : '' %>
 <% }); %>};
-//// /////////////// ////
 
 
-//// App Root ////
 const root = createRoot(document.getElementById("root") as HTMLElement);
 !async function () {
     await render(root, {
@@ -53,4 +46,3 @@ const root = createRoot(document.getElementById("root") as HTMLElement);
         metadata: AppUserEntry.metadata,
     });
 }();
-//// //////// ////

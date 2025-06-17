@@ -1,5 +1,5 @@
-import {SplashScreenDefinition} from "@/client/app/types";
-import {useSplashScreen} from "@/client/app/providers/splash-screen-provider";
+import {SplashScreenDefinition} from "@/client/_app/types";
+import {useSplashScreen} from "@/client/_app/providers/splash-screen-provider";
 import React, {useEffect, useRef, useState} from "react";
 import {AnimatePresence, motion} from "motion/react";
 
