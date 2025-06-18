@@ -112,8 +112,10 @@ export class AppWindow extends WindowProxy {
     }
 
     public getClientAppConfig(): ClientAppConfiguration {
+        const config = this.getApp().getConfig();
         return {
-            recoveryCreationInterval: this.getApp().getConfig().recoveryCreationInterval,
+            recoveryCreationInterval: config.recoveryCreationInterval,
+            appErrorHandling: config.appErrorHandling,
         };
     }
 

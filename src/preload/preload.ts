@@ -19,6 +19,9 @@ const APIs: Window["NarraLeaf"] = {
         throw new Error(result.error);
     },
     app: {
+        restart(): void {
+            ipcClient.send(IPCEventType.appRestart, {});
+        },
         terminate(err: string | Error | null): void {
             ipcClient.send(IPCEventType.appTerminate, {
                 err: err instanceof Error ? err.message : err,

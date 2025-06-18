@@ -4,6 +4,7 @@ import { AppConfig } from "./app.types";
 import { CrashReport } from "@/main/app/types";
 import { NarraLeafMainWorldProperty } from "@/core/build/constants";
 import { CriticalRendererProcessError } from "@/main/utils/error";
+import { AppAPI } from "./api";
 
 type AppEvents = {};
 type AppStates = {
@@ -11,7 +12,7 @@ type AppStates = {
 };
 
 
-export class App {
+export class App extends AppAPI {
     static DefaultAppStates: AppStates = {
         isPlaying: false,
     };
@@ -21,6 +22,7 @@ export class App {
     public readonly config: AppConfig;
 
     constructor(config: AppConfig) {
+        super(config.api);
         this.config = config;
     }
 

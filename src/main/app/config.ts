@@ -7,6 +7,7 @@ import { CrashManager, DevToolManager, MenuManager, ProtocolManager, StorageMana
 export interface BaseAppConfig {
     forceSandbox: boolean;
     recoveryCreationInterval: number;
+    appErrorHandling: "terminate" | "raw" | "restart";
     deleteCorruptedSaves: boolean;
     store?: StoreProvider;
 }
@@ -54,6 +55,7 @@ export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
         recoveryCreationInterval: 5000,
+        appErrorHandling: "terminate",
         deleteCorruptedSaves: false,
     };
     public static readonly DefaultWindowsConfig: IWindowsConfig = {};

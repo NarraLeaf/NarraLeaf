@@ -7,6 +7,7 @@ import type { ClientAppConfiguration } from "../@types/global";
 
 export enum IPCEventType {
     getPlatform = "getPlatform",
+    appRestart = "app.restart",
     appTerminate = "app.terminate",
     appRequestMainEvent = "app.event.requestMain",
     appGetJsonStore = "app.store.getJson",
@@ -39,6 +40,12 @@ export type IPCEvents = {
             crashReport: CrashReport | null;
             config: ClientAppConfiguration;
         };
+    };
+    [IPCEventType.appRestart]: {
+        type: IPCMessageType.message,
+        consumer: IPCType.Host,
+        data: {},
+        response: never;
     };
     [IPCEventType.appTerminate]: {
         type: IPCMessageType.message,

@@ -1,4 +1,5 @@
 import { AppInfo } from "@/core/@types/global";
+import { NarraLeafMainWorldProperty } from "@/core/build/constants";
 import * as NLReact from "narraleaf-react";
 import { Game } from "narraleaf-react";
 
@@ -9,6 +10,7 @@ interface AppConfig {
     appInfo: AppInfo;
     router: ReturnType<typeof NLReact["useRouter"]>;
     game: Game;
+    api: typeof window[typeof NarraLeafMainWorldProperty];
 };
 
 type PageModuleData = {

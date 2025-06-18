@@ -7,6 +7,7 @@ import { SavedGame } from "narraleaf-react";
 
 export interface ClientAppConfiguration {
     recoveryCreationInterval: number;
+    appErrorHandling: "terminate" | "raw" | "restart";
 }
 
 export type AppInfo = {
@@ -21,6 +22,7 @@ declare global {
         NarraLeaf: {
             getPlatform(): Promise<AppInfo>;
             app: {
+                restart(): void;
                 terminate(err: string | Error | null): void;
                 requestMain<Request, Response>(event: string, ...args: Response extends void ? [payload?: Request] : [payload: Request]): Promise<RequestStatus<Response>>;
             };
