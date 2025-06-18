@@ -3,6 +3,7 @@ import {App} from "../app";
 import {Command} from "commander";
 import { BaseProjectStructure } from "@/core/project/projectConfig/baseProject";
 import { Project } from "@/core/project/project";
+import { createAppRouter } from "@/core/build/renderer/router/scan";
 
 export default async function info(this: Command, app: App, []: []) {
     const logger = App.createLogger(app);
@@ -20,4 +21,7 @@ export default async function info(this: Command, app: App, []: []) {
     logger.info("Renderer Project:", rendererProject.project.config);
     logger.info("Renderer Project Root:", rendererProject.project.getRootDir());
     logger.info("Renderer Project Node Modules:", rendererProject.project.fs.resolve("node_modules"));
+
+    const router = await createAppRouter(rendererProject);
+    logger.info("Router:", JSON.stringify(router, null, 2));
 }

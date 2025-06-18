@@ -103,7 +103,7 @@ export class App {
 
         this.game.getLiveGame().reset();
         this.dispatchState({ isPlaying: false });
-        this.router.clear().cleanHistory().push(RendererHomePage);
+        // this.router.clear().cleanHistory().push(RendererHomePage);
     }
 
     public onStateChanged(callback: (state: GamePlaybackState) => void): EventToken {

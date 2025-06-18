@@ -172,7 +172,7 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
     }, [currentSaved]);
 
     useEffect(() => {
-        router.push(RendererHomePage);
+        // router.push(RendererHomePage);
 
         console.debug("[NarraLeaf Client] stagePages", stagePages);
     }, []);
@@ -198,7 +198,7 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
 
     const handleEnd = () => {
         app.dispatchState({ isPlaying: false });
-        router.push(RendererHomePage);
+        // router.push(RendererHomePage);
     };
     const handleReady = () => {
         app.setRouter(router);
@@ -215,14 +215,14 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
         >
             {Object.entries(stagePages).map(([key, page]) => {
                 const PageComponent = page.registry.component;
-                return (
-                    <Page
-                        key={key}
-                        id={key}
-                        {...merge({}, pageStyles, page.registry.config || {})}
-                    >
-                        <PageComponent />
-                    </Page>
+                return (void 0
+                    // <Page
+                    //     key={key}
+                    //     id={key}
+                    //     {...merge({}, pageStyles, page.registry.config || {})}
+                    // >
+                    //     <PageComponent />
+                    // </Page>
                 );
             })}
         </lib.Player>
