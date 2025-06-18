@@ -60,3 +60,6 @@ export {SaveType} from "@core/game/save";
 export type {PageConfig} from "@/client/_app/app";
 export type {SavedGame, SavedGameMetaData, SavedGameMetaData as SavedGameMetadata} from "narraleaf-react";
 export type {UseSavedGameResult, UseSaveActionResult} from "@/client/_app/hooks/game-save";
+
+// Export router module data types
+export type {AppRouterModuleData, ProductionAppRouterModuleData} from "@/client/app/app.types";

@@ -1,20 +1,21 @@
 /**
- * scan.ts用于扫描目录并且返回目录结构
- * 从根目录出发，包含以下约定：
- * 目录名可以以[开头，包含一个字母/数字/下划线/拉丁文/亚洲文字，并且以]结尾时，视为slug
- * 目录下的layout.(ts|js|tsx|jsx)视作layout文件，接受children并且嵌入
- * 目录下的index.(ts|js|tsx|jsx)视作默认处理器页面，当没有其他页面匹配时渲染
- * 在根目录下的index.(ts|js|tsx|jsx)视为主页
- * 任何其他文件名视作page文件，不接受children，并且名字不能包含"[]"
+ * scan.ts is used to scan directories and return the directory structure
+ * Starting from the root directory, with the following conventions:
+ * Directory names starting with [ and ending with ], containing letters/numbers/underscores/Latin/Asian characters, are treated as slugs
+ * layout.(ts|js|tsx|jsx) files in directories are treated as layout files, accepting and embedding children
+ * index.(ts|js|tsx|jsx) files in directories are treated as default handler pages, rendered when no other pages match
+ * index.(ts|js|tsx|jsx) in the root directory is treated as the homepage
+ * Any other filenames are treated as page files, do not accept children, and cannot contain "[]"
  */
 
+import { Logger } from "@/cli/logger";
 import { RendererProject } from "@/core/project/renderer/rendererProject";
 import { Fs } from "@/utils/nodejs/fs";
 import path from "path";
-import fs from "fs/promises";
 
 export type AppRouterData = {
     root: LayoutDir;
+    rootPath: string;
 };
 
 export type LayoutDir = {
@@ -29,6 +30,7 @@ export type LayoutDir = {
 export type PageData = {
     name: string;
     path: string;
+    module?: any;
 };
 
 export async function createAppRouter(rendererProject: RendererProject): Promise<AppRouterData> {
@@ -188,10 +190,10 @@ export async function createAppRouter(rendererProject: RendererProject): Promise
                 const isLastChild = i === childrenToOutput.length - 1;
                 let prefix = indent + (isLast ? "    " : "│   ") + (isLastChild ? "└── " : "├── ");
                 if (child.type === 'layout') {
-                    logr.info(`${prefix}📄 layout${path.extname(child.data.path)} (layout)`);
+                    logr.info(`${prefix}📋 ${Logger.chalk.blue("layout" + path.extname(child.data.path))}`);
                     children.push(child.data);
                 } else if (child.type === 'index') {
-                    logr.info(`${prefix}📄 ${path.basename(child.data.path, path.extname(child.data.path))}${path.extname(child.data.path)} (index)`);
+                    logr.info(`${prefix}📋 ${Logger.chalk.blue(path.basename(child.data.path, path.extname(child.data.path)) + path.extname(child.data.path))}`);
                     children.push(child.data);
                 } else if (child.type === 'page') {
                     logr.info(`${prefix}📄 ${child.data.name}${path.extname(child.data.path)}`);
@@ -273,9 +275,9 @@ export async function createAppRouter(rendererProject: RendererProject): Promise
             let prefix = parentIndent + (isParentLast ? "    " : "│   ") + (isLastChild ? "└── " : "├── ");
             
             if (child.type === 'layout') {
-                logr.info(`${prefix}📄 layout${path.extname(child.data.path)} (layout)`);
+                logr.info(`${prefix}📋 ${Logger.chalk.blue("layout" + path.extname(child.data.path))}`);
             } else if (child.type === 'index') {
-                logr.info(`${prefix}📄 ${path.basename(child.data.path, path.extname(child.data.path))}${path.extname(child.data.path)} (index)`);
+                logr.info(`${prefix}📋 ${Logger.chalk.blue(path.basename(child.data.path, path.extname(child.data.path)) + path.extname(child.data.path))}`);
             } else if (child.type === 'page') {
                 logr.info(`${prefix}📄 ${child.data.name}${path.extname(child.data.path)}`);
             } else if (child.type === 'dir') {
@@ -295,10 +297,9 @@ export async function createAppRouter(rendererProject: RendererProject): Promise
     if (!root) {
         throw new Error("No pages found");
     }
-    
-    logr.info("✅ Pages directory structure scanning completed");
 
     return {
-        root
+        root,
+        rootPath: pagesDir
     };
 }

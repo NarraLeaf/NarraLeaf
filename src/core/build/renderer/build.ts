@@ -10,7 +10,6 @@ import webpack from "webpack";
 import { RendererOutputFileName, RendererOutputHTMLFileName } from "@core/build/constants";
 import { Fs } from "@/utils/nodejs/fs";
 import { App } from "@/cli/app";
-import { getFileTree } from "@/utils/nodejs/string";
 
 export type RendererBuildResult = {
     dir: string;
@@ -26,8 +25,8 @@ export async function buildRenderer(
         rendererProject: RendererProject;
     }
 ): Promise<RendererBuildResult> {
-    const pages = await getPages(rendererProject);
-    const rendererAppStructure = createRendererAppStructure(pages);
+    const isProduction = !rendererProject.project.config.build.dev;
+    const rendererAppStructure = await createRendererAppStructure(rendererProject, isProduction);
     const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildTemp);
     const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
     const appEntry = path.resolve(buildDir, rendererAppStructure.name);
@@ -95,8 +94,7 @@ export async function watchRenderer(
         onRebuild?: () => void;
     }
 ): Promise<RendererBuildWatchToken> {
-    const pages = await getPages(rendererProject);
-    const rendererAppStructure = createRendererAppStructure(pages);
+    const rendererAppStructure = await createRendererAppStructure(rendererProject);
     const buildTempDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuildTemp);
     const buildDistDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuild);
     const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
@@ -181,27 +179,5 @@ export async function watchRenderer(
     };
 }
 
-async function getPages(rendererProject: RendererProject): Promise<string[]> {
-    const logr = rendererProject.project.app.createLogger();
-    const pagesDir = rendererProject.getPagesDir();
-    const result = await Fs.getFiles(
-        pagesDir,
-        [".js", ".jsx", ".ts", ".tsx"]
-    );
 
-    if (!result.ok) {
-        logr.warn("Failed to get pages:", result.error);
-        return [];
-    }
-
-    logr
-        .debug("Scanning", pagesDir)
-        .info("Scanning", result.data.length, "pages")
-        .info(getFileTree("Pages Found", result.data.map(p => ({
-            type: "file",
-            name: path.parse(p).base,
-        })), []));
-
-    return result.data;
-}
 
