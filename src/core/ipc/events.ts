@@ -7,7 +7,7 @@ import type { ClientAppConfiguration } from "../@types/global";
 
 export enum IPCEventType {
     getPlatform = "getPlatform",
-    appRestart = "app.restart",
+    appReload = "app.reload",
     appTerminate = "app.terminate",
     appRequestMainEvent = "app.event.requestMain",
     appGetJsonStore = "app.store.getJson",
@@ -41,7 +41,7 @@ export type IPCEvents = {
             config: ClientAppConfiguration;
         };
     };
-    [IPCEventType.appRestart]: {
+    [IPCEventType.appReload]: {
         type: IPCMessageType.message,
         consumer: IPCType.Host,
         data: {},

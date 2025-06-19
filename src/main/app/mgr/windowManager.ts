@@ -6,6 +6,7 @@ import { AppRequestMainEventHandler } from "./window/handler/appAction";
 import { GameSaveGameHandler, GameReadGameHandler, GameListGameHandler, GameDeleteGameHandler } from "./window/handler/gameSave";
 import { AppInfoHandler } from "./window/handler/appInfo";
 import { AppGetJsonStoreHandler, AppSaveJsonStoreHandler } from "./window/handler/appStore";
+import { AppReloadHandler } from "./window/handler/appAction";
 
 export class WindowManager {
     private mainWindow: AppWindow | null = null;
@@ -76,6 +77,7 @@ export class WindowManager {
         win.registerIPCHandler(new AppInfoHandler());
         win.registerIPCHandler(new AppTerminateHandler());
         win.registerIPCHandler(new AppRequestMainEventHandler());
+        win.registerIPCHandler(new AppReloadHandler());
         win.registerIPCHandler(new AppGetJsonStoreHandler());
         win.registerIPCHandler(new AppSaveJsonStoreHandler());
 

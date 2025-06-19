@@ -35,3 +35,13 @@ export class AppRequestMainEventHandler extends IPCHandler<IPCEventType.appReque
         return this.failed(`Event ${event} not found`);
     }
 }
+
+export class AppReloadHandler extends IPCHandler<IPCEventType.appReload> {
+    readonly name = IPCEventType.appReload;
+    readonly type = IPCMessageType.message;
+
+    public handle(window: AppWindow, {}: IPCHandlerProps<IPCEventType.appReload>) {
+        window.win.webContents.reload();
+        return { success: true, data: null as never };
+    }
+}

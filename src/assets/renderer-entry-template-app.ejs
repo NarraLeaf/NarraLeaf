@@ -88,10 +88,10 @@ const appRouterData = {
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
 !async function () {
-    await render(root, {
-        NarraLeafReact,
-        appRouterData,
+    await render({
+        renderer: root,
         App: AppUserEntry.default,
+        appRouterData,
         metadata: AppUserEntry.metadata,
     });
 }();

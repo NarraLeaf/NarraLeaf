@@ -1,5 +1,5 @@
 import * as React from "react";
-import {NarraLeafMainWorldProperty} from "@core/build/constants";
+import {NarraLeaf} from "@core/build/constants";
 
 
 export class ErrorBoundary extends React.Component<{
@@ -33,7 +33,7 @@ export class ErrorBoundary extends React.Component<{
         if (this.props.crash) {
             const message = `${error.name}: ${error.message}\nComponent Stack: ${info.componentStack}`;
 
-            window[NarraLeafMainWorldProperty].app.terminate(message);
+            window[NarraLeaf].app.terminate(message);
         }
     }
 

@@ -1,6 +1,6 @@
 import { AppInfo } from "@/core/@types/global";
 import { ErrorBoundary, ErrorBoundaryProps } from "./ErrorBoundary";
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 import { CriticalErrorBoundary, CriticalErrorBoundaryProps } from "./CriticalErrorBoundary";
 import { RouterErrorFallback } from "./RouterErrorFallback";
 
@@ -12,15 +12,20 @@ export class RouterErrorBoundary extends CriticalErrorBoundary<RouterErrorBounda
     static MINIMUM_RESTART_DELAY = 10;
 
     constructor(props: RouterErrorBoundaryProps) {
-        super({
-            ...props,
-            fallback: <RouterErrorFallback path={props.path} />,
-        });
+        super(props);
     }
 
     protected handleError(error: Error, info: { componentStack: string; }): void {
         console.error(error);
 
         super.handleError(error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (<RouterErrorFallback path={this.props.path} />);
+        }
+
+        return this.props.children;
     }
 }

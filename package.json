@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias",
-    "build:dev": "node project/esbuild.js && tsc --emitDeclarationOnly && tsc-alias && node project/postbuild.js",
+    "build:dev": "node project/esbuild.js --dev && tsc --emitDeclarationOnly && tsc-alias && node project/postbuild.js",
     "watch": "node project/esbuild.js --watch & tsc --emitDeclarationOnly --watch",
     "prepublishOnly": "npm run build"
   },

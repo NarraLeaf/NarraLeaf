@@ -1,7 +1,7 @@
 import {IPCClient} from "@/preload/data/ipcClient";
 import {IPCEventType, IPCEvents, Namespace, RequestStatus} from "@core/ipc/events";
 import {contextBridge} from "electron";
-import {NarraLeafMainWorldProperty, QuickSaveId} from "@core/build/constants";
+import {NarraLeaf, QuickSaveId} from "@core/build/constants";
 import {SaveType} from "@core/game/save";
 import {generateId} from "@/utils/pure/string";
 import { AppInfo } from "@core/@types/global";
@@ -19,8 +19,8 @@ const APIs: Window["NarraLeaf"] = {
         throw new Error(result.error);
     },
     app: {
-        restart(): void {
-            ipcClient.send(IPCEventType.appRestart, {});
+        reload(): void {
+            ipcClient.send(IPCEventType.appReload, {});
         },
         terminate(err: string | Error | null): void {
             ipcClient.send(IPCEventType.appTerminate, {
@@ -56,7 +56,7 @@ const APIs: Window["NarraLeaf"] = {
     },
 };
 
-contextBridge.exposeInMainWorld(NarraLeafMainWorldProperty, APIs);
+contextBridge.exposeInMainWorld(NarraLeaf, APIs);
 
 console.log("[NarraLeaf preload] Preload script loaded");
 

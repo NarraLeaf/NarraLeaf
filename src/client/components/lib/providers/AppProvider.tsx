@@ -14,6 +14,6 @@ export function AppProvider({children, app}: { children?: ReactNode, app: App; }
 
 export function useApp(): ContextType {
     const ctx = useContext(context);
-    if (!ctx) throw new Error("useContext must be used within a Provider");
+    if (!ctx) throw new Error("useApp must be used within a Provider");
     return ctx;
 }

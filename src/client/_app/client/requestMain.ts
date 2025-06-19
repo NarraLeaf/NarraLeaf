@@ -1,6 +1,6 @@
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 
-const api = window[NarraLeafMainWorldProperty];
+const api = window[NarraLeaf];
 
 /**
  * Request a main event from the main process.

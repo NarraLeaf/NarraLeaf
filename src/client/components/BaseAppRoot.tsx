@@ -1,4 +1,4 @@
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 import { CriticalRendererProcessError } from "@/main/utils/error";
 import React from "react";
 import { RendererAppRootProps } from "./components.types";
@@ -6,9 +6,10 @@ import { AppInfo } from "@/core/@types/global";
 import { GameProviders } from "narraleaf-react";
 import { App } from "./lib/App";
 import { CriticalErrorBoundary } from "./errorHandling/CriticalErrorBoundary";
+import { BaseAppErrorFallback } from "./errorHandling/BaseAppErrorFallback";
 
 function validateEnv(): void {
-    if (!window || !window[NarraLeafMainWorldProperty] || !document) {
+    if (!window || !window[NarraLeaf] || !document) {
         throw new CriticalRendererProcessError("Invalid environment");
     }
 
@@ -26,7 +27,7 @@ function validateConfig(config: RendererAppRootProps): void {
 
 async function requestAppInfo(): Promise<{ok: boolean, data: AppInfo | null, error?: Error | null}> {
     try {
-        const data = await window[NarraLeafMainWorldProperty].getPlatform();
+        const data = await window[NarraLeaf].getPlatform();
         return {ok: true, data};
     } catch (error) {
         return {ok: false, data: null, error: error as Error};
@@ -46,19 +47,16 @@ export async function render(config: RendererAppRootProps): Promise<void> {
     // Request app info
     const {ok, data, error} = await requestAppInfo();
     if (!ok || !data) {
-        window[NarraLeafMainWorldProperty].app.terminate(error || null);
+        window[NarraLeaf].app.terminate(error || null);
     }
 
     renderer.render(
         <React.StrictMode>
-            <CriticalErrorBoundary appInfo={data!} initialTimestamp={initialTimestamp}>
+            <CriticalErrorBoundary appInfo={data!} initialTimestamp={initialTimestamp} fallback={<BaseAppErrorFallback />}>
                 <GameProviders>
-                    <App appInfo={data!} api={window[NarraLeafMainWorldProperty]} config={config} />
+                    <App appInfo={data!} api={window[NarraLeaf]} config={config} />
                 </GameProviders>
             </CriticalErrorBoundary>
         </React.StrictMode>
     );
 }
-
-
-

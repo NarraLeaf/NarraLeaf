@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import { AppState } from "./utils/appState";
 import { AppConfig } from "./app.types";
 import { CrashReport } from "@/main/app/types";
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 import { CriticalRendererProcessError } from "@/main/utils/error";
 import { AppAPI } from "./api";
 
@@ -31,7 +31,7 @@ export class App extends AppAPI {
     }
 
     public crash(error: Error | string | null | undefined = null): void {
-        window[NarraLeafMainWorldProperty].app.terminate(error);
+        window[NarraLeaf].app.terminate(error);
     }
 
     public async newGame(): Promise<void> {
@@ -48,7 +48,7 @@ export class App extends AppAPI {
     public async loadGame(id: string): Promise<void> {
         const { game, router } = this.config;
 
-        const savedGame = await window[NarraLeafMainWorldProperty].game.save.read(id);
+        const savedGame = await window[NarraLeaf].game.save.read(id);
         if (!savedGame.success) {
             throw new CriticalRendererProcessError("Failed to load game: " + savedGame.error);
         }

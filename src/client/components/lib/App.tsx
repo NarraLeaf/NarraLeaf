@@ -1,5 +1,5 @@
 import { AppInfo } from "@/core/@types/global";
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 import { useGame, useRouter } from "narraleaf-react";
 import { App as Application } from "@/client/app/app";
 import { useState } from "react";
@@ -10,7 +10,7 @@ import { AppPlayer } from "./AppPlayer";
 type AppProps = {
     appInfo: AppInfo;
     config: RendererAppRootProps;
-    api: typeof window[typeof NarraLeafMainWorldProperty];
+    api: typeof window[typeof NarraLeaf];
 };
 
 export function App({appInfo, api, config}: AppProps) {
@@ -28,7 +28,7 @@ export function App({appInfo, api, config}: AppProps) {
     return (
         <AppProvider app={app}>
             <AppUserEntry>
-                <AppPlayer />
+                <AppPlayer config={config} />
             </AppUserEntry>
         </AppProvider>
     );

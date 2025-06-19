@@ -1,5 +1,5 @@
 import { Preference } from "narraleaf-react";
-import { StringKeyof } from "./data";
+import { StringKeyof } from "./types";
 import { EventToken } from "@/client/app/app.types";
 
 export class AppState<T extends Record<string, any>> extends Preference<T> {

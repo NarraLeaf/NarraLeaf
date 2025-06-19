@@ -2,6 +2,14 @@
 const esbuild = require('esbuild');
 const CssModulesPlugin = require('esbuild-css-modules-plugin');
 
+const isDev = process.argv.includes('--dev');
+
+if (isDev) {
+  console.log("Building in dev mode");
+} else {
+  console.log("Building in production mode");
+}
+
 const external = [
   "babel-loader",
   "electron",
@@ -66,7 +74,7 @@ Promise.all([
     format: 'esm',
     outfile: 'dist/client.mjs',
     platform: 'browser',
-    minify: true,
+    minify: !isDev,
     plugins: [
       CssModulesPlugin({
         inject: {
@@ -88,6 +96,6 @@ Promise.all([
     format: 'cjs',
     outfile: 'dist/preload.js',
     target: 'node16',
-    minify: true,
+    minify: !isDev,
   }),
 ]).catch(() => process.exit(1));

@@ -22,7 +22,7 @@ declare global {
         NarraLeaf: {
             getPlatform(): Promise<AppInfo>;
             app: {
-                restart(): void;
+                reload(): void;
                 terminate(err: string | Error | null): void;
                 requestMain<Request, Response>(event: string, ...args: Response extends void ? [payload?: Request] : [payload: Request]): Promise<RequestStatus<Response>>;
             };

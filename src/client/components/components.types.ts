@@ -11,3 +11,5 @@ export type RendererAppRootProps = {
     appRouterData: ProductionAppRouterModuleData | AppRouterModuleData;
     metadata: GameMetadata;
 };
+
+export type { ErrorFallbackProps } from "./errorHandling/errorHandling";

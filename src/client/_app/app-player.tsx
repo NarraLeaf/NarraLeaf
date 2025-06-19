@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GameMetadata } from "@/client/_app/types";
 import { SplashScreen } from "@/client/_app/splash-screen/splash-screen";
-import { useApp, useCurrentSaved } from "@/client";
+import { useApp, useCurrentSaved } from "@/client/_app/hooks";
 import { AsyncTaskQueue } from "@/utils/pure/array";
-import { NarraLeafMainWorldProperty, RendererHomePage } from "@core/build/constants";
+import { NarraLeaf, RendererHomePage } from "@core/build/constants";
 import { PageConfig, Pages } from "@/client/_app/app";
 import { Page, SavedGame, Stage, useGame, useRouter } from "narraleaf-react";
 import merge from "lodash/merge";
@@ -142,17 +142,10 @@ const AppPlayerContent = ({ story, pages, lib, metadata }: {
         : undefined;
     useBackgroundImagePreload(backgroundImage);
 
-    const pageStyles: PageConfig = {
-        style: {
-            position: "absolute",
-            inset: 0,
-        },
-    };
-
     const [throttledSaveHandler] = useState(() => 
         throttle(async (savedGame: SavedGame) => {
             queue.current.clear().push(async () => {
-                await window[NarraLeafMainWorldProperty].game.save.createRecovery(savedGame);
+                await window[NarraLeaf].game.save.createRecovery(savedGame);
             });
         }, app.appInfo.config.recoveryCreationInterval)
     );

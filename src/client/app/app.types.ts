@@ -1,5 +1,5 @@
 import { AppInfo } from "@/core/@types/global";
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 import * as NLReact from "narraleaf-react";
 import { Game } from "narraleaf-react";
 import React from "react";
@@ -11,16 +11,16 @@ interface AppConfig {
     appInfo: AppInfo;
     router: ReturnType<typeof NLReact["useRouter"]>;
     game: Game;
-    api: typeof window[typeof NarraLeafMainWorldProperty];
+    api: typeof window[typeof NarraLeaf];
 };
 
-type LayoutModule = {
+export type LayoutModule = {
     default: React.FunctionComponent<{
         children: React.ReactNode;
     }>;
 };
 
-type PageModule = {
+export type PageModule = {
     default: React.FunctionComponent;
 };
 
@@ -86,3 +86,4 @@ export type {
     EventToken,
     AppConfig,
 };
+export {SavedGameMetaData} from "narraleaf-react";

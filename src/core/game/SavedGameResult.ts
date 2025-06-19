@@ -1,10 +1,10 @@
-import { SavedGameMetadata } from "@/client";
+import type { SavedGameMetaData } from "narraleaf-react";
 import { SavedGame } from "narraleaf-react";
 
 
 export type SavedGameResult = {
     savedGame: SavedGame;
-    metadata: SavedGameMetadata;
+    metadata: SavedGameMetaData;
 } | {
-    metadata: SavedGameMetadata;
+    metadata: SavedGameMetaData;
 };

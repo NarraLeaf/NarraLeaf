@@ -5,7 +5,7 @@ import { CriticalRendererProcessError } from "@/main/utils/error";
 import { GamePlaybackState } from "../providers/game-state-provider";
 import { EventEmitter } from "events";
 import { EventToken } from "../types";
-import { NarraLeafMainWorldProperty, RendererHomePage } from "@/core/build/constants";
+import { NarraLeaf, RendererHomePage } from "@/core/build/constants";
 
 export interface AppConfig {
     appInfo: AppInfo;
@@ -54,7 +54,7 @@ export class App {
     }
 
     public crash(error: Error | string | null | undefined = null): void {
-        window[NarraLeafMainWorldProperty].app.terminate(error);
+        window[NarraLeaf].app.terminate(error);
     }
 
     public async newGame(): Promise<void> {
@@ -75,7 +75,7 @@ export class App {
             throw new CriticalRendererProcessError("Game or router not mounted");
         }
 
-        const savedGame = await window[NarraLeafMainWorldProperty].game.save.read(id);
+        const savedGame = await window[NarraLeaf].game.save.read(id);
         if (!savedGame.success) {
             throw new CriticalRendererProcessError("Failed to load game: " + savedGame.error);
         }

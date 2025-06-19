@@ -1,6 +1,6 @@
 import { AppInfo } from "@/core/@types/global";
 import { ErrorBoundary, ErrorBoundaryProps } from "./ErrorBoundary";
-import { NarraLeafMainWorldProperty } from "@/core/build/constants";
+import { NarraLeaf } from "@/core/build/constants";
 
 export interface CriticalErrorBoundaryProps extends ErrorBoundaryProps {
     appInfo: AppInfo;
@@ -18,6 +18,10 @@ export class CriticalErrorBoundary<T extends CriticalErrorBoundaryProps> extends
     protected handleError(error: Error, info: { componentStack: string; }): void {
         const { appInfo } = this.props;
 
+        if (!appInfo.isPackaged && appInfo.config.appErrorHandling === "terminate") {
+            console.warn("App is not terminated due to dev mode. In production, the app will be terminated.");
+        }
+
         const isRawErrorHandling = 
             appInfo.config.appErrorHandling === "raw"
             || !appInfo.isPackaged;
@@ -30,12 +34,12 @@ export class CriticalErrorBoundary<T extends CriticalErrorBoundaryProps> extends
             // If the app is crashing too fast, that means the error is happening during the initialization
             || (this.props.initialTimestamp && Date.now() - this.props.initialTimestamp < CriticalErrorBoundary.MINIMUM_RESTART_DELAY);
         if (forceTerminate) {
-            window[NarraLeafMainWorldProperty].app.terminate(error);
+            window[NarraLeaf].app.terminate(error);
         }
 
         const shouldRestart = appInfo.config.appErrorHandling === "restart";
         if (shouldRestart) {
-            window[NarraLeafMainWorldProperty].app.restart();
+            window[NarraLeaf].app.reload();
         }
     }
 }

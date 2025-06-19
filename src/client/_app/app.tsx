@@ -1,10 +1,10 @@
-import {NarraLeafMainWorldProperty} from "@core/build/constants";
+import {NarraLeaf} from "@core/build/constants";
 import {CriticalRendererProcessError} from "@/main/utils/error";
 import React from "react";
 import {AppInfo} from "@core/@types/global";
 import {ErrorBoundary} from "@/client/_app/errorHandling/error-boundary";
 import ErrorFallback from "@/client/_app/errorHandling/error-fallback";
-import {AppPlayer} from "@/client";
+import {AppPlayer} from "@/client/_app/app-player";
 import {GameMetadata, Meta} from "@/client/_app/types";
 import AppProviders from "@/client/_app/providers/app-providers";
 import {AppConfig} from "@/client/_app/client/app";
@@ -40,21 +40,21 @@ async function render(
     if (!window) {
         throw new CriticalRendererProcessError("Cannot access Window object in the renderer process");
     }
-    if (!window[NarraLeafMainWorldProperty]) {
+    if (!window[NarraLeaf]) {
         window.close();
     }
     if (!lib.metadata.story) {
-        window[NarraLeafMainWorldProperty].app.terminate(new Error("Story not found in the meta object"));
+        window[NarraLeaf].app.terminate(new Error("Story not found in the meta object"));
     }
 
     const reactMainVersion = React.version.split(".")[0];
-    const appInfo: AppInfo = await window[NarraLeafMainWorldProperty].getPlatform();
+    const appInfo: AppInfo = await window[NarraLeaf].getPlatform();
     const appConfig: AppConfig = {
         appInfo,
     };
 
     if (reactMainVersion !== "19") {
-        window[NarraLeafMainWorldProperty].app.terminate(new Error("React 19 is required to run NarraLeaf, you are using React " + reactMainVersion));
+        window[NarraLeaf].app.terminate(new Error("React 19 is required to run NarraLeaf, you are using React " + reactMainVersion));
     }
     if (!appInfo.isPackaged) {
         console.log("NarraLeaf is Running in development mode");
