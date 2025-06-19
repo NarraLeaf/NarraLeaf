@@ -2,6 +2,7 @@ import { AppInfo } from "@/core/@types/global";
 import { NarraLeafMainWorldProperty } from "@/core/build/constants";
 import * as NLReact from "narraleaf-react";
 import { Game } from "narraleaf-react";
+import React from "react";
 
 type EventToken = {
     cancel(): void;
@@ -13,17 +14,33 @@ interface AppConfig {
     api: typeof window[typeof NarraLeafMainWorldProperty];
 };
 
-type PageModuleData = {
+type LayoutModule = {
+    default: React.FunctionComponent<{
+        children: React.ReactNode;
+    }>;
+};
+
+type PageModule = {
+    default: React.FunctionComponent;
+};
+
+type LayoutModuleData = {
     name: string;
     path: string;
-    module: any;
+    module: LayoutModule;
+};
+
+export type PageModuleData = {
+    name: string;
+    path: string;
+    module: PageModule;
 };
 
 type LayoutModuleDir = {
     name: string;
     path: string;
     isSlug: boolean;
-    layout: PageModuleData | null;
+    layout: LayoutModuleData | null;
     indexHandler: PageModuleData | null;
     children: (LayoutModuleDir | PageModuleData)[];
 };
@@ -36,13 +53,19 @@ type AppRouterModuleData = {
 // Production types without any path information
 type ProductionPageModuleData = {
     name: string;
-    module: any;
+    module: PageModule;
+};
+
+type ProductionLayoutModuleData = {
+    name: string;
+    path: string;
+    module: LayoutModule;
 };
 
 type ProductionLayoutModuleDir = {
     name: string;
     isSlug: boolean;
-    layout: ProductionPageModuleData | null;
+    layout: ProductionLayoutModuleData | null;
     indexHandler: ProductionPageModuleData | null;
     children: (ProductionLayoutModuleDir | ProductionPageModuleData)[];
 };
@@ -57,6 +80,9 @@ export {
 export type {
     AppRouterModuleData,
     ProductionAppRouterModuleData,
+    ProductionLayoutModuleDir,
+    ProductionPageModuleData,
+    LayoutModuleDir,
     EventToken,
     AppConfig,
 };

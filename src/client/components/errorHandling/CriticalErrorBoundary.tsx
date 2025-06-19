@@ -2,16 +2,16 @@ import { AppInfo } from "@/core/@types/global";
 import { ErrorBoundary, ErrorBoundaryProps } from "./ErrorBoundary";
 import { NarraLeafMainWorldProperty } from "@/core/build/constants";
 
-interface CriticalErrorBoundaryProps extends ErrorBoundaryProps {
+export interface CriticalErrorBoundaryProps extends ErrorBoundaryProps {
     appInfo: AppInfo;
     children: React.ReactNode;
-    initialTimestamp: number;
+    initialTimestamp?: number;
 };
 
-export class CriticalErrorBoundary extends ErrorBoundary<CriticalErrorBoundaryProps> {
+export class CriticalErrorBoundary<T extends CriticalErrorBoundaryProps> extends ErrorBoundary<T> {
     static MINIMUM_RESTART_DELAY = 10;
 
-    constructor(props: CriticalErrorBoundaryProps) {
+    constructor(props: T) {
         super(props);
     }
 
@@ -28,7 +28,7 @@ export class CriticalErrorBoundary extends ErrorBoundary<CriticalErrorBoundaryPr
         const forceTerminate =
             appInfo.config.appErrorHandling === "terminate"
             // If the app is crashing too fast, that means the error is happening during the initialization
-            || Date.now() - this.props.initialTimestamp < CriticalErrorBoundary.MINIMUM_RESTART_DELAY;
+            || (this.props.initialTimestamp && Date.now() - this.props.initialTimestamp < CriticalErrorBoundary.MINIMUM_RESTART_DELAY);
         if (forceTerminate) {
             window[NarraLeafMainWorldProperty].app.terminate(error);
         }
