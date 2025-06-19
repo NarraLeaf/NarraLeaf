@@ -50,9 +50,11 @@ export async function render(config: RendererAppRootProps): Promise<void> {
         window[NarraLeaf].app.terminate(error || null);
     }
 
+    const ErrorFallbackComponent = config.appRouterData.errorHandler?.module?.default || BaseAppErrorFallback;
+
     renderer.render(
         <React.StrictMode>
-            <CriticalErrorBoundary appInfo={data!} initialTimestamp={initialTimestamp} fallback={<BaseAppErrorFallback />}>
+            <CriticalErrorBoundary appInfo={data!} initialTimestamp={initialTimestamp} fallback={ErrorFallbackComponent}>
                 <GameProviders>
                     <App appInfo={data!} api={window[NarraLeaf]} config={config} />
                 </GameProviders>

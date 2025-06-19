@@ -10,6 +10,7 @@ import webpack from "webpack";
 import { RendererOutputFileName, RendererOutputHTMLFileName } from "@core/build/constants";
 import { Fs } from "@/utils/nodejs/fs";
 import { App } from "@/cli/app";
+import chokidar from "chokidar";
 
 export type RendererBuildResult = {
     dir: string;
@@ -167,13 +168,46 @@ export async function watchRenderer(
         initialBuildResolve = resolve;
     });
 
+    // ------------------------------------------------------------------
+    // Watch pages directory to regenerate the renderer App entry whenever
+    // a page file (add/remove) changes. This keeps the routing structure
+    // in sync during dev without restarting the dev server.
+    // ------------------------------------------------------------------
+    const pagesWatcher = chokidar.watch(rendererProject.getPagesDir(), {
+        ignored: /(^|[\\/])\../, // ignore dotfiles
+        ignoreInitial: true,
+    });
+
+    const regenerateAppEntry = async () => {
+        try {
+            const newStructure = await createRendererAppStructure(rendererProject);
+            await createStructure([
+                newStructure,
+            ], rendererProject, buildTempDir);
+            logr.info("Detected page change, regenerated renderer app entry");
+        } catch (e) {
+            logr.error("Failed to regenerate renderer app entry", e as Error);
+        }
+    };
+
+    pagesWatcher
+        .on("add", regenerateAppEntry)
+        .on("unlink", regenerateAppEntry)
+        .on("addDir", regenerateAppEntry)
+        .on("unlinkDir", regenerateAppEntry);
+
     return {
         close(): Promise<void> {
             return new Promise<void>(resolve => {
-                compiler.close(() => {
-                    logr.info("Renderer build stopped");
-                    resolve();
-                });
+                const shutdown = async () => {
+                    await pagesWatcher.close();
+                    compiler.close(() => {
+                        logr.info("Renderer build stopped");
+                        resolve();
+                    });
+                };
+
+                shutdown();
             })
         }
     };

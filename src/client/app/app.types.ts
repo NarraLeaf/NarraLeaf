@@ -48,6 +48,7 @@ type LayoutModuleDir = {
 type AppRouterModuleData = {
     root: LayoutModuleDir;
     rootPath: string;
+    errorHandler: PageModuleData | null;
 };
 
 // Production types without any path information
@@ -72,6 +73,7 @@ type ProductionLayoutModuleDir = {
 
 type ProductionAppRouterModuleData = {
     root: ProductionLayoutModuleDir;
+    errorHandler: ProductionPageModuleData | null;
 };
 
 export {

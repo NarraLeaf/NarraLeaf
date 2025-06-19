@@ -23,7 +23,8 @@ export class RouterErrorBoundary extends CriticalErrorBoundary<RouterErrorBounda
 
     render() {
         if (this.state.hasError) {
-            return (<RouterErrorFallback path={this.props.path} />);
+            const FallbackComponent = this.props.fallback || RouterErrorFallback;
+            return <FallbackComponent path={this.props.path} />;
         }
 
         return this.props.children;

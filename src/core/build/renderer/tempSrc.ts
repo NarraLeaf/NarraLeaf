@@ -69,6 +69,11 @@ export async function createRendererAppStructure(
     
     collectPaths(appRouterData.root);
     
+    // Collect global error handler file if exists
+    if (appRouterData.errorHandler) {
+        collectPaths(appRouterData.errorHandler, "_error");
+    }
+    
     // Create module map for easier lookup
     const moduleMap: Record<string, string> = {};
     allPaths.forEach(({ path, id }) => {

@@ -16,6 +16,12 @@ import path from "path";
 export type AppRouterData = {
     root: LayoutDir;
     rootPath: string;
+    /**
+     * If an error page is provided at the root of the pages directory (e.g. error.tsx),
+     * it will be returned here.  This page can be used by the renderer as a global
+     * fallback error boundary.
+     */
+    errorHandler?: PageData;
 };
 
 export type LayoutDir = {
@@ -36,6 +42,33 @@ export type PageData = {
 export async function createAppRouter(rendererProject: RendererProject): Promise<AppRouterData> {
     const logr = rendererProject.project.app.createLogger();
     const pagesDir = rendererProject.getPagesDir();
+
+    // Scan for a global error handler page (error.(tsx|jsx|ts|js)) directly
+    let errorHandler: PageData | undefined;
+    try {
+        const rootFilesResult = await Fs.getFiles(pagesDir, [".js", ".jsx", ".ts", ".tsx"]);
+        if (!rootFilesResult.ok) {
+            throw new Error(rootFilesResult.error);
+        }
+
+        const errorFile = rootFilesResult.data.find(file => {
+            const fileName = path.basename(file, path.extname(file));
+            return fileName === "error";
+        });
+
+        if (errorFile) {
+            errorHandler = {
+                name: "error",
+                path: errorFile,
+            };
+
+            logr.info("Global error handler detected: " + Logger.chalk.blue(path.basename(errorFile)));
+        }
+    } catch (e) {
+        // If something goes wrong when searching for the error file we don't
+        // want to block the build process – just log the error and move on.
+        logr.warn("Failed while scanning for global error handler: " + (e as Error).message);
+    }
 
     const scan = async function (dir: string, indent: string = "", isLast: boolean = true, shouldLog: boolean = true): Promise<LayoutDir | null> {
         const files = await Fs.getFiles(dir, [".js", ".jsx", ".ts", ".tsx"]);
@@ -163,9 +196,6 @@ export async function createAppRouter(rendererProject: RendererProject): Promise
             const fileName = path.basename(file, path.extname(file));
             return fileName !== "layout" && fileName !== "index" && !usedAsIndexHandlerFiles.has(file);
         });
-        
-        // Check if there are other items after layout
-        const hasItemsAfterLayout = pageFiles.length > 0 || subdirs.length > 0 || indexHandler;
         
         // Build all children to output (layout, index, page files, subdirs)
         const childrenToOutput: { type: 'layout' | 'index' | 'page' | 'dir', data: any }[] = [];
@@ -300,6 +330,7 @@ export async function createAppRouter(rendererProject: RendererProject): Promise
 
     return {
         root,
-        rootPath: pagesDir
+        rootPath: pagesDir,
+        errorHandler,
     };
 }

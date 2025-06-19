@@ -13,10 +13,12 @@ import { RouterErrorBoundary } from "@/client/components/errorHandling/RouterErr
 import { Page, Layout } from "narraleaf-react";
 import { useApp } from "@/client/components/lib/providers/AppProvider";
 import { CriticalRendererProcessError } from "@/main/utils/error";
+import { BaseAppErrorFallback } from "../../errorHandling/BaseAppErrorFallback";
 
 export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterModuleData | AppRouterModuleData }) {
     const app = useApp();
-    const { root } = appRouterData;
+    const { root, errorHandler } = appRouterData;
+    const ErrorFallbackComponent = errorHandler?.module?.default || BaseAppErrorFallback;
 
     const assertComponent = (module: LayoutModule | PageModule, path?: string): React.ComponentType<any> => {
         if (typeof module.default !== "function") {
@@ -45,7 +47,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
 
         if (LayoutWrapper) {
             return (
-                <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={layoutName}>
+                <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={layoutName} fallback={ErrorFallbackComponent}>
                     <Layout name={layoutName} key={layoutName}>
                         <LayoutWrapper>
                             {indexHandler && createPage(indexHandler)}
@@ -57,7 +59,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
         }
 
         return (
-            <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={layoutName}>
+            <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={layoutName} fallback={ErrorFallbackComponent}>
                 <Layout name={layoutName} key={layoutName}>
                     {indexHandler && createPage(indexHandler)}
                     {childrenNodes}
@@ -73,7 +75,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
         const PageNode = assertComponent(module, sourcePath ?? undefined);
 
         return (
-            <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={name}>
+            <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={name} fallback={ErrorFallbackComponent}>
                 <Page name={name} key={name}>
                     <PageNode />                    
                 </Page>
@@ -93,7 +95,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
     if (indexHandler) {
         const PageNode = assertComponent(indexHandler.module, "path" in indexHandler ? indexHandler.path : undefined);
         rootNodes.push(
-            <RouterErrorBoundary appInfo={app.config.appInfo} key={"/"}>
+            <RouterErrorBoundary appInfo={app.config.appInfo} key={"/"} fallback={ErrorFallbackComponent}>
                 <Page name={null} key={null}>
                     <PageNode />
                 </Page>

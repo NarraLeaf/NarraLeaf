@@ -75,14 +75,14 @@ function generateModuleStructure(item, moduleMap, isRoot = false, isProduction =
 /* import */ import { createRoot } from "react-dom/client";
 /* import */ import { render } from "narraleaf/client";
 /* import */ import * as AppUserEntry from "<%= appPath %>";
-/* import */ import * as NarraLeafReact from "narraleaf-react";
 
 <% allPaths.forEach(function(item) { %>/* import */ import * as __NARRALEAF_IMPORTED_MODULE_<%= item.id %> from "<%= item.path %>";
 <% }); %>
 
 /**@type {import("narraleaf/client").<%= isProduction ? 'ProductionAppRouterModuleData' : 'AppRouterModuleData' %>} */
 const appRouterData = {
-    root: <%- generateModuleStructure(appRouterData.root, moduleMap, true, isProduction) %><% if (!isProduction) { %>,
+    root: <%- generateModuleStructure(appRouterData.root, moduleMap, true, isProduction) %>,
+    errorHandler: <%- generateModuleStructure(appRouterData.errorHandler, moduleMap, false, isProduction) %><% if (!isProduction) { %>,
     rootPath: "<%- escapeJSString(appRouterData.rootPath) %>"<% } %>
 };
 

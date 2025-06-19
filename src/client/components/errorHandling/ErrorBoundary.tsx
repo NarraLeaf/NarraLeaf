@@ -1,8 +1,9 @@
 import * as React from "react";
+import { ErrorFallbackProps } from "./errorHandling";
 
 export type ErrorBoundaryProps = {
     children: React.ReactNode;
-    fallback?: React.ReactNode;
+    fallback?: React.ComponentType<ErrorFallbackProps> | null;
 };
 
 export class ErrorBoundary<TProps extends ErrorBoundaryProps = ErrorBoundaryProps> extends React.Component<TProps, {
@@ -43,7 +44,12 @@ export class ErrorBoundary<TProps extends ErrorBoundaryProps = ErrorBoundaryProp
 
     render() {
         if (this.state.hasError) {
-            return this.props.fallback;
+            const FallbackComponent = this.props.fallback as React.ComponentType<ErrorFallbackProps>;
+            if (!FallbackComponent) {
+                return null;
+            }
+
+            return <FallbackComponent />;
         }
 
         return this.props.children;
