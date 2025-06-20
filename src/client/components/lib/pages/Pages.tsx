@@ -51,7 +51,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
                 <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={layoutName} fallback={ErrorFallbackComponent}>
                     <Layout name={layoutName} key={layoutName}>
                         <LayoutWrapper>
-                            {indexHandler && createPage(indexHandler)}
+                            {indexHandler && createPage(indexHandler, null)}
                             {childrenNodes}
                         </LayoutWrapper>
                     </Layout>
@@ -69,7 +69,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
         );
     };
 
-    const createPage = (page: ProductionPageModuleData | PageModuleData): React.ReactNode => {
+    const createPage = (page: ProductionPageModuleData | PageModuleData, pageName?: string | null): React.ReactNode => {
         const { name, module } = page;
         const sourcePath = "path" in page ? page.path : null;
 
@@ -77,7 +77,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
 
         return (
             <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={name} fallback={ErrorFallbackComponent}>
-                <Page name={name} key={name}>
+                <Page name={pageName ?? name} key={name}>
                     <PageNode />                    
                 </Page>
             </RouterErrorBoundary>
