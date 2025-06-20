@@ -38,6 +38,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
 
         const childrenNodes = children.map((v) => {
             if ("module" in v) {
+                if (v.name === "index") return null;
                 return createPage(v);
             } else {
                 return createLayout(v);
@@ -86,6 +87,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
     const {layout, indexHandler, children} = root;
     const rootNodes = children.map((v) => {
         if ("module" in v) {
+            if (v.name === "index") return null;
             return createPage(v);
         } else {
             return createLayout(v);
