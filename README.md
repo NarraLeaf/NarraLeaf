@@ -136,15 +136,36 @@ $root
 
 #### allowHTTP
 
-By default, the renderer process does not allow HTTP requests. This is to prevent security issues. If you need to allow HTTP requests, you can set the `allowHTTP` option to `true` in the `narraleaf.config.js` file.  
-```typescript
+This option controls whether the renderer process is allowed to make HTTP requests. By default, this is set to `false` for security reasons. If you need to allow HTTP requests, you can set the `allowHTTP` option to `true` in the `narraleaf.config.js` file.
+
+```javascript
 module.exports = {
-  renderer: {
-    baseDir: "./renderer",
-    allowHTTP: true,
+  default: {
+    renderer: {
+      allowHTTP: true,
+    },
   },
 };
 ```
+
+#### httpDevServer
+
+This option enables HTTP development server mode. When enabled, the renderer will be served via HTTP on localhost instead of using local file paths. This is useful for development scenarios where you need to serve files over HTTP. The default value is `false`.
+
+```javascript
+module.exports = {
+  default: {
+    renderer: {
+      httpDevServer: true,
+    },
+    dev: {
+      port: 5050, // HTTP server port
+    },
+  },
+};
+```
+
+**Note**: When `httpDevServer` is enabled, the WebSocket server for development tools will run on a different port (port + 1) to avoid conflicts.
 
 ### resources
 

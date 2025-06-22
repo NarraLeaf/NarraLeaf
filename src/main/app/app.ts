@@ -10,9 +10,9 @@ import type { StringKeyOf } from "narraleaf-react/dist/util/data";
 import type { SavedGame } from "narraleaf-react";
 
 // Core modules
-import { PreloadFileName, RendererOutputHTMLFileName } from "@core/build/constants";
+import { AppHost, DefaultDevHTTPServerPort, PreloadFileName, RendererOutputHTMLFileName } from "@core/build/constants";
 import { DevTempNamespace, TempNamespace } from "@core/constants/tempNamespace";
-import { SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGameMeta, SaveType } from "@core/game/save";
 import type { SavedGameResult } from "@core/game/SavedGameResult";
 
 // Local modules
@@ -40,6 +40,10 @@ type AppEvents = {
 export type AppMeta = {
     publicDir: string;
     rootDir: string;
+    httpMode?: {
+        enabled: boolean;
+        port: number;
+    };
 };
 
 export enum AppDataNamespace {
@@ -139,11 +143,23 @@ export class App {
     }
 
     public getEntryFile(): string {
-        const appDir = this.electronApp.getAppPath();
+        // If HTTP mode is enabled, return localhost URL
+        if (this.isHttpDevServerMode()) {
+            const devServerPort = this.devToolManager.getMetadata().httpMode?.port ?? DefaultDevHTTPServerPort;
+            const url = `http://localhost:${devServerPort}/${AppHost.DevServer}/${RendererOutputHTMLFileName}`;
+            this.logger.info(`HTTP mode enabled, returning URL: ${url}`);
+            this.logger.info(`HTTP mode state: isHttpMode=${this.isHttpDevServerMode()}, devServerPort=${devServerPort}`);
+            return url;
+        }
 
-        return this.electronApp.isPackaged
+        const appDir = this.electronApp.getAppPath();
+        const filePath = this.electronApp.isPackaged
             ? path.resolve(appDir, TempNamespace.RendererBuild, RendererOutputHTMLFileName)
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), DevTempNamespace.RendererBuild, RendererOutputHTMLFileName);
+        
+        this.logger.info(`HTTP mode disabled, returning file path: ${filePath}`);
+        this.logger.info(`HTTP mode state: isHttpMode=${this.isHttpDevServerMode()}, isPackaged=${this.electronApp.isPackaged}`);
+        return filePath;
     }
 
     public getPublicDir(): string {
@@ -177,6 +193,13 @@ export class App {
         return this.electronApp.isPackaged
             ? path.resolve(appDir, TempNamespace.RendererBuild)
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), DevTempNamespace.RendererBuild);
+    }
+
+    /**
+     * Check if HTTP dev server mode is enabled
+     */
+    public isHttpDevServerMode(): boolean {
+        return this.devToolManager.tryGetMetadata()?.httpMode?.enabled ?? false;
     }
 
     /**
@@ -237,7 +260,7 @@ export class App {
         return this.storageManager.readGameData(id);
     }
 
-    public async listGameData(): Promise<SavedGameMetadata[]> {
+    public async listGameData(): Promise<SavedGameMeta[]> {
         return await this.storageManager.listGameData();
     }
 
@@ -268,10 +291,10 @@ export class App {
             }
 
             this.initialized = true;
+            this.logger.info("App initialization completed");
 
             this.emit(App.Events.Ready);
             this.emitHook(HookEvents.AfterReady);
-
         });
     }
 

@@ -39,16 +39,16 @@ export type PageModuleData = {
 type LayoutModuleDir = {
     name: string;
     path: string;
-    isSlug: boolean;
-    layout: LayoutModuleData | null;
-    indexHandler: PageModuleData | null;
+    isSlug?: boolean;
+    layout?: LayoutModuleData | null;
+    indexHandler?: PageModuleData | null;
     children: (LayoutModuleDir | PageModuleData)[];
 };
 
 type AppRouterModuleData = {
     root: LayoutModuleDir;
     rootPath: string;
-    errorHandler: PageModuleData | null;
+    errorHandler?: PageModuleData | null;
 };
 
 // Production types without any path information
@@ -65,15 +65,15 @@ type ProductionLayoutModuleData = {
 
 type ProductionLayoutModuleDir = {
     name: string;
-    isSlug: boolean;
-    layout: ProductionLayoutModuleData | null;
-    indexHandler: ProductionPageModuleData | null;
+    isSlug?: boolean;
+    layout?: ProductionLayoutModuleData | null;
+    indexHandler?: ProductionPageModuleData | null;
     children: (ProductionLayoutModuleDir | ProductionPageModuleData)[];
 };
 
 type ProductionAppRouterModuleData = {
     root: ProductionLayoutModuleDir;
-    errorHandler: ProductionPageModuleData | null;
+    errorHandler?: ProductionPageModuleData | null;
 };
 
 export {
@@ -88,4 +88,6 @@ export type {
     EventToken,
     AppConfig,
 };
-export {SavedGameMetaData} from "narraleaf-react";
+export type { SavedGameMetaData } from "narraleaf-react";
+export type { UseSaveActionResult, UseSavedGameResult } from "./game/save/gameSaveHooks";
+export type { SavedGameMeta } from "@core/game/save";

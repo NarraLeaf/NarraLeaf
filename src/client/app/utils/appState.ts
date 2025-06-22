@@ -7,7 +7,11 @@ export class AppState<T extends Record<string, any>> extends Preference<T> {
         super(settings);
     }
 
-    public get(): T {
+    public get<K extends StringKeyof<T>>(key: K): T[K] {
+        return this.getPreference(key);
+    }
+
+    public getAll(): T {
         return this.getPreferences();
     }
 

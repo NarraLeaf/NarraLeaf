@@ -3,7 +3,7 @@ import {DevTempNamespace} from "@core/constants/tempNamespace";
 import path from "path";
 import {MainOutputFileName} from "@core/build/constants";
 import {summon, SummonedProcess} from "@/utils/nodejs/os";
-import { AppEventToken } from "@/main/app/types";
+import {AppEventToken} from "@/main/app/types";
 
 export type ElectronDevServerToken = {
     close(): Promise<void>;

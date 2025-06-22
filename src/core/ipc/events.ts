@@ -1,7 +1,7 @@
 import type { SavedGameResult } from "@/core/game/SavedGameResult";
 import type { CrashReport } from "@/main/app/mgr/crashManager";
 import type { PlatformInfo } from "@/utils/pure/os";
-import type { SavedGameMetadata, SaveType } from "@core/game/save";
+import type { SavedGameMeta, SaveType } from "@core/game/save";
 import type { IPCMessageType, IPCType } from "@core/ipc/ipc";
 import type { ClientAppConfiguration } from "../@types/global";
 
@@ -97,7 +97,7 @@ export type IPCEvents = {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {},
-        response: SavedGameMetadata[];
+        response: SavedGameMeta[];
     };
     [IPCEventType.gameDeleteGame]: {
         type: IPCMessageType.request,

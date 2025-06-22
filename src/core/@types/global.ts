@@ -1,5 +1,5 @@
 import { PlatformInfo } from "@/utils/pure/os";
-import { SavedGameMetadata } from "@core/game/save";
+import { SavedGameMeta } from "@core/game/save";
 import { RequestStatus } from "@core/ipc/events";
 import { SavedGameResult } from "@/core/game/SavedGameResult";
 import { CrashReport } from "@/main/app/mgr/crashManager";
@@ -32,7 +32,7 @@ declare global {
                     quickSave(gameData: SavedGame): Promise<RequestStatus<void>>;
                     createRecovery(gameData: SavedGame): Promise<RequestStatus<void>>;
                     read(id: string): Promise<RequestStatus<SavedGameResult | null>>;
-                    list(): Promise<RequestStatus<SavedGameMetadata[]>>;
+                    list(): Promise<RequestStatus<SavedGameMeta[]>>;
                 };
             };
         }

@@ -4,6 +4,7 @@ import { LiveGame, useGame } from "narraleaf-react";
 import React, { useEffect } from "react";
 import { NarraLeaf, QuickSaveId } from "@core/build/constants";
 import { safeClone } from "@/utils/pure/object";
+import { SavedGameMeta } from "@/core/game/save";
 
 export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;
@@ -13,7 +14,7 @@ export type UseSaveActionResult = {
 };
 
 export type UseSavedGameResult = {
-    results: SavedGameMetadata[] | [],
+    results: SavedGameMeta[] | [],
     error: Error | null,
     isLoading: boolean,
     refetch: () => void,
@@ -125,7 +126,7 @@ export function useSaveAction(): UseSaveActionResult {
 }
 
 export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResult {
-    const [results, setResults] = React.useState<SavedGameMetadata[]>([]);
+    const [results, setResults] = React.useState<SavedGameMeta[]>([]);
     const [error, setError] = React.useState<Error | null>(null);
     const [isLoading, setLoading] = React.useState<boolean>(false);
 

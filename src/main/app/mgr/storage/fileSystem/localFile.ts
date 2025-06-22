@@ -3,7 +3,7 @@ import { Fs } from "@/utils/nodejs/fs";
 import { Metadata } from "@/main/app/mgr/storage/fileSystem/localFileMetadata";
 import { StoreProvider } from "@/main/app/mgr/storage/storeProvider";
 import { SavedGameResult } from "@core/game/SavedGameResult";
-import { SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGameMeta, SaveType } from "@core/game/save";
 import { SavedGame } from "narraleaf-react";
 
 export type StorageConfig = {
@@ -21,7 +21,7 @@ export class LocalFile extends StoreProvider {
         forceDelete: false,
     };
 
-    static isUnknown(metadata: SavedGameMetadata | { id: string, isUnknown: true }): metadata is { id: string, isUnknown: true } {
+    static isUnknown(metadata: SavedGameMeta | { id: string, isUnknown: true }): metadata is { id: string, isUnknown: true } {
         return "isUnknown" in metadata && metadata.isUnknown;
     }
 
@@ -33,7 +33,7 @@ export class LocalFile extends StoreProvider {
         await this.prepareDir();
 
         const path = this.resolve(name);
-        const handle = await Metadata.read<SavedGameMetadata, SavedGame>(path);
+        const handle = await Metadata.read<SavedGameMeta, SavedGame>(path);
         const metadataResult = await handle.readMetaData();
 
         if (!metadataResult.ok) {
@@ -59,11 +59,11 @@ export class LocalFile extends StoreProvider {
         };
     }
 
-    async metadata(name: string): Promise<SavedGameMetadata | null> {
+    async metadata(name: string): Promise<SavedGameMeta | null> {
         await this.prepareDir();
 
         const path = this.resolve(name);
-        const handle = await Metadata.read<SavedGameMetadata, SavedGame>(path);
+        const handle = await Metadata.read<SavedGameMeta, SavedGame>(path);
         const result = await handle.readMetaData();
 
         await handle.close();
@@ -76,7 +76,7 @@ export class LocalFile extends StoreProvider {
         return result.content;
     }
 
-    async set(name: string, type: SaveType, metadata: SavedGameMetadata, data: SavedGame): Promise<void> {
+    async set(name: string, type: SaveType, metadata: SavedGameMeta, data: SavedGame): Promise<void> {
         await this.prepareDir();
 
         if (type === SaveType.QuickSave) {
@@ -86,18 +86,18 @@ export class LocalFile extends StoreProvider {
         }
 
         const path = this.resolve(name);
-        return await Metadata.write<SavedGameMetadata, SavedGame>(path, metadata, data);
+        return await Metadata.write<SavedGameMeta, SavedGame>(path, metadata, data);
     }
 
-    async list(): Promise<SavedGameMetadata[]> {
+    async list(): Promise<SavedGameMeta[]> {
         await this.prepareDir();
         await this.fullCleanup();
 
         const result = await this.rawList();
-        return result.filter((v) => !LocalFile.isUnknown(v)) as SavedGameMetadata[];
+        return result.filter((v) => !LocalFile.isUnknown(v)) as SavedGameMeta[];
     }
 
-    async rawList(): Promise<(SavedGameMetadata | { id: string, isUnknown: true })[]> {
+    async rawList(): Promise<(SavedGameMeta | { id: string, isUnknown: true })[]> {
         const result = await Fs.listFiles(this.config.dir);
         if (!result.ok) {
             throw new Error(result.error);
@@ -125,17 +125,17 @@ export class LocalFile extends StoreProvider {
         }
     }
 
-    private async quickSave(metadata: SavedGameMetadata, data: SavedGame): Promise<void> {
+    private async quickSave(metadata: SavedGameMeta, data: SavedGame): Promise<void> {
         return this.limitedSave(SaveType.QuickSave, metadata, data, this.config.maxTemporary || LocalFile.DefaultConfig.maxTemporary);
     }
 
-    private async createRecovery(metadata: SavedGameMetadata, data: SavedGame): Promise<void> {
+    private async createRecovery(metadata: SavedGameMeta, data: SavedGame): Promise<void> {
         return this.limitedSave(SaveType.Recovery, metadata, data, this.config.maxRecoveries || LocalFile.DefaultConfig.maxRecoveries);
     }
 
-    private async limitedSave(type: SaveType, metadata: SavedGameMetadata, data: SavedGame, max: number): Promise<void> {
+    private async limitedSave(type: SaveType, metadata: SavedGameMeta, data: SavedGame, max: number): Promise<void> {
         const path = this.resolve(metadata.id);
-        await Metadata.write<SavedGameMetadata, SavedGame>(path, metadata, data);
+        await Metadata.write<SavedGameMeta, SavedGame>(path, metadata, data);
 
         await this.cleanupOldSaves(type, max);
     }
@@ -163,7 +163,7 @@ export class LocalFile extends StoreProvider {
             }
         }
 
-        const saves = list.filter(v => !LocalFile.isUnknown(v) && v.type === type) as SavedGameMetadata[];
+        const saves = list.filter(v => !LocalFile.isUnknown(v) && v.type === type) as SavedGameMeta[];
         const removing = [];
         const sorted = saves.sort((a, b) =>
             (b.updated || 0) - (a.updated || 0));

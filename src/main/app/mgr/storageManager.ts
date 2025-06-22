@@ -2,7 +2,7 @@ import path from "path";
 import { App } from "../app";
 import { StoreProvider } from "./storage/storeProvider";
 import { LocalFile } from "./storage/fileSystem/localFile";
-import { SavedGameMetadata, SaveType } from "@core/game/save";
+import { SavedGameMeta, SaveType } from "@core/game/save";
 import { SavedGameResult } from "@core/game/SavedGameResult";
 import { AppDataNamespace } from "../app";
 import { JsonStore } from "../../utils/jsonStore";
@@ -60,7 +60,7 @@ export class StorageManager {
         return this.saveStorage.get(id);
     }
 
-    public async listGameData(): Promise<SavedGameMetadata[]> {
+    public async listGameData(): Promise<SavedGameMeta[]> {
         return await this.saveStorage.list();
     }
 
@@ -68,7 +68,7 @@ export class StorageManager {
         return this.saveStorage.delete(id);
     }
 
-    private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string, preview?: string): SavedGameMetadata {
+    private getSavedGameMetadata(save: SavedGame, type: SaveType, id: string, preview?: string): SavedGameMeta {
         return {
             ...save.meta,
             id,

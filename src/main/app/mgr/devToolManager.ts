@@ -2,13 +2,13 @@ import { app } from "electron";
 import { Client } from "@/utils/nodejs/websocket";
 import { DevServerEvent, DevServerEvents } from "@core/dev/devServer";
 import { DefaultDevServerPort, ENV_DEV_SERVER_PORT } from "@core/build/constants";
-import { App } from "@/main/app/app";
+import { App, AppMeta } from "@/main/app/app";
 import path from "path";
 import { DevTempNamespace } from "@core/constants/tempNamespace";
 
 export class DevToolManager {
     private wsClient: Client<DevServerEvents> | null = null;
-    private metadata: { rootDir: string; publicDir: string } | null = null;
+    private metadata: AppMeta | null = null;
     private initialized: boolean = false;
 
     constructor(private app: App) {
@@ -33,9 +33,7 @@ export class DevToolManager {
     private setupDevServer(): void {
         this.wsClient = Client.construct<DevServerEvents>(
             "localhost",
-            process.env[ENV_DEV_SERVER_PORT] 
-                ? Number(process.env[ENV_DEV_SERVER_PORT]) 
-                : DefaultDevServerPort
+            DefaultDevServerPort
         ).connect();
     }
 
@@ -72,14 +70,14 @@ export class DevToolManager {
         this.metadata = data;
     }
 
-    public getMetadata(): { rootDir: string; publicDir: string } {
+    public getMetadata(): AppMeta {
         if (!this.metadata) {
             throw new Error("Metadata is not available");
         }
         return this.metadata;
     }
 
-    public tryGetMetadata(): { rootDir: string; publicDir: string } | null {
+    public tryGetMetadata(): AppMeta | null {
         if (!this.metadata) {
             return null;
         }

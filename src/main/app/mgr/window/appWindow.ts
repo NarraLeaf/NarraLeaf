@@ -86,6 +86,31 @@ export class AppWindow extends WindowProxy {
         }
     }
 
+    // Install extension by ID or path
+    public async installExtension(extensionIdOrPath: string): Promise<void> {
+        try {
+            const session = this.getWebContents().session;
+            
+            // Check if extension is already installed
+            const extensions = await session.getAllExtensions();
+            const existingExtension = extensions.find(ext => 
+                ext.id === extensionIdOrPath || ext.name === extensionIdOrPath
+            );
+            
+            if (existingExtension) {
+                this.app.logger.info(`Extension ${extensionIdOrPath} already installed`);
+                return;
+            }
+
+            // Try to install extension
+            await session.loadExtension(extensionIdOrPath);
+            this.app.logger.info(`Extension ${extensionIdOrPath} installed successfully`);
+        } catch (error) {
+            this.app.logger.error(`Error installing extension ${extensionIdOrPath}: ${error}`);
+            throw error;
+        }
+    }
+
     // Window State Operations
     public setIcon(icon: string): void {
         this.getInstance().setIcon(icon);

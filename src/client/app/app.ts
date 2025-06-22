@@ -7,7 +7,7 @@ import { CriticalRendererProcessError } from "@/main/utils/error";
 import { AppAPI } from "./api";
 
 type AppEvents = {};
-type AppStates = {
+export type AppStates = {
     isPlaying: boolean;
 };
 

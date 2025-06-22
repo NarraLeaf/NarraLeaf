@@ -45,7 +45,7 @@ export class CrashManager {
         await this.crashFlag.unflag();
         this.crashReport = report;
 
-        this.app.logger.error("Crash detected: \n" + JSON.stringify(report, null, 2));
+        this.app.logger.error("Crash Report detected: \n" + JSON.stringify(report, null, 2));
     }
 
     private setupErrorHandlers(): void {

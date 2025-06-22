@@ -13,24 +13,35 @@ import { Project } from "@core/project/project";
 export const RendererHTMLEntryPoint: Structure = {
     type: StructureEntityType.File,
     name: "index.html",
-    src: (rendererProject, devMode: boolean) => ejs.render(RendererEntryTemplateHTML, {
-        version: rendererProject.project.app.config.version,
-        title: rendererProject.project.name,
-        base: url.format({
-            protocol: AppProtocol,
-            slashes: true,
-            hostname: AppHost.Public,
-        }),
-        script: url.format({
-            protocol: AppProtocol,
-            slashes: true,
-            hostname: AppHost.Renderer,
-            pathname: RendererOutputFileName,
-        }),
-        protocol: AppProtocol,
-        allowHTTP: rendererProject.project.config.renderer.allowHTTP,
-        devMode
-    })
+    src: (rendererProject, devMode: boolean) => {
+        // Check if HTTP dev server mode is enabled
+        const isHttpMode = rendererProject.project.config.renderer.httpDevServer;
+        const devPort = rendererProject.project.config.renderer.httpDevServerPort;
+        
+        // Determine protocol and hostname based on HTTP mode
+        const protocol = isHttpMode ? "http" : AppProtocol;
+        const baseHostname = isHttpMode ? "localhost" : AppHost.Public;
+        
+        return ejs.render(RendererEntryTemplateHTML, {
+            version: rendererProject.project.app.config.version,
+            title: rendererProject.project.name,
+            base: url.format({
+                protocol: protocol,
+                slashes: true,
+                hostname: baseHostname,
+                port: isHttpMode ? devPort : undefined,
+            }),
+            script: url.format({
+                protocol: AppProtocol,
+                slashes: true,
+                hostname: AppHost.Renderer,
+                pathname: RendererOutputFileName,
+            }),
+            protocol: protocol,
+            allowHTTP: rendererProject.project.config.renderer.allowHTTP,
+            devMode
+        });
+    }
 };
 
 function createRelativeImportPath(fromPath: string, toPath: string): string {

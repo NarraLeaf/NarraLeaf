@@ -15,6 +15,8 @@ export type BaseProjectConfigZod = z.ZodObject<{
     renderer: z.ZodObject<{
         baseDir: z.ZodString;
         allowHTTP: z.ZodBoolean;
+        httpDevServer: z.ZodBoolean;
+        httpDevServerPort: z.ZodNumber;
     }>;
     temp: z.ZodString;
     dev: z.ZodObject<{
@@ -65,6 +67,8 @@ export const BaseProjectStructure: DirStructureDefinition<{
                     renderer: z.object({
                         baseDir: z.string(),
                         allowHTTP: z.boolean(),
+                        httpDevServer: z.boolean(),
+                        httpDevServerPort: z.number(),
                     }).partial(),
                     temp: z.string(),
                     dev: z.object({

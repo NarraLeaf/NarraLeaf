@@ -42,7 +42,7 @@ export async function buildMain(
             resolve: {},
             externals: [
                 NodeExternals(),
-                ...Builtins,
+                // ...Builtins,
                 "narraleaf",
             ],
             target: "electron-main",
@@ -103,7 +103,7 @@ export async function watchMain(
             resolve: {},
             externals: [
                 NodeExternals(),
-                ...Builtins,
+                // ...Builtins,
                 "narraleaf",
             ],
             target: "electron-main",

@@ -20,7 +20,30 @@ export class WindowManager {
 
     public async launchMainWindow(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
         const win = this.createMainWindow(config);
-        await win.loadFile(this.app.getEntryFile());
+        
+        // Check if HTTP dev server mode is enabled
+        if (this.app.isHttpDevServerMode()) {
+            const url = this.app.getEntryFile();
+            console.log(`[WindowManager] Loading URL in HTTP mode: ${url}`);
+            try {
+                await win.loadURL(url);
+                console.log(`[WindowManager] Successfully loaded URL: ${url}`);
+            } catch (error) {
+                console.error(`[WindowManager] Failed to load URL: ${url}`, error);
+                throw error;
+            }
+        } else {
+            const filePath = this.app.getEntryFile();
+            console.log(`[WindowManager] Loading file in file mode: ${filePath}`);
+            try {
+                await win.loadFile(filePath);
+                console.log(`[WindowManager] Successfully loaded file: ${filePath}`);
+            } catch (error) {
+                console.error(`[WindowManager] Failed to load file: ${filePath}`, error);
+                throw error;
+            }
+        }
+        
         await win.show();
         return win;
     }
