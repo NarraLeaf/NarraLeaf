@@ -17,6 +17,7 @@ export class RouterErrorBoundary extends CriticalErrorBoundary<RouterErrorBounda
 
     protected handleError(error: Error, info: { componentStack: string; }): void {
         console.error(error);
+        console.error(info.componentStack);
 
         super.handleError(error, info);
     }

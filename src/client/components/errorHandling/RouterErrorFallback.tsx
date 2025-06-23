@@ -5,7 +5,7 @@ export function RouterErrorFallback({path}: {path?: string}) {
         <>
             <h1>Router Error</h1>
             <p>Something went wrong. Error details have been logged to the renderer console.</p>
-            {path && <p>Source File Path: {path}</p>}
+            <pre>{path && <p>Source File Path: {path}</p>}</pre>
         </>
     );
 }

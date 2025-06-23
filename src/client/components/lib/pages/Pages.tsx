@@ -1,27 +1,27 @@
-import React from "react";
 import {
     AppRouterModuleData,
+    LayoutModule,
+    LayoutModuleDir,
+    PageModule,
+    PageModuleData,
     ProductionAppRouterModuleData,
     ProductionLayoutModuleDir,
     ProductionPageModuleData,
-    LayoutModuleDir,
-    PageModuleData,
-    LayoutModule,
-    PageModule,
 } from "@/client/app/app.types";
 import { RouterErrorBoundary } from "@/client/components/errorHandling/RouterErrorBoundary";
-import { Page, Layout, LayoutRouterProvider } from "narraleaf-react";
 import { useApp } from "@/client/components/lib/providers/AppProvider";
 import { CriticalRendererProcessError } from "@/main/utils/error";
-import { BaseAppErrorFallback } from "../../errorHandling/BaseAppErrorFallback";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence } from "motion/react";
+import { Layout, LayoutRouterProvider, Page } from "narraleaf-react";
+import React from "react";
+import { RouterErrorFallback } from "../../errorHandling/RouterErrorFallback";
 
 const ignorePageNames = ["index", "layout"];
 
-export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterModuleData | AppRouterModuleData }) {
+export function RootPages({ appRouterData }: { appRouterData: ProductionAppRouterModuleData | AppRouterModuleData }) {
     const app = useApp();
     const { root, errorHandler } = appRouterData;
-    const ErrorFallbackComponent = errorHandler?.module?.default || BaseAppErrorFallback;
+    const ErrorFallbackComponent = errorHandler?.module?.default || RouterErrorFallback;
 
     const assertComponent = (module: LayoutModule | PageModule, path?: string): React.ComponentType<any> => {
         if (typeof module.default !== "function") {
@@ -84,7 +84,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
             )] : []),
             ...childrenNodes
         ];
-        
+
         return allNodes;
     };
 
@@ -104,28 +104,14 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
             <RouterErrorBoundary path={sourcePath ?? undefined} appInfo={app.config.appInfo} key={key ?? name} fallback={ErrorFallbackComponent}>
                 <AnimatePresence mode="wait">
                     <Page name={configName} key={configName}>
-                        <motion.div
-                            key={`${configName}-motion`}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                            onAnimationStart={(definition) => {
-                                console.log("Animation started:", definition, "for page:", configName);
-                            }}
-                            onAnimationComplete={(definition) => {
-                                console.log("Animation completed:", definition, "for page:", configName);
-                            }}
-                        >
-                            <PageNode key={configName ?? "index"} />
-                        </motion.div>
+                        <PageNode key={configName ?? "index"} />
                     </Page>
                 </AnimatePresence>
             </RouterErrorBoundary>
         );
     };
 
-    const {layout, indexHandler, children} = root;
+    const { layout, indexHandler, children } = root;
     const rootNodes = children.map((v, i) => {
         if ("module" in v) {
             if (ignorePageNames.includes(v.name)) return null;
@@ -134,7 +120,7 @@ export function Pages({ appRouterData }: { appRouterData: ProductionAppRouterMod
             return createLayout(v, "/", i.toString());
         }
     }).filter(Boolean);
-    
+
     if (indexHandler) {
         const PageNode = assertComponent(indexHandler.module, "path" in indexHandler ? indexHandler.path : undefined);
         rootNodes.push(

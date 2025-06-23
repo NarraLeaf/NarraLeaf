@@ -3,7 +3,7 @@ import { ErrorInfo, useCallback, useEffect } from "react";
 import { useApp } from "./providers/AppProvider";
 import { RendererAppRootProps } from "../components.types";
 import { Player, useGame } from "narraleaf-react";
-import { Pages } from "./pages/Pages";
+import { RootPages } from "./pages/Pages";
 
 export function AppPlayer({config}: {config: RendererAppRootProps}) {
     const app = useApp();
@@ -45,7 +45,7 @@ export function AppPlayer({config}: {config: RendererAppRootProps}) {
                 width="100%"
                 height="100%"
             >
-                <Pages appRouterData={config.appRouterData} />
+                <RootPages appRouterData={config.appRouterData} />
             </Player>
         </>
     );
