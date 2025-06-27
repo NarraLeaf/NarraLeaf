@@ -9,5 +9,9 @@ export class AppAPI {
     async createRecovery(savedGame: SavedGame) {
         await this.api.game.save.createRecovery(savedGame);
     }
+
+    public quit() {
+        this.api.app.terminate(null);
+    }
 }
 

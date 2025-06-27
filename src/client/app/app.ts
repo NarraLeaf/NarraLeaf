@@ -1,10 +1,11 @@
-import { EventEmitter } from "events";
-import { AppState } from "./utils/appState";
-import { AppConfig } from "./app.types";
-import { CrashReport } from "@/main/app/types";
 import { NarraLeaf } from "@/core/build/constants";
+import { CrashReport } from "@/main/app/types";
 import { CriticalRendererProcessError } from "@/main/utils/error";
+import { EventEmitter } from "events";
+import { RootPath } from "narraleaf-react";
 import { AppAPI } from "./api";
+import { AppConfig } from "./app.types";
+import { AppState } from "./utils/appState";
 
 type AppEvents = {};
 export type AppStates = {
@@ -67,5 +68,17 @@ export class App extends AppAPI {
         game.getLiveGame().getGameStateForce().events.once("event:state.onRender", () => {
             game.getLiveGame().deserialize(data.savedGame);
         });
+    }
+
+    public async exitGame() {
+        const { game, router } = this.config;
+
+        game.getLiveGame().reset();
+        this.state.set("isPlaying", false);
+
+        router
+            .clear()
+            .cleanHistory()
+            .navigate(RootPath);
     }
 }
