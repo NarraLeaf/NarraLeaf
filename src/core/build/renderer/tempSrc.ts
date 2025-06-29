@@ -15,7 +15,7 @@ export const RendererHTMLEntryPoint: Structure = {
     name: "index.html",
     src: (rendererProject, devMode: boolean) => {
         // Check if HTTP dev server mode is enabled
-        const isHttpMode = rendererProject.project.config.renderer.httpDevServer;
+        const isHttpMode = rendererProject.project.config.renderer.httpDevServer && devMode;
         const devPort = rendererProject.project.config.renderer.httpDevServerPort;
         
         // Determine protocol and hostname based on HTTP mode

@@ -75,7 +75,9 @@ export class FileSystemHandler implements ProtocolHandler, AssetResolver {
                         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
                         "Pragma": "no-cache",
                         "Expires": "0"
-                    } : {})
+                    } : {
+                        "Cache-Control": "public, max-age=180, immutable"
+                    })
                 },
                 data: data
             } as ProtocolResponse;

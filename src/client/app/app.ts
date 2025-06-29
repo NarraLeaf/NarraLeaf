@@ -6,6 +6,7 @@ import { RootPath } from "narraleaf-react";
 import { AppAPI } from "./api";
 import { AppConfig } from "./app.types";
 import { AppState } from "./utils/appState";
+import { SaveType } from "@/core/game/save";
 
 type AppEvents = {};
 export type AppStates = {
@@ -62,12 +63,14 @@ export class App extends AppAPI {
         router.clear().cleanHistory();
         await game.getLiveGame()
             .newGame()
-            .waitForRouterExit().promise;
+            .deserialize(data.savedGame);
+        await game.getLiveGame().waitForRouterExit().promise;
 
         this.state.set("isPlaying", true);
-        game.getLiveGame().getGameStateForce().events.once("event:state.onRender", () => {
-            game.getLiveGame().deserialize(data.savedGame);
-        });
+
+        // game.getLiveGame().getGameStateForce().events.once("event:state.onRender", () => {
+
+        // });
     }
 
     public async exitGame() {
@@ -80,5 +83,19 @@ export class App extends AppAPI {
             .clear()
             .cleanHistory()
             .navigate(RootPath);
+    }
+
+    public async continueGame(): Promise<true | null> {
+        const saves = await this.listSaves();
+        const latestSave = saves
+            .filter(save => save.type === SaveType.Save)
+            .sort((a, b) => b.updated - a.updated)[0];
+
+        if (!latestSave) {
+            return null;
+        }
+
+        this.loadGame(latestSave.id);
+        return true;
     }
 }

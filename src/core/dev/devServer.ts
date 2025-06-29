@@ -186,6 +186,7 @@ export class DevServer {
                 res.writeHead(200, {
                     "Content-Type": mimeType,
                     "Content-Length": content.length.toString(),
+                    "Cache-Control": "public, max-age=180, immutable"
                 });
                 res.end(content);
             } catch (error) {

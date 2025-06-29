@@ -1,11 +1,22 @@
 import { NarraLeaf } from "@/core/build/constants";
 import { SavedGame } from "narraleaf-react";
+import { SavedGameMeta } from "./app.types";
 
-export class AppAPI {
+export class GameAPI {
     constructor(
-        private readonly api: typeof window[typeof NarraLeaf],
+        protected readonly api: typeof window[typeof NarraLeaf],
     ) {}
 
+    async listSaves(): Promise<SavedGameMeta[]> {
+        const res = await this.api.game.save.list();
+        if (!res.success) {
+            throw new Error(res.error);
+        }
+        return res.data;
+    }
+}
+
+export class AppAPI extends GameAPI {
     async createRecovery(savedGame: SavedGame) {
         await this.api.game.save.createRecovery(savedGame);
     }

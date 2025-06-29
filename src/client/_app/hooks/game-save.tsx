@@ -124,7 +124,7 @@ export function useSaveAction(): UseSaveActionResult {
     };
 }
 
-export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResult {
+export function useSavedGames(): UseSavedGameResult {
     const [results, setResults] = React.useState<SavedGameMetadata[]>([]);
     const [error, setError] = React.useState<Error | null>(null);
     const [isLoading, setLoading] = React.useState<boolean>(false);
@@ -156,7 +156,7 @@ export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResu
 
     React.useEffect(() => {
         refetch()
-    }, deps);
+    }, []);
 
     return {
         results,
