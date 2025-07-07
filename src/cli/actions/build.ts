@@ -7,13 +7,14 @@ import {errorToStack, errorToString} from "@/utils/pure/string";
 
 type BuildOptions = {};
 
-export default async function build(this: Command, app: App, [path]: [string, BuildOptions]) {
+export default async function build(this: Command, app: App, []: [BuildOptions]) {
     const logr = App.createLogger(app);
     logr.info("Building project...");
 
     try {
         // Prepare project
         const time = Date.now();
+        const path = app.cwd();
         const projectStructure = await parseDirStructure(BaseProjectStructure, app.resolvePath(path));
         const project = new Project(app, app.resolvePath(path), projectStructure);
         logr.info("Building project at", app.resolvePath(path));

@@ -1,18 +1,6 @@
-/**
- * @todo: use import("narraleaf-react").SavedGame instead
- */
-export interface SavedGame {
-    name: string;
-    meta: {
-        created: number;
-        updated: number;
-    };
-    game: Record<string, any>;
-}
+import type {SavedGameMetaData as NLRSavedGameMetaData} from "narraleaf-react";
 
-export interface SavedGameMetadata {
-    created: number;
-    updated: number;
+export interface SavedGameMeta extends NLRSavedGameMetaData {
     id: string;
     type: SaveType;
     capture?: string;

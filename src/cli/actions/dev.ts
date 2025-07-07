@@ -18,7 +18,7 @@ export default async function dev(this: Command, app: App, []: [DevOptions]) {
     const time = Date.now();
 
     try {
-        const path = app.getProcess().cwd();
+        const path = app.cwd();
         const projectStructure = await parseDirStructure(BaseProjectStructure, app.resolvePath(path));
 
         const project = new Project(app, app.resolvePath(path), projectStructure);

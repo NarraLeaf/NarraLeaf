@@ -1,15 +1,21 @@
-import {IPCMessageType, IPCType} from "@core/ipc/ipc";
-import {PlatformInfo} from "@/utils/pure/os";
-import {SavedGame, SavedGameMetadata, SaveType} from "@core/game/save";
-import {CrashReport} from "@/main/electron/app/app";
+import type { SavedGameResult } from "@/core/game/SavedGameResult";
+import type { CrashReport } from "@/main/app/mgr/crashManager";
+import type { PlatformInfo } from "@/utils/pure/os";
+import type { SavedGameMeta, SaveType } from "@core/game/save";
+import type { IPCMessageType, IPCType } from "@core/ipc/ipc";
+import type { ClientAppConfiguration } from "../@types/global";
 
-export enum IpcEvent {
+export enum IPCEventType {
     getPlatform = "getPlatform",
-    app_terminate = "app.terminate",
-    game_save_save = "game.save.save",
-    game_save_read = "game.save.read",
-    game_save_list = "game.save.list",
-    game_save_delete = "game.save.delete",
+    appReload = "app.reload",
+    appTerminate = "app.terminate",
+    appRequestMainEvent = "app.event.requestMain",
+    appGetJsonStore = "app.store.getJson",
+    appSaveJsonStore = "app.store.saveJson",
+    gameSaveGame = "game.save.save",
+    gameReadGame = "game.save.read",
+    gameListGame = "game.save.list",
+    gameDeleteGame = "game.save.delete",
 }
 
 export type VoidRequestStatus = RequestStatus<void>;
@@ -17,14 +23,14 @@ export type RequestStatus<T> = {
     success: true;
     data: T;
     error?: never;
-} |{
+} | {
     success: false;
     data?: never;
     error?: string;
 };
 
-export type IpcEvents = {
-    [IpcEvent.getPlatform]: {
+export type IPCEvents = {
+    [IPCEventType.getPlatform]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {},
@@ -32,9 +38,16 @@ export type IpcEvents = {
             platform: PlatformInfo;
             isPackaged: boolean;
             crashReport: CrashReport | null;
+            config: ClientAppConfiguration;
         };
     };
-    [IpcEvent.app_terminate]: {
+    [IPCEventType.appReload]: {
+        type: IPCMessageType.message,
+        consumer: IPCType.Host,
+        data: {},
+        response: never;
+    };
+    [IPCEventType.appTerminate]: {
         type: IPCMessageType.message,
         consumer: IPCType.Host,
         data: {
@@ -42,7 +55,26 @@ export type IpcEvents = {
         },
         response: never;
     };
-    [IpcEvent.game_save_save]: {
+
+    [IPCEventType.appGetJsonStore]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            name: string;
+        },
+        response: Record<string, any>;
+    };
+    [IPCEventType.appSaveJsonStore]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            name: string;
+            data: Record<string, any>;
+        },
+        response: void;
+    };
+
+    [IPCEventType.gameSaveGame]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {
@@ -51,29 +83,38 @@ export type IpcEvents = {
             type: SaveType;
             preview?: string;
         },
-        response: VoidRequestStatus;
+        response: void;
     };
-    [IpcEvent.game_save_read]: {
+    [IPCEventType.gameReadGame]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {
             id: string;
         },
-        response: RequestStatus<SavedGame>;
+        response: SavedGameResult | null;
     };
-    [IpcEvent.game_save_list]: {
+    [IPCEventType.gameListGame]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {},
-        response: RequestStatus<SavedGameMetadata[]>;
+        response: SavedGameMeta[];
     };
-    [IpcEvent.game_save_delete]: {
+    [IPCEventType.gameDeleteGame]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {
             id: string;
         },
-        response: VoidRequestStatus;
+        response: void;
+    };
+    [IPCEventType.appRequestMainEvent]: {
+        type: IPCMessageType.request,
+        consumer: IPCType.Host,
+        data: {
+            event: string;
+            payload: any;
+        },
+        response: any;
     };
 };
 

@@ -82,6 +82,10 @@ export class App {
         return path.resolve(this.getProcess().cwd(), p);
     }
 
+    public cwd(): string {
+        return this.getProcess().cwd();
+    }
+
     public createLogger(): Logger {
         return App.createLogger(this);
     }

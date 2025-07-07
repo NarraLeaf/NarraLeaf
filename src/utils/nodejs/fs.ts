@@ -1,7 +1,7 @@
 import path from "path";
 import {Logger} from "@/cli/logger";
 import fs from "fs/promises";
-import {default as fsSync} from "fs";
+import {Dirent, default as fsSync} from "fs";
 
 export type FsResult<T, OK extends true | false = true | false> = OK extends true ? { ok: true; data: T } : {
     ok: false;
@@ -86,8 +86,20 @@ export class Fs {
         }));
     }
 
+    public static listDirs(dir: string): Promise<FsResult<string[]>> {
+        return this.wrap(fs.readdir(dir, {withFileTypes: true}).then((files) => {
+            return files
+                .filter((file) => file.isDirectory())
+                .map((file) => file.name);
+        }));
+    }
+
     public static deleteFile(path: string): Promise<FsResult<void>> {
         return this.wrap(fs.unlink(path));
+    }
+
+    public static dirEntries(dir: string): Promise<FsResult<Dirent[]>> {
+        return this.wrap(fs.readdir(dir, {withFileTypes: true}));
     }
 
     private static errorToString(error: unknown): string {

@@ -21,7 +21,7 @@ export type IPCConfiguration = {
     type: IPCMessageType.request;
     consumer: IPCType;
     data: Record<any, any>;
-    response: Record<any, any>;
+    response: Record<any, any> | null | void;
 };
 
 type Opposite<T extends IPCType> = T extends IPCType.Host ? IPCType.Client : IPCType.Host;
@@ -31,7 +31,7 @@ export type OnlyMessage<T extends Record<any, IPCConfiguration>, U extends IPCTy
 };
 export type OnlyRequest<T extends Record<any, IPCConfiguration>, U extends IPCType> = {
     [K in keyof T]: T[K] extends { consumer: Opposite<U> } ?
-        T[K] extends { type: IPCMessageType.request, response: Record<any, any> } ? K : never : never;
+        T[K] extends { type: IPCMessageType.request } ? K : never : never;
 }
 
 export class IPC<T extends Record<any, IPCConfiguration>, U extends IPCType> {

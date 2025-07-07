@@ -21,7 +21,8 @@
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' <%= protocol %>:;
         img-src 'self' <%= protocol %>: data: <%= allowHTTP ? 'http: https:' : '' %>;
-        script-src 'self' <%= protocol %>: <%= devMode ? "'unsafe-eval'" : '' %>;
+        script-src 'self' <%= protocol %>: <%= protocol !== 'app' ? 'app: app://renderer' : 'app://renderer' %> 'unsafe-eval';
+        font-src 'self' <%= protocol %>: <%= protocol !== 'app' ? 'app: app://renderer' : 'app://renderer' %>;
         style-src 'self' 'unsafe-inline';
     ">
     <script defer src="<%= script %>"></script>

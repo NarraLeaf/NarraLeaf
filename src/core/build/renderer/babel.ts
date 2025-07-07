@@ -13,15 +13,33 @@ export class Babel extends WebpackModule {
             loader: "babel-loader",
             options: {
                 presets: this.getPresets(),
+                plugins: this.getPlugins(),
+                cacheDirectory: true,
             },
         };
     }
 
     public getPresets() {
         return [
-            "@babel/preset-env",
+            ["@babel/preset-env", {
+                targets: {
+                    node: "current"
+                }
+            }],
             "@babel/preset-typescript",
-            ...(this.useReact ? ["@babel/preset-react"] : []),
+            ...(this.useReact ? [["@babel/preset-react", {
+                runtime: "automatic",
+                development: process.env.NODE_ENV === "development"
+            }]] : []),
         ];
+    }
+
+    public getPlugins() {
+        return this.useReact ? [
+            ["@babel/plugin-transform-react-jsx", {
+                runtime: "automatic",
+                importSource: "react"
+            }]
+        ] : [];
     }
 }

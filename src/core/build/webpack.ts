@@ -20,6 +20,7 @@
  */
 import {Configuration, RuleSetUse} from "webpack";
 import _ from "lodash";
+import { App } from "@/cli/app";
 
 export enum WebpackMode {
     Development = "development",
@@ -49,7 +50,7 @@ export class WebpackConfig {
         this.node_modules = [];
     }
 
-    public getConfiguration(): Configuration {
+    public getConfiguration(app: App): Configuration {
         return _.merge({
             mode: this.config.mode,
             entry: this.config.entry,
@@ -65,7 +66,7 @@ export class WebpackConfig {
                 rules: this.modules.map(module => ({
                     test: module.test,
                     exclude: module.exclude,
-                    use: module.getLoader()
+                    use: module.getLoader(app)
                 }))
             },
             plugins: this.plugins,
@@ -95,6 +96,6 @@ export abstract class WebpackModule {
     public abstract test: RegExp;
     public abstract exclude: RegExp;
 
-    public abstract getLoader(): RuleSetUse;
+    public abstract getLoader(app: App): RuleSetUse;
 }
 

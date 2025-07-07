@@ -1,6 +1,6 @@
 import _ from "lodash";
 import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
-import {DefaultDevServerPort} from "@core/build/constants";
+import {DefaultDevHTTPServerPort, DefaultDevServerPort} from "@core/build/constants";
 
 
 export const DefaultProjectConfig: BaseProjectConfig = {
@@ -16,6 +16,8 @@ export const DefaultProjectConfig: BaseProjectConfig = {
     renderer: {
         baseDir: "renderer",
         allowHTTP: false,
+        httpDevServer: false,
+        httpDevServerPort: DefaultDevHTTPServerPort,
     },
     temp: ".narraleaf",
     dev: {

@@ -10,7 +10,7 @@ import webpack from "webpack";
 import { RendererOutputFileName, RendererOutputHTMLFileName } from "@core/build/constants";
 import { Fs } from "@/utils/nodejs/fs";
 import { App } from "@/cli/app";
-import { getFileTree } from "@/utils/nodejs/string";
+import chokidar from "chokidar";
 
 export type RendererBuildResult = {
     dir: string;
@@ -26,12 +26,13 @@ export async function buildRenderer(
         rendererProject: RendererProject;
     }
 ): Promise<RendererBuildResult> {
-    const pages = await getPages(rendererProject);
-    const rendererAppStructure = createRendererAppStructure(pages);
+    const isProduction = !rendererProject.project.config.build.dev;
+    const rendererAppStructure = await createRendererAppStructure(rendererProject, isProduction);
     const buildDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuildTemp);
     const outputDir = rendererProject.project.getTempDir(Project.TempNamespace.RendererBuild);
     const appEntry = path.resolve(buildDir, rendererAppStructure.name);
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
+    const libNodeModules = path.resolve(rendererProject.project.app.config.cliRoot, "node_modules");
 
     await Fs.createDir(buildDir);
     await Fs.createDir(outputDir);
@@ -45,11 +46,21 @@ export async function buildRenderer(
         outputDir: outputDir,
         outputFilename: RendererOutputFileName,
         extensions: [".ts", ".tsx", ".js", ".jsx"],
+        extend: {
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(rendererProject.project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(rendererProject.project.fs.resolve('node_modules'))
+                ]
+            }
+        }
     })
         .useModule(new Babel(true))
         .useModule(new StyleSheet())
+        .useNodeModule(libNodeModules)
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(rendererProject.project.app);
 
     await new Promise<void>((resolve, reject) => {
         webpack(config, async (err, stats) => {
@@ -84,19 +95,19 @@ export async function watchRenderer(
         onRebuild?: () => void;
     }
 ): Promise<RendererBuildWatchToken> {
-    const pages = await getPages(rendererProject);
-    const rendererAppStructure = createRendererAppStructure(pages);
+    const rendererAppStructure = await createRendererAppStructure(rendererProject);
     const buildTempDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuildTemp);
     const buildDistDir = rendererProject.project.getDevTempDir(Project.DevTempNamespace.RendererBuild);
     const appEntry = path.resolve(buildTempDir, rendererAppStructure.name);
     const logr = App.createLogger(rendererProject.project.app);
-
+    const usePostcss = (await rendererProject.project.fs.isFileExists("postcss.config.js")).ok;
+    const libNodeModules = path.resolve(rendererProject.project.app.config.cliRoot, "node_modules");
+    
     await Fs.createDir(buildTempDir);
     await Fs.createDir(buildDistDir);
     await createStructure([
         rendererAppStructure,
     ], rendererProject, buildTempDir);
-
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
@@ -107,13 +118,21 @@ export async function watchRenderer(
         extend: {
             cache: false,
             devtool: "source-map",
+            resolveLoader: {
+                modules: [
+                    'node_modules',
+                    path.resolve(rendererProject.project.app.config.cliRoot, 'node_modules'),
+                    path.resolve(rendererProject.project.fs.resolve('node_modules'))
+                ]
+            }
         }
     })
         .useModule(new Babel(true))
-        .useModule(new StyleSheet())
+        .useModule(new StyleSheet(usePostcss))
+        .useNodeModule(libNodeModules)
         .useNodeModule(rendererProject.project.fs.resolve("node_modules"));
 
-    const config = webpackConfig.getConfiguration();
+    const config = webpackConfig.getConfiguration(rendererProject.project.app);
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
 
@@ -143,46 +162,56 @@ export async function watchRenderer(
         if (onRebuild) {
             onRebuild();
         }
-
     });
 
     await new Promise<void>(resolve => {
         initialBuildResolve = resolve;
     });
 
+    // ------------------------------------------------------------------
+    // Watch pages directory to regenerate the renderer App entry whenever
+    // a page file (add/remove) changes. This keeps the routing structure
+    // in sync during dev without restarting the dev server.
+    // ------------------------------------------------------------------
+    const pagesWatcher = chokidar.watch(rendererProject.getPagesDir(), {
+        ignored: /(^|[\\/])\../, // ignore dotfiles
+        ignoreInitial: true,
+    });
+
+    const regenerateAppEntry = async () => {
+        try {
+            const newStructure = await createRendererAppStructure(rendererProject);
+            await createStructure([
+                newStructure,
+            ], rendererProject, buildTempDir);
+            logr.info("Detected page change, regenerated renderer app entry");
+        } catch (e) {
+            logr.error("Failed to regenerate renderer app entry", e as Error);
+        }
+    };
+
+    pagesWatcher
+        .on("add", regenerateAppEntry)
+        .on("unlink", regenerateAppEntry)
+        .on("addDir", regenerateAppEntry)
+        .on("unlinkDir", regenerateAppEntry);
+
     return {
         close(): Promise<void> {
             return new Promise<void>(resolve => {
-                compiler.close(() => {
-                    logr.info("Renderer build stopped");
-                    resolve();
-                });
+                const shutdown = async () => {
+                    await pagesWatcher.close();
+                    compiler.close(() => {
+                        logr.info("Renderer build stopped");
+                        resolve();
+                    });
+                };
+
+                shutdown();
             })
         }
     };
 }
 
-async function getPages(rendererProject: RendererProject): Promise<string[]> {
-    const logr = rendererProject.project.app.createLogger();
-    const pagesDir = rendererProject.getPagesDir();
-    const result = await Fs.getFiles(
-        pagesDir,
-        [".js", ".jsx", ".ts", ".tsx"]
-    );
 
-    if (!result.ok) {
-        logr.warn("Failed to get pages:", result.error);
-        return [];
-    }
-
-    logr
-        .debug("Scanning", pagesDir)
-        .info("Scanning", result.data.length, "pages")
-        .info(getFileTree("Pages Found", result.data.map(p => ({
-            type: "file",
-            name: path.parse(p).base,
-        })), []));
-
-    return result.data;
-}
 

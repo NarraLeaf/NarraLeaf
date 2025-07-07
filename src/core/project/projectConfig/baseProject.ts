@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {ProjectFileType, DirStructureDefinition} from "@core/project/projectConfig/parser";
-import {BuildTarget} from "@core/build/electron/target";
+import {PlatformBuildTarget} from "@core/build/electron/target";
 
 export type BaseProjectConfigZod = z.ZodObject<{
     build: z.ZodObject<{
@@ -9,12 +9,14 @@ export type BaseProjectConfigZod = z.ZodObject<{
         dev: z.ZodBoolean;
         dist: z.ZodString;
         productName: z.ZodString;
-        targets: z.ZodType<BuildTarget> | z.ZodArray<z.ZodType<BuildTarget>>;
+        targets: z.ZodType<PlatformBuildTarget> | z.ZodArray<z.ZodType<PlatformBuildTarget>>;
     }>;
     main: z.ZodString;
     renderer: z.ZodObject<{
         baseDir: z.ZodString;
         allowHTTP: z.ZodBoolean;
+        httpDevServer: z.ZodBoolean;
+        httpDevServerPort: z.ZodNumber;
     }>;
     temp: z.ZodString;
     dev: z.ZodObject<{
@@ -55,16 +57,18 @@ export const BaseProjectStructure: DirStructureDefinition<{
                         dev: z.boolean(),
                         dist: z.string(),
                         productName: z.string(),
-                        targets: z.custom<BuildTarget | BuildTarget[]>((value) => {
+                        targets: z.custom<PlatformBuildTarget | PlatformBuildTarget[]>((value) => {
                             return Array.isArray(value)
-                                ? value.every((t) => BuildTarget.isTarget(t))
-                                : BuildTarget.isTarget(value);
+                                ? value.every((t) => PlatformBuildTarget.isTarget(t))
+                                : PlatformBuildTarget.isTarget(value);
                         }, "Invalid target configuration"),
                     }).partial(),
                     main: z.string(),
                     renderer: z.object({
                         baseDir: z.string(),
                         allowHTTP: z.boolean(),
+                        httpDevServer: z.boolean(),
+                        httpDevServerPort: z.number(),
                     }).partial(),
                     temp: z.string(),
                     dev: z.object({
