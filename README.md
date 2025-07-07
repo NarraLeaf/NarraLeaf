@@ -8,6 +8,10 @@
 
 A new definition of Visual Novel Engine.
 
+> [!WARNING]
+>
+> The project is in the early stages of development. For the Legacy Electron main process, check [NarraLeaf-Electron](https://github.com/NarraLeaf/NarraLeaf-Electron)
+
 ## About
 
 NarraLeaf is a lightweight, [React](https://react.dev/)/[Electron](https://electronjs.org/)-based visual novel engine built for speed and developer control. Build and package cross-platform VNs with minimal code and maximum flexibility.
