@@ -9,14 +9,12 @@ use tokio::sync::oneshot;
 use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
-use crate::ipc::types::{ServerState, ClientConnection, PlatformListener, PlatformStream};
+use crate::ipc::types::{ServerState, ClientConnection};
 use crate::ipc::platform::listener::{create_listener, accept_connection};
 use crate::ipc::client::{handle_client, cleanup_disconnected_clients, send_message_to_client_by_id};
 use crate::ipc::handlers::{PingHandler, VersionHandler, EchoHandler, StatusHandler};
 
 /**
- * IPC Server Manager
- * 
  * Manages the IPC server that NodeJS sidecar connects to
  */
 pub struct IPCServer {
@@ -187,7 +185,7 @@ impl IPCServer {
         }
 
         // Start listening for connections
-        let listener = match create_listener(&connection_string).await {
+        let mut listener = match create_listener(&connection_string).await {
             Ok(listener) => listener,
             Err(e) => {
                 println!("Failed to create listener: {}", e);
@@ -204,9 +202,12 @@ impl IPCServer {
                 break;
             }
 
-            // Accept new connections
-            match accept_connection(&listener).await {
-                Ok(stream) => {
+            // Accept new connections with timeout
+            match tokio::time::timeout(
+                Duration::from_millis(100),
+                accept_connection(&mut listener)
+            ).await {
+                Ok(Ok(stream)) => {
                     let client_id = Uuid::new_v4().to_string();
                     println!("New client connected: {}", client_id);
 
@@ -231,11 +232,15 @@ impl IPCServer {
                         handle_client(client_id_clone, server_state_clone).await;
                     });
                 }
-                Err(e) => {
-                    // Non-blocking accept, continue loop
-                    if e.kind() != std::io::ErrorKind::WouldBlock {
+                Ok(Err(e)) => {
+                    // Connection error
+                    if e.kind() != std::io::ErrorKind::WouldBlock && 
+                       e.kind() != std::io::ErrorKind::TimedOut {
                         println!("Error accepting connection: {}", e);
                     }
+                }
+                Err(_) => {
+                    // Timeout - this is normal, continue loop
                 }
             }
 

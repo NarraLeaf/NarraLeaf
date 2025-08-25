@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde_json::Value;
+
 
 /// Message handler trait for processing different message types
 pub trait MessageHandler {
@@ -15,6 +15,7 @@ pub trait MessageHandler {
 }
 
 /// Client connection information
+#[derive(Debug)]
 pub struct ClientConnection {
     pub id: String,
     pub last_seen: std::time::Instant,
@@ -22,14 +23,16 @@ pub struct ClientConnection {
 }
 
 /// Platform-specific stream wrapper
+#[derive(Debug)]
 pub enum PlatformStream {
     #[cfg(target_os = "windows")]
-    NamedPipe(tokio::net::windows::named_pipe::NamedPipeServer),
+    NamedPipe(std::sync::Arc<tokio::net::windows::named_pipe::NamedPipeServer>),
     #[cfg(not(target_os = "windows"))]
     Unix(tokio::net::UnixStream),
 }
 
 /// Platform-specific listener wrapper
+#[derive(Debug)]
 pub enum PlatformListener {
     #[cfg(target_os = "windows")]
     NamedPipe(tokio::net::windows::named_pipe::NamedPipeServer),

@@ -2,11 +2,10 @@
  * Platform-specific listener implementations
  */
 
-use std::path::PathBuf;
 use crate::ipc::types::PlatformListener;
 
 /// Create platform-specific listener
-pub async fn create_listener(connection_string: &str) -> Result<PlatformListener, String> {
+pub async fn create_listener(_connection_string: &str) -> Result<PlatformListener, String> {
     #[cfg(target_os = "windows")]
     {
         // For Windows, we'll create a named pipe server

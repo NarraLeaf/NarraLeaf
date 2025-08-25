@@ -6,7 +6,6 @@
 
 use crate::ipc::types::MessageHandler;
 use crate::communication::SidecarMessage;
-use serde_json::Value;
 
 /// Default ping handler
 pub struct PingHandler;
@@ -46,12 +45,12 @@ pub struct EchoHandler;
 impl MessageHandler for EchoHandler {
     fn handle_message(&self, message: &SidecarMessage) -> Result<Option<SidecarMessage>, String> {
         match message {
-            SidecarMessage::Request { id, request_type, payload } => {
+            SidecarMessage::Request { id, request_type, payload, token: _ } => {
                 if request_type == "echo" {
                     Ok(Some(SidecarMessage::Response {
                         id: id.clone(),
                         success: true,
-                        data: payload.clone(),
+                        data: Some(payload.clone()),
                         error: None,
                     }))
                 } else {
@@ -69,7 +68,7 @@ pub struct StatusHandler;
 impl MessageHandler for StatusHandler {
     fn handle_message(&self, message: &SidecarMessage) -> Result<Option<SidecarMessage>, String> {
         match message {
-            SidecarMessage::Request { id, request_type, payload } => {
+            SidecarMessage::Request { id, request_type, payload: _, token: _ } => {
                 if request_type == "status" {
                     let status_data = serde_json::json!({
                         "platform": std::env::consts::OS,

@@ -16,7 +16,7 @@ pub async fn process_message(
     server_state: &Arc<ServerState>,
 ) {
     match message {
-        SidecarMessage::Request { id, request_type, payload } => {
+        SidecarMessage::Request { id, request_type, payload: _, token: _ } => {
             // Handle request
             let handlers = server_state.message_handlers.read().await;
             if let Some(handler) = handlers.get(request_type) {

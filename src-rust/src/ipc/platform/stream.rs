@@ -4,17 +4,23 @@
 
 use crate::ipc::types::PlatformStream;
 use crate::communication::SidecarMessage;
+use std::sync::Arc;
 
 /// Read data from platform-specific stream
 pub async fn read_from_stream(stream: &PlatformStream) -> Result<Vec<u8>, std::io::Error> {
     match stream {
         #[cfg(target_os = "windows")]
         PlatformStream::NamedPipe(pipe) => {
-            // Windows implementation would go here
-            Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Windows not implemented",
-            ))
+            use tokio::io::AsyncReadExt;
+            
+            // Try to get ownership of the NamedPipeServer
+            let mut pipe = Arc::try_unwrap(pipe.clone())
+                .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Failed to get exclusive access to pipe"))?;
+            
+            let mut temp_buffer = [0u8; 1024];
+            let bytes_read = pipe.read(&mut temp_buffer).await?;
+            
+            Ok(temp_buffer[..bytes_read].to_vec())
         }
         
         #[cfg(not(target_os = "windows"))]
@@ -36,8 +42,15 @@ pub async fn write_to_stream(stream: &PlatformStream, data: &[u8]) -> Result<(),
     match stream {
         #[cfg(target_os = "windows")]
         PlatformStream::NamedPipe(pipe) => {
-            // Windows implementation would go here
-            println!("Writing to Windows named pipe: {} bytes", data.len());
+            use tokio::io::AsyncWriteExt;
+            
+            // Try to get ownership of the NamedPipeServer
+            let mut pipe = Arc::try_unwrap(pipe.clone())
+                .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Failed to get exclusive access to pipe"))?;
+            
+            pipe.write_all(data).await?;
+            pipe.flush().await?;
+            
             Ok(())
         }
         

@@ -4,11 +4,8 @@
  * Handles individual client connections and their lifecycle
  */
 
-use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
-use uuid::Uuid;
 
 use crate::ipc::types::{ClientConnection, ServerState};
 use crate::ipc::platform::stream::read_from_stream;

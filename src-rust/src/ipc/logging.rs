@@ -87,21 +87,19 @@ impl IPCLogger {
     }
 }
 
+use once_cell::sync::OnceCell;
+
 /// Global logger instance
-pub static mut LOGGER: Option<IPCLogger> = None;
+static LOGGER: OnceCell<IPCLogger> = OnceCell::new();
 
 /// Initialize global logger
 pub fn init_logger(config: IPCConfig) {
-    unsafe {
-        LOGGER = Some(IPCLogger::new(config));
-    }
+    let _ = LOGGER.set(IPCLogger::new(config));
 }
 
 /// Get global logger reference
 pub fn get_logger() -> Option<&'static IPCLogger> {
-    unsafe {
-        LOGGER.as_ref()
-    }
+    LOGGER.get()
 }
 
 /// Log message using global logger

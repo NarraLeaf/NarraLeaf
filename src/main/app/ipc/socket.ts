@@ -3,10 +3,26 @@ import * as path from 'path';
 import * as os from 'os';
 import net from 'net';
 import { Logger } from '@/cli/logger';
+import { 
+  SidecarMessage, 
+  ConnectionStatus, 
+  MessageHandler, 
+  PROTOCOL_VERSION,
+  MAX_MESSAGE_SIZE,
+  PingMessage,
+  PongMessage,
+  VersionCheckMessage,
+  VersionResponseMessage,
+  ConnectedMessage,
+  RequestMessage,
+  ResponseMessage
+} from './types';
 
 /**
  * Cross-platform IPC communication class using Unix Domain Socket (Linux/macOS) 
  * or Named Pipe (Windows) for Tauri main process communication
+ * 
+ * Now implements the same protocol as Rust communication.rs
  */
 export class MainServiceIPCClient extends EventEmitter {
     private client: net.Socket | null = null;
@@ -16,11 +32,54 @@ export class MainServiceIPCClient extends EventEmitter {
     private reconnectAttempts: number = 0;
     private maxReconnectAttempts: number = 5;
     private reconnectDelay: number = 1000;
+    private messageHandlers: Map<string, MessageHandler> = new Map();
+    private messageBuffer: Buffer = Buffer.alloc(0);
+    private messageIdCounter: number = 0;
 
     constructor(socketName: string, private logger: Logger) {
         super();
         this.socketPath = this.getSocketPath(socketName);
         this.setupEventHandlers();
+        this.registerDefaultHandlers();
+    }
+
+    /**
+     * Register default message handlers
+     */
+    private registerDefaultHandlers(): void {
+        // Ping handler
+        this.messageHandlers.set('ping', {
+            handleMessage: async (message: SidecarMessage) => {
+                if (message.type === 'Ping') {
+                    return {
+                        type: 'Pong',
+                        timestamp: message.timestamp
+                    } as PongMessage;
+                }
+                return null;
+            }
+        });
+
+        // Version handler
+        this.messageHandlers.set('version', {
+            handleMessage: async (message: SidecarMessage) => {
+                if (message.type === 'VersionCheck') {
+                    return {
+                        type: 'VersionResponse',
+                        version: PROTOCOL_VERSION,
+                        compatible: message.version === PROTOCOL_VERSION
+                    } as VersionResponseMessage;
+                }
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Register a custom message handler
+     */
+    public registerHandler(requestType: string, handler: MessageHandler): void {
+        this.messageHandlers.set(requestType, handler);
     }
 
     /**
@@ -47,22 +106,91 @@ export class MainServiceIPCClient extends EventEmitter {
     }
 
     /**
-     * Send message to the connected peer
+     * Send message to the connected peer with length prefix (matching Rust protocol)
      */
-    public send(message: any): boolean {
+    public send(message: SidecarMessage): boolean {
         if (!this.connected || !this.client) {
             this.logger.error('Not connected to server');
             return false;
         }
 
         try {
-            const data = JSON.stringify(message);
-            this.client.write(data);
+            const jsonString = JSON.stringify(message);
+            const messageBuffer = Buffer.from(jsonString, 'utf8');
+            const lengthHex = messageBuffer.length.toString(16).padStart(8, '0');
+            const lengthBuffer = Buffer.from(lengthHex, 'utf8');
+            
+            // Send: [8-byte hex length][message data]
+            this.client.write(lengthBuffer);
+            this.client.write(messageBuffer);
+            
+            this.logger.debug(`Sent message: ${message.type} (${messageBuffer.length} bytes)`);
             return true;
         } catch (error) {
             this.logger.error('Failed to send message:', error as Error);
             return false;
         }
+    }
+
+    /**
+     * Send a request message and wait for response
+     */
+    public async sendRequest(requestType: string, payload: any, token: string = ''): Promise<ResponseMessage> {
+        return new Promise((resolve, reject) => {
+            const requestId = (++this.messageIdCounter).toString();
+            const request: RequestMessage = {
+                type: 'Request',
+                id: requestId,
+                request_type: requestType,
+                payload,
+                token
+            };
+
+            // Set up one-time response handler
+            const responseHandler = (message: SidecarMessage) => {
+                if (message.type === 'Response' && message.id === requestId) {
+                    this.removeListener('message', responseHandler);
+                    resolve(message as ResponseMessage);
+                }
+            };
+
+            this.on('message', responseHandler);
+
+            // Send request
+            if (!this.send(request)) {
+                this.removeListener('message', responseHandler);
+                reject(new Error('Failed to send request'));
+                return;
+            }
+
+            // Set timeout for response
+            setTimeout(() => {
+                this.removeListener('message', responseHandler);
+                reject(new Error('Request timeout'));
+            }, 10000); // 10 second timeout
+        });
+    }
+
+    /**
+     * Send ping message
+     */
+    public sendPing(): boolean {
+        const ping: PingMessage = {
+            type: 'Ping',
+            timestamp: Date.now()
+        };
+        return this.send(ping);
+    }
+
+    /**
+     * Send version check
+     */
+    public sendVersionCheck(): boolean {
+        const versionCheck: VersionCheckMessage = {
+            type: 'VersionCheck',
+            version: PROTOCOL_VERSION
+        };
+        return this.send(versionCheck);
     }
 
     /**
@@ -80,6 +208,7 @@ export class MainServiceIPCClient extends EventEmitter {
         }
 
         this.connected = false;
+        this.messageBuffer = Buffer.alloc(0);
     }
 
     /**
@@ -87,6 +216,19 @@ export class MainServiceIPCClient extends EventEmitter {
      */
     public getConnected(): boolean {
         return this.connected;
+    }
+
+    /**
+     * Get current connection status
+     */
+    public getConnectionStatus(): ConnectionStatus {
+        if (this.connected) {
+            return ConnectionStatus.Connected;
+        } else if (this.reconnectInterval) {
+            return ConnectionStatus.Connecting;
+        } else {
+            return ConnectionStatus.Disconnected;
+        }
     }
 
     /**
@@ -111,6 +253,14 @@ export class MainServiceIPCClient extends EventEmitter {
             this.connected = true;
             this.reconnectAttempts = 0;
             this.emit('connected');
+            
+            // Send connection notification
+            const connected: ConnectedMessage = {
+                type: 'Connected',
+                timestamp: Date.now()
+            };
+            this.send(connected);
+            
             resolve();
         });
 
@@ -163,6 +313,14 @@ export class MainServiceIPCClient extends EventEmitter {
             this.connected = true;
             this.reconnectAttempts = 0;
             this.emit('connected');
+            
+            // Send connection notification
+            const connected: ConnectedMessage = {
+                type: 'Connected',
+                timestamp: Date.now()
+            };
+            this.send(connected);
+            
             resolve();
         });
 
@@ -170,7 +328,7 @@ export class MainServiceIPCClient extends EventEmitter {
     }
 
     /**
-     * Setup client event handlers
+     * Setup client event handlers with message parsing (matching Rust protocol)
      */
     private setupClientHandlers(reject: (error: Error) => void): void {
         if (!this.client) {
@@ -179,12 +337,11 @@ export class MainServiceIPCClient extends EventEmitter {
         }
 
         this.client.on('data', (data: Buffer) => {
-            try {
-                const message = JSON.parse(data.toString());
-                this.emit('message', message);
-            } catch (error) {
-                this.logger.error('Failed to parse message:', error as Error);
-            }
+            // Add incoming data to buffer
+            this.messageBuffer = Buffer.concat([this.messageBuffer, data]);
+            
+            // Process complete messages
+            this.processMessageBuffer();
         });
 
         this.client.on('close', () => {
@@ -197,6 +354,68 @@ export class MainServiceIPCClient extends EventEmitter {
             this.logger.error('Client error:', error);
             reject(error);
         });
+    }
+
+    /**
+     * Process message buffer with length prefix protocol (matching Rust)
+     */
+    private processMessageBuffer(): void {
+        while (this.messageBuffer.length >= 8) {
+            // Read message length (8 hex chars)
+            const lengthStr = this.messageBuffer.toString('utf8', 0, 8);
+            const messageLength = parseInt(lengthStr, 16);
+            
+            if (isNaN(messageLength) || messageLength > MAX_MESSAGE_SIZE) {
+                this.logger.error('Invalid message length:', lengthStr);
+                this.messageBuffer = Buffer.alloc(0);
+                return;
+            }
+
+            const totalLength = 8 + messageLength;
+            if (this.messageBuffer.length < totalLength) {
+                break; // Incomplete message
+            }
+
+            // Extract and parse message
+            const messageData = this.messageBuffer.slice(8, totalLength);
+            try {
+                const message = JSON.parse(messageData.toString('utf8')) as SidecarMessage;
+                this.handleIncomingMessage(message);
+            } catch (error) {
+                this.logger.error('Failed to parse message:', error as Error);
+            }
+
+            // Remove processed message
+            this.messageBuffer = this.messageBuffer.slice(totalLength);
+        }
+    }
+
+    /**
+     * Handle incoming message
+     */
+    private async handleIncomingMessage(message: SidecarMessage): Promise<void> {
+        this.logger.debug(`Received message: ${message.type}`);
+        
+        // Emit message event for external handlers
+        this.emit('message', message);
+
+        // Handle specific message types
+        switch (message.type) {
+            case 'Pong':
+                this.emit('pong', message);
+                break;
+            case 'VersionResponse':
+                this.emit('versionResponse', message);
+                break;
+            case 'Response':
+                this.emit('response', message);
+                break;
+            case 'Connected':
+                this.emit('connected', message);
+                break;
+            default:
+                this.logger.debug('Unhandled message type:', message.type);
+        }
     }
 
     /**

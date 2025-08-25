@@ -18,7 +18,11 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod sidecar;
-mod communication;
-mod ipc;
+pub mod sidecar;
+pub mod communication;
+pub mod ipc;
+
+// Re-export main types for convenience
+pub use communication::{SidecarMessage, PROTOCOL_VERSION};
+pub use ipc::IPCServer;
 
