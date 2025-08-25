@@ -32,3 +32,8 @@ temp
 .narraleaf
 package-lock.json
 dev.json
+*.ignore
+
+# Tauri Ignore
+target/
+Cargo.lock

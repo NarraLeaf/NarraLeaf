@@ -13,7 +13,7 @@ type LoggerConfig = {
     platform: PlatformInfo;
 };
 
-type MessageContent = string | number | null | undefined | Array<any> | object;
+type MessageContent = string | number | null | undefined | Array<any> | object | Error;
 
 export class Logger {
     public static readonly chalk = chalk;
@@ -92,6 +92,10 @@ export class Logger {
 
         if (typeof content === "object" && content !== null) {
             return JSON.stringify(content, null, 2);
+        }
+
+        if (content && (content as any) instanceof Error) {
+            return (content as any).message;
         }
 
         return String(content);
