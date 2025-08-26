@@ -45,7 +45,7 @@ pub struct EchoHandler;
 impl MessageHandler for EchoHandler {
     fn handle_message(&self, message: &SidecarMessage) -> Result<Option<SidecarMessage>, String> {
         match message {
-            SidecarMessage::Request { id, request_type, payload, token: _ } => {
+            SidecarMessage::Request { id, request_type, payload } => {
                 if request_type == "echo" {
                     Ok(Some(SidecarMessage::Response {
                         id: id.clone(),
@@ -68,7 +68,7 @@ pub struct StatusHandler;
 impl MessageHandler for StatusHandler {
     fn handle_message(&self, message: &SidecarMessage) -> Result<Option<SidecarMessage>, String> {
         match message {
-            SidecarMessage::Request { id, request_type, payload: _, token: _ } => {
+            SidecarMessage::Request { id, request_type, payload: _ } => {
                 if request_type == "status" {
                     let status_data = serde_json::json!({
                         "platform": std::env::consts::OS,

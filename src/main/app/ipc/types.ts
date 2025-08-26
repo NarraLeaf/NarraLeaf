@@ -30,7 +30,6 @@ export interface RequestMessage {
   id: string;
   request_type: string;
   payload: any;
-  token: string;
 }
 
 /**

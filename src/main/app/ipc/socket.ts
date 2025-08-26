@@ -135,15 +135,14 @@ export class MainServiceIPCClient extends EventEmitter {
     /**
      * Send a request message and wait for response
      */
-    public async sendRequest(requestType: string, payload: any, token: string = ''): Promise<ResponseMessage> {
+    public async sendRequest(requestType: string, payload: any): Promise<ResponseMessage> {
         return new Promise((resolve, reject) => {
             const requestId = (++this.messageIdCounter).toString();
             const request: RequestMessage = {
                 type: 'Request',
                 id: requestId,
                 request_type: requestType,
-                payload,
-                token
+                payload
             };
 
             // Set up one-time response handler

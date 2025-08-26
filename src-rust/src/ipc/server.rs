@@ -21,12 +21,13 @@ pub struct IPCServer {
     connection_string: String,
     server_state: Arc<ServerState>,
     shutdown_tx: Option<oneshot::Sender<()>>,
+    sidecar_manager: Option<std::sync::Weak<tokio::sync::Mutex<crate::sidecar::SidecarManager>>>,
 }
 
 impl IPCServer {
     /**
      * Create a new IPC server
-     * 
+     *
      * @param connection_string - Connection string (pipe name or socket path)
      * @returns New IPCServer instance
      */
@@ -35,6 +36,31 @@ impl IPCServer {
             connection_string,
             server_state: Arc::new(ServerState::new()),
             shutdown_tx: None,
+            sidecar_manager: None,
+        };
+
+        // Register default handlers
+        server.register_default_handlers();
+
+        server
+    }
+
+    /**
+     * Create a new IPC server with sidecar manager reference
+     *
+     * @param connection_string - Connection string (pipe name or socket path)
+     * @param sidecar_manager - Weak reference to sidecar manager for initial response handling
+     * @returns New IPCServer instance
+     */
+    pub fn new_with_sidecar_manager(
+        connection_string: String,
+        sidecar_manager: std::sync::Weak<tokio::sync::Mutex<crate::sidecar::SidecarManager>>
+    ) -> Self {
+        let mut server = Self {
+            connection_string,
+            server_state: Arc::new(ServerState::new()),
+            shutdown_tx: None,
+            sidecar_manager: Some(sidecar_manager),
         };
 
         // Register default handlers
@@ -74,9 +100,10 @@ impl IPCServer {
         // Start server loop
         let connection_string = self.connection_string.clone();
         let server_state = Arc::clone(&self.server_state);
+        let sidecar_manager = self.sidecar_manager.clone();
 
         tokio::spawn(async move {
-            Self::server_loop(connection_string, server_state, shutdown_rx).await;
+            Self::server_loop(connection_string, server_state, sidecar_manager, shutdown_rx).await;
         });
 
         // Wait a bit for server to start
@@ -163,11 +190,20 @@ impl IPCServer {
 
     /**
      * Check if server is running
-     * 
+     *
      * @returns True if server is running
      */
     pub async fn is_running(&self) -> bool {
         *self.server_state.is_running.read().await
+    }
+
+    /**
+     * Get server state (for internal use)
+     *
+     * @returns Reference to server state
+     */
+    pub fn get_server_state(&self) -> &Arc<crate::ipc::types::ServerState> {
+        &self.server_state
     }
 
     /**
@@ -176,6 +212,7 @@ impl IPCServer {
     async fn server_loop(
         connection_string: String,
         server_state: Arc<ServerState>,
+        sidecar_manager: Option<std::sync::Weak<tokio::sync::Mutex<crate::sidecar::SidecarManager>>>,
         mut shutdown_rx: oneshot::Receiver<()>,
     ) {
         // Update running status
@@ -227,9 +264,10 @@ impl IPCServer {
                     // Start client handler
                     let server_state_clone = Arc::clone(&server_state);
                     let client_id_clone = client_id.clone();
+                    let sidecar_manager_clone = sidecar_manager.clone();
 
                     tokio::spawn(async move {
-                        handle_client(client_id_clone, server_state_clone).await;
+                        handle_client(client_id_clone, server_state_clone, sidecar_manager_clone).await;
                     });
                 }
                 Ok(Err(e)) => {

@@ -22,15 +22,28 @@ pub const MAX_MESSAGE_SIZE: usize = 1024 * 1024; // 1MB
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SidecarMessage {
-    /// Request from Rust to NodeJS
+    /// Request from Rust to NodeJS (narraleaf: operations)
     Request {
         id: String,
         request_type: String,
         payload: Value,
-        token: String,
     },
     /// Response from NodeJS to Rust
     Response {
+        id: String,
+        success: bool,
+        data: Option<Value>,
+        error: Option<String>,
+    },
+    /// Request from NodeJS to Rust (tauri: operations)
+    SidecarRequest {
+        id: String,
+        request_type: String,
+        payload: Value,
+        response_channel: String, // Channel for sidecar to receive response
+    },
+    /// Response from Rust to NodeJS (for tauri: operations)
+    SidecarResponse {
         id: String,
         success: bool,
         data: Option<Value>,
@@ -57,6 +70,13 @@ pub enum SidecarMessage {
     Connected {
         timestamp: u64,
     },
+    /// Initial response from sidecar with metadata
+    InitialResponse {
+        language: String,
+        version: String,
+        ipc_protocol_version: u32,
+        capabilities: Vec<String>,
+    },
 }
 
 /**
@@ -70,35 +90,4 @@ pub enum ConnectionStatus {
     Failed,
 }
 
-/**
- * Simple message sender for basic communication needs
- */
-pub struct MessageSender {
-    ipc_server: crate::ipc::IPCServer,
-}
 
-impl MessageSender {
-    /// Create a new message sender
-    pub fn new(ipc_server: crate::ipc::IPCServer) -> Self {
-        Self { ipc_server }
-    }
-    
-    /// Send a message to all connected clients
-    pub async fn broadcast(&self, message: &SidecarMessage) -> Result<(), String> {
-        self.ipc_server.broadcast_message(message).await
-    }
-    
-    /// Send a message to a specific client
-    pub async fn send_to_client(&self, client_id: &str, message: &SidecarMessage) -> Result<(), String> {
-        self.ipc_server.send_to_client(client_id, message).await
-    }
-    
-    /// Get current connection status
-    pub async fn get_status(&self) -> ConnectionStatus {
-        if self.ipc_server.is_running().await {
-            ConnectionStatus::Connected
-        } else {
-            ConnectionStatus::Disconnected
-        }
-    }
-}
