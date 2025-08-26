@@ -26,7 +26,7 @@ pub struct ClientConnection {
 #[derive(Debug)]
 pub enum PlatformStream {
     #[cfg(target_os = "windows")]
-    NamedPipe(std::sync::Arc<tokio::net::windows::named_pipe::NamedPipeServer>),
+    NamedPipe(tokio::net::windows::named_pipe::NamedPipeServer),
     #[cfg(not(target_os = "windows"))]
     Unix(tokio::net::UnixStream),
 }
@@ -35,7 +35,7 @@ pub enum PlatformStream {
 #[derive(Debug)]
 pub enum PlatformListener {
     #[cfg(target_os = "windows")]
-    NamedPipe(tokio::net::windows::named_pipe::NamedPipeServer),
+    NamedPipe(String), // Pipe name for Windows
     #[cfg(not(target_os = "windows"))]
     Unix(tokio::net::UnixListener),
 }

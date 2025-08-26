@@ -130,9 +130,9 @@ impl IPCServer {
      * @returns Result indicating success or failure
      */
     pub async fn broadcast_message(&self, message: &crate::communication::SidecarMessage) -> Result<(), String> {
-        let clients = self.server_state.clients.read().await;
-        
-        for client in clients.values() {
+        let mut clients = self.server_state.clients.write().await;
+
+        for client in clients.values_mut() {
             if let Err(e) = crate::ipc::client::send_message_to_client(client, message).await {
                 println!("Failed to send message to client {}: {}", client.id, e);
             }
@@ -185,7 +185,7 @@ impl IPCServer {
         }
 
         // Start listening for connections
-        let mut listener = match create_listener(&connection_string).await {
+        let listener = match create_listener(&connection_string).await {
             Ok(listener) => listener,
             Err(e) => {
                 println!("Failed to create listener: {}", e);
@@ -205,7 +205,7 @@ impl IPCServer {
             // Accept new connections with timeout
             match tokio::time::timeout(
                 Duration::from_millis(100),
-                accept_connection(&mut listener)
+                accept_connection(&listener)
             ).await {
                 Ok(Ok(stream)) => {
                     let client_id = Uuid::new_v4().to_string();

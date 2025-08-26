@@ -28,7 +28,6 @@ pub struct SidecarManager {
     pub ipc_server: Option<IPCServer>,
     connection_string: String,
     is_initialized: bool,
-    resource_mappings: HashMap<String, Value>,
 }
 
 impl SidecarManager {
@@ -43,7 +42,6 @@ impl SidecarManager {
             ipc_server: None,
             connection_string,
             is_initialized: false,
-            resource_mappings: HashMap::new(),
         }
     }
 

@@ -21,15 +21,22 @@ pub async fn handle_client(
     loop {
         // Get client connection
         let clients_guard = server_state.clients.read().await;
-        let client = match clients_guard.get(&client_id) {
-            Some(client) => client,
-            None => break, // Client disconnected
-        };
+        if clients_guard.get(&client_id).is_none() {
+            break; // Client disconnected
+        }
 
         // Read data from client
-        let data = match read_from_stream(&client.platform_stream).await {
-            Ok(data) => data,
-            Err(_) => break, // Client disconnected or error
+        let data = {
+            let mut clients_guard = server_state.clients.write().await;
+            let client = match clients_guard.get_mut(&client_id) {
+                Some(client) => client,
+                None => break, // Client disconnected
+            };
+
+            match read_from_stream(&mut client.platform_stream).await {
+                Ok(data) => data,
+                Err(_) => break, // Client disconnected or error
+            }
         };
 
         // Add to buffer
@@ -101,10 +108,10 @@ pub async fn cleanup_disconnected_clients(server_state: &Arc<ServerState>) {
 
 /// Send message to specific client
 pub async fn send_message_to_client(
-    client: &ClientConnection,
+    client: &mut ClientConnection,
     message: &crate::communication::SidecarMessage,
 ) -> Result<(), String> {
-    crate::ipc::platform::stream::send_message_to_stream(&client.platform_stream, message).await
+    crate::ipc::platform::stream::send_message_to_stream(&mut client.platform_stream, message).await
 }
 
 /// Send message to client by ID
@@ -113,9 +120,9 @@ pub async fn send_message_to_client_by_id(
     server_state: &Arc<ServerState>,
     message: &crate::communication::SidecarMessage,
 ) -> Result<(), String> {
-    let clients_guard = server_state.clients.read().await;
-    
-    if let Some(client) = clients_guard.get(client_id) {
+    let mut clients_guard = server_state.clients.write().await;
+
+    if let Some(client) = clients_guard.get_mut(client_id) {
         send_message_to_client(client, message).await
     } else {
         Err(format!("Client {} not found", client_id))

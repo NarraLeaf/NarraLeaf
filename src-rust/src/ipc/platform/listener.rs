@@ -5,18 +5,39 @@
 use crate::ipc::types::PlatformListener;
 
 /// Create platform-specific listener
-pub async fn create_listener(_connection_string: &str) -> Result<PlatformListener, String> {
+pub async fn create_listener(connection_string: &str) -> Result<PlatformListener, String> {
     #[cfg(target_os = "windows")]
     {
-        // For Windows, we'll create a named pipe server
-        // Note: This is a simplified approach
-        Err("Windows named pipe server not yet implemented".to_string())
+        // For Windows, convert connection string to a valid pipe name
+        // Extract a meaningful name from the connection string, or use a default
+        let pipe_name = if connection_string.is_empty() || connection_string == "default" {
+            "narraleaf_ipc".to_string()
+        } else {
+            // Clean the connection string to create a valid pipe name
+            connection_string
+                .chars()
+                .filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-')
+                .collect::<String>()
+        };
+
+        // Ensure pipe name is not empty
+        let pipe_name = if pipe_name.is_empty() {
+            "narraleaf_ipc".to_string()
+        } else {
+            pipe_name
+        };
+
+        // Create the full pipe path
+        let full_pipe_name = format!(r"\\.\pipe\{}", pipe_name);
+
+        println!("Creating Windows named pipe listener: {}", full_pipe_name);
+        Ok(PlatformListener::NamedPipe(full_pipe_name))
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     {
         let socket_path = PathBuf::from(connection_string);
-        
+
         // Remove existing socket file if it exists
         if socket_path.exists() {
             std::fs::remove_file(&socket_path)
@@ -34,14 +55,35 @@ pub async fn create_listener(_connection_string: &str) -> Result<PlatformListene
 pub async fn accept_connection(listener: &PlatformListener) -> Result<crate::ipc::types::PlatformStream, std::io::Error> {
     match listener {
         #[cfg(target_os = "windows")]
-        PlatformListener::NamedPipe(_) => {
-            // Windows implementation would go here
-            Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Windows not implemented",
-            ))
+        PlatformListener::NamedPipe(pipe_name) => {
+            use tokio::net::windows::named_pipe::{ServerOptions, NamedPipeServer};
+
+            println!("Accepting connection on pipe: {}", pipe_name);
+
+            // Create a named pipe server instance with default options
+            let server: NamedPipeServer = ServerOptions::new()
+                .first_pipe_instance(false) // Allow multiple instances
+                .max_instances(100)
+                .in_buffer_size(65536)
+                .out_buffer_size(65536)
+                .create(pipe_name)
+                .map_err(|e| {
+                    println!("Failed to create named pipe server '{}': {}", pipe_name, e);
+                    e
+                })?;
+
+            println!("Named pipe server created, waiting for connection...");
+
+            // Wait for client connection
+            server.connect().await.map_err(|e| {
+                println!("Failed to accept connection on pipe '{}': {}", pipe_name, e);
+                e
+            })?;
+
+            println!("Client connected successfully");
+            Ok(crate::ipc::types::PlatformStream::NamedPipe(server))
         }
-        
+
         #[cfg(not(target_os = "windows"))]
         PlatformListener::Unix(unix_listener) => {
             let (stream, _) = unix_listener.accept().await?;
