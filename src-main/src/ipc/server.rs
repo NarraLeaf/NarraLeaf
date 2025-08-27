@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::ipc::types::{ServerState, ClientConnection};
 use crate::ipc::platform::listener::{create_listener, accept_connection};
 use crate::ipc::client::{handle_client, cleanup_disconnected_clients, send_message_to_client_by_id};
-use crate::ipc::handlers::{VersionHandler, EchoHandler, StatusHandler};
+
 
 /**
  * Manages the IPC server that NodeJS sidecar connects to
@@ -31,32 +31,29 @@ impl IPCServer {
      * @returns New IPCServer instance
      */
     pub fn new(connection_string: String) -> Self {
-        let mut server = Self {
+        Self {
             connection_string,
             server_state: Arc::new(ServerState::new()),
             shutdown_tx: None,
-        };
-
-        // Register default handlers
-        server.register_default_handlers();
-
-        server
+        }
     }
-
-
 
     /**
-     * Register default message handlers
+     * Create a new IPC server with app handle
+     *
+     * @param connection_string - Connection string (pipe name or socket path)
+     * @param app_handle - Tauri app handle for tauri operations
+     * @returns New IPCServer instance
      */
-    fn register_default_handlers(&mut self) {
-        let state = Arc::clone(&self.server_state);
-        tokio::spawn(async move {
-            let mut handlers = state.message_handlers.write().await;
-            handlers.insert("version".to_string(), Box::new(VersionHandler));
-            handlers.insert("echo".to_string(), Box::new(EchoHandler));
-            handlers.insert("status".to_string(), Box::new(StatusHandler));
-        });
+    pub fn with_app_handle(connection_string: String, app_handle: tauri::AppHandle) -> Self {
+        Self {
+            connection_string,
+            server_state: Arc::new(ServerState::with_app_handle(app_handle)),
+            shutdown_tx: None,
+        }
     }
+
+
 
     /**
      * Start the IPC server
@@ -109,38 +106,7 @@ impl IPCServer {
         Ok(())
     }
 
-    /**
-     * Register a message handler
-     * 
-     * @param message_type - Type of message to handle
-     * @param handler - Message handler implementation
-     */
-    pub async fn register_handler(
-        &self,
-        message_type: &str,
-        handler: Box<dyn crate::ipc::types::MessageHandler + Send + Sync>,
-    ) {
-        let mut handlers = self.server_state.message_handlers.write().await;
-        handlers.insert(message_type.to_string(), handler);
-    }
 
-    /**
-     * Send message to all connected clients
-     * 
-     * @param message - Message to send
-     * @returns Result indicating success or failure
-     */
-    pub async fn broadcast_message(&self, message: &crate::communication::SidecarMessage) -> Result<(), String> {
-        let mut clients = self.server_state.clients.write().await;
-
-        for client in clients.values_mut() {
-            if let Err(e) = crate::ipc::client::send_message_to_client(client, message).await {
-                println!("Failed to send message to client {}: {}", client.id, e);
-            }
-        }
-
-        Ok(())
-    }
 
     /**
      * Send message to specific client

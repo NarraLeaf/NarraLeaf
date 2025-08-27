@@ -8,7 +8,7 @@
 pub mod server;
 pub mod client;
 pub mod message;
-pub mod handlers;
+
 pub mod types;
 pub mod platform;
 pub mod config;
@@ -16,5 +16,5 @@ pub mod error;
 
 // Re-export main types for convenience
 pub use server::IPCServer;
-pub use types::{ClientConnection, MessageHandler};
+pub use types::ClientConnection;
 pub use config::IPCConfig;

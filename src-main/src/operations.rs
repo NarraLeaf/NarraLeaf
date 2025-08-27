@@ -1,16 +1,14 @@
 /*!
- * Operations Module for NarraLeaf (Refactored)
+ * Operations Module for NarraLeaf
  *
  * This module provides the core operation framework for NarraLeaf Tauri plugin.
  * It handles routing of operations between renderer (narraleaf:*) and sidecar (tauri:*).
- * Business logic is delegated to NodeJS sidecar, while system operations remain local.
+ * Game logic is delegated to NodeJS sidecar, while Tauri operations remain local.
  */
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-#[cfg(feature = "tauri-plugin")]
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 /**
  * Generic operation result
@@ -22,8 +20,6 @@ pub struct OperationResult {
     pub message: Option<String>,
     pub data: Option<serde_json::Value>,
 }
-
-
 
 /**
  * Available operation types (Core Only)
@@ -37,9 +33,6 @@ pub enum OperationType {
     // Note: narraleaf:* operations are forwarded to sidecar
     // This enum is kept for type safety but operations are handled elsewhere
 }
-
-// Note: All narraleaf:* operations are forwarded to the sidecar process
-// No local IPC helper functions are needed for unsupported operations
 
 /**
  * Operation executor
@@ -56,37 +49,11 @@ impl OperationExecutor {
     pub async fn execute_from_ipc(
         request_type: &str,
         _payload: Value,
-        #[cfg(feature = "tauri-plugin")] app_handle: Option<&AppHandle>,
+        app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // Special handling for heartbeat ping (defined in protocol.md)
-        if request_type == "tauri:ping" {
-            return OperationResult {
-                success: true,
-                message: Some("Heartbeat acknowledged".to_string()),
-                data: Some(serde_json::json!({
-                    "timestamp": std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap_or_default()
-                        .as_millis(),
-                    "status": "alive"
-                })),
-            };
-        }
-
-        // Route tauri operations to dedicated handler (only if tauri-plugin is enabled)
-        #[cfg(feature = "tauri-plugin")]
+        // Route tauri operations to dedicated handler
         if request_type.starts_with("tauri:") {
             return crate::tauri_handlers::execute_tauri_operation(request_type, _payload, app_handle).await;
-        }
-
-        // Tauri operations not available without tauri-plugin feature
-        #[cfg(not(feature = "tauri-plugin"))]
-        if request_type.starts_with("tauri:") {
-            return OperationResult {
-                success: false,
-                message: Some(format!("Tauri operation '{}' not available (tauri-plugin feature disabled)", request_type)),
-                data: None,
-            };
         }
 
         // All narraleaf:* operations should be forwarded to sidecar
@@ -105,6 +72,4 @@ impl OperationExecutor {
             data: None,
         }
     }
-
-
 }

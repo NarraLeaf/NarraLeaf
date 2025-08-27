@@ -17,52 +17,27 @@ pub async fn process_message(
     server_state: &Arc<ServerState>,
 ) {
     match message {
-        SidecarMessage::Request { id, request_type, payload: _ } => {
-            // Handle request
-            let handlers = server_state.message_handlers.read().await;
-            if let Some(handler) = handlers.get(request_type) {
-                match handler.handle_message(message) {
-                    Ok(Some(response)) => {
-                        // Send response back to client
-                        if let Err(e) = send_message_to_client_by_id(
-                            client_id, server_state, &response
-                        ).await {
-                            println!("Failed to send response to client {}: {}", client_id, e);
-                        }
-                    }
-                    Ok(None) => {
-                        // No response needed
-                    }
-                    Err(e) => {
-                        // Send error response
-                        let error_response = SidecarMessage::Response {
-                            id: id.clone(),
-                            success: false,
-                            data: None,
-                            error: Some(e),
-                        };
+        SidecarMessage::Request { id, request_type, payload } => {
+            // Handle request using OperationExecutor
+            let result = OperationExecutor::execute_from_ipc(
+                &request_type,
+                payload.clone(),
+                server_state.app_handle.as_ref(),
+            ).await;
 
-                        if let Err(e) = send_message_to_client_by_id(
-                            client_id, server_state, &error_response
-                        ).await {
-                            println!("Failed to send error response to client {}: {}", client_id, e);
-                        }
-                    }
-                }
-            } else {
-                // No handler found, send error response
-                let error_response = SidecarMessage::Response {
-                    id: id.clone(),
-                    success: false,
-                    data: None,
-                    error: Some(format!("No handler for request type: {}", request_type)),
-                };
+            // Create response based on operation result
+            let response = SidecarMessage::Response {
+                id: id.clone(),
+                success: result.success,
+                data: result.data,
+                error: result.message,
+            };
 
-                if let Err(e) = send_message_to_client_by_id(
-                    client_id, server_state, &error_response
-                ).await {
-                    println!("Failed to send error response to client {}: {}", client_id, e);
-                }
+            // Send response back to client
+            if let Err(e) = send_message_to_client_by_id(
+                client_id, server_state, &response
+            ).await {
+                println!("Failed to send response to client {}: {}", client_id, e);
             }
         }
 
@@ -86,21 +61,14 @@ pub async fn process_message(
             println!("Received sidecar request: {} -> {}", request_type, id);
 
             // Process the sidecar request using the operations framework
-            #[cfg(feature = "tauri-plugin")]
             let result = OperationExecutor::execute_from_ipc(
                 &request_type,
                 payload.clone(),
                 None, // No app handle in IPC context
             ).await;
 
-            #[cfg(not(feature = "tauri-plugin"))]
-            let result = OperationExecutor::execute_from_ipc(
-                &request_type,
-                payload.clone(),
-            ).await;
-
             // Create response based on operation result
-            let response = SidecarMessage::Response {
+            let response = SidecarMessage::SidecarResponse {
                 id: id.clone(),
                 success: result.success,
                 data: result.data,

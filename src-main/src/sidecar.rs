@@ -6,6 +6,7 @@
  */
 
 use crate::ipc::IPCServer;
+use tauri::AppHandle;
 
 /**
  * Lifecycle state of the sidecar process
@@ -30,13 +31,11 @@ pub struct SidecarManager {
     connection_string: String,
     pub state: SidecarState,
     last_health_check: std::time::Instant,
+    app_handle: Option<AppHandle>,
 }
 
-
-
 impl SidecarManager {
-    pub fn new() -> Self {
-        let connection_string = Self::generate_connection_string();
+    pub fn new(connection_string: String, app_handle: AppHandle) -> Self {
 
         Self {
             child_process: None,
@@ -44,16 +43,7 @@ impl SidecarManager {
             connection_string,
             state: SidecarState::Stopped,
             last_health_check: std::time::Instant::now(),
-        }
-    }
-
-    pub fn new_with_connection_string(connection_string: String) -> Self {
-        Self {
-            child_process: None,
-            ipc_server: None,
-            connection_string,
-            state: SidecarState::Stopped,
-            last_health_check: std::time::Instant::now(),
+            app_handle: Some(app_handle),
         }
     }
 
@@ -85,8 +75,12 @@ impl SidecarManager {
 
         self.state = SidecarState::Starting;
 
-        // Start IPC server
-        let ipc_server = IPCServer::new(connection_string.to_string());
+        // Start IPC server with app handle for tauri operations
+        let ipc_server = if let Some(app_handle) = &self.app_handle {
+            IPCServer::with_app_handle(connection_string.to_string(), app_handle.clone())
+        } else {
+            IPCServer::new(connection_string.to_string())
+        };
         self.ipc_server = Some(ipc_server);
 
         // Start sidecar process
@@ -168,16 +162,12 @@ impl SidecarManager {
         &self.connection_string
     }
 
-
-
-
-
-    fn generate_connection_string() -> String {
+    pub(crate) fn generate_connection_string() -> String {
         use uuid::Uuid;
         format!("narraleaf-ipc-{}", Uuid::new_v4().simple())
     }
 
-    pub async fn monitor_sidecar_health(&mut self) {
+    pub async fn listen_sidecar_status(&mut self) {
         while self.state == SidecarState::Running {
             // Check if child process is still running
             if let Some(ref mut child) = self.child_process {
@@ -207,9 +197,7 @@ impl SidecarManager {
                 break;
             }
 
-
-
-            // Sleep for a shorter interval to check heartbeat timing
+            // Sleep for a shorter interval
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
     }
@@ -218,32 +206,13 @@ impl SidecarManager {
      * Trigger main process shutdown when sidecar dies
      */
     async fn trigger_main_process_shutdown(&self) {
-        println!("🔄 Sidecar died, triggering main process shutdown...");
+        println!("Sidecar died, triggering main process shutdown...");
 
-        // Send a special request to trigger main process shutdown
-        if let Some(ipc_server) = &self.ipc_server {
-            let connected_clients = ipc_server.get_connected_clients().await;
-            if !connected_clients.is_empty() {
-                let client_id = &connected_clients[0];
-
-                // Send a shutdown request to the main process
-                let shutdown_message = crate::communication::SidecarMessage::SidecarRequest {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    request_type: "tauri:shutdown".to_string(),
-                    payload: serde_json::json!({
-                        "reason": "sidecar_died",
-                        "message": "Sidecar process terminated unexpectedly"
-                    }),
-                    response_channel: format!("shutdown_response_{}", std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap_or_default()
-                        .as_millis()),
-                };
-
-                if let Err(e) = ipc_server.send_to_client(client_id, &shutdown_message).await {
-                    println!("Failed to send shutdown request: {}", e);
-                }
-            }
+        if let Some(app_handle) = &self.app_handle {
+            println!("Exiting Tauri application due to sidecar termination...");
+            app_handle.exit(0);
+        } else {
+            println!("Warning: No app handle available, cannot trigger main process shutdown");
         }
     }
 
@@ -298,8 +267,6 @@ impl SidecarManager {
             Err("IPC server not available".to_string())
         }
     }
-
-
 
     /**
      * Send a sidecar message to connected Rust processes

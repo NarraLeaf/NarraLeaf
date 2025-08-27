@@ -59,11 +59,6 @@ pub enum SidecarMessage {
         version: u32,
         compatible: bool,
     },
-    /// Connection established notification
-    Connected {
-        timestamp: u64,
-    },
-
 }
 
 /**

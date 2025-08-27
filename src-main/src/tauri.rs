@@ -6,39 +6,41 @@
  * to Tauri applications.
  */
 
-use tauri::{plugin::Builder, plugin::TauriPlugin, AppHandle, Manager, Runtime, State};
+use tauri::{plugin::Builder, plugin::TauriPlugin, AppHandle, Manager, State};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::ipc::IPCServer;
 use crate::sidecar::SidecarManager;
-use crate::communication::SidecarMessage;
-use crate::app_protocol::handle_app_protocol_request;
+use crate::communication::PROTOCOL_VERSION;
 
 /**
  * Plugin state shared across the Tauri app
  */
 pub struct PluginState {
     pub sidecar_manager: Arc<Mutex<SidecarManager>>,
-    pub app_handle: Option<AppHandle>,
+    pub app_handle: AppHandle,
 }
 
 /**
  * IPC request payload from renderer
+ * Now includes id field for proper request-response correlation
  */
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IPCRequest {
+    pub id: String,
     pub request_type: String,
     pub payload: Value,
 }
 
 /**
  * IPC response to renderer
+ * Now includes id field for proper request-response correlation
  */
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IPCResponse {
+    pub id: String,
     pub success: bool,
     pub data: Option<Value>,
     pub error: Option<String>,
@@ -54,18 +56,20 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
     Builder::new("narraleaf")
         .invoke_handler(tauri::generate_handler![
             request_ipc,
+            get_protocol_version,
         ])
         .setup(move |app, _api| {
             println!("Initializing NarraLeaf Tauri Runtime plugin...");
+            println!("Protocol version: {}", PROTOCOL_VERSION);
 
             // Generate random socket connection string and start IPC server
             let connection_string = format!("narraleaf-ipc-{}", uuid::Uuid::new_v4().simple());
 
             // Create plugin state
-            let sidecar_manager = Arc::new(Mutex::new(SidecarManager::new_with_connection_string(connection_string.clone())));
+            let sidecar_manager = Arc::new(Mutex::new(SidecarManager::new(connection_string.clone(), app.app_handle().clone())));
             let plugin_state = PluginState {
                 sidecar_manager: Arc::clone(&sidecar_manager),
-                app_handle: Some(app.app_handle().clone()),
+                app_handle: app.app_handle().clone(),
             };
 
             // Start sidecar process with socket connection string as parameter
@@ -88,37 +92,15 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                     println!("Plugin initialization completed");
 
                     // Monitor sidecar health and handle termination
-                    manager.monitor_sidecar_health().await;
+                    manager.listen_sidecar_status().await;
                 }
             });
 
             // Store the plugin state
             app.manage(plugin_state);
 
-            // Register app:// protocol handler
-            let app_handle = app.app_handle();
-            let sidecar_manager_clone = Arc::clone(&plugin_state.sidecar_manager);
 
-            app.protocol("app", move |request| {
-                let app_handle_clone = app_handle.clone();
-                let sidecar_manager = Arc::clone(&sidecar_manager_clone);
-
-                async move {
-                    match handle_app_protocol_request(&app_handle_clone, &request, sidecar_manager).await {
-                        Ok(response) => response,
-                        Err(e) => {
-                            eprintln!("Error handling app protocol request: {}", e);
-                            tauri::http::Response::builder()
-                                .status(500)
-                                .header("Content-Type", "application/json")
-                                .body(format!(r#"{{"error": "{}", "status": 500}}"#, e).into_bytes())
-                                .unwrap()
-                        }
-                    }
-                }
-            });
-
-            println!("NarraLeaf plugin initialized successfully with app:// protocol support");
+            println!("NarraLeaf plugin initialized successfully");
             Ok(())
         })
         .on_event(move |app, event| {
@@ -163,12 +145,13 @@ async fn request_ipc(
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    println!("IPC Request: {} at {}", request.request_type, current_time);
+    println!("IPC Request: {} (id: {}) at {}", request.request_type, request.id, current_time);
 
     // Security check: Only allow narraleaf: namespace requests from renderer
     if !request.request_type.starts_with("narraleaf:") {
         println!("Rejected non-narraleaf request: {}", request.request_type);
         return Ok(IPCResponse {
+            id: request.id.clone(),
             success: false,
             data: None,
             error: Some(format!("Access denied: Only 'narraleaf:' namespace requests are allowed from renderer. Got: {}", request.request_type)),
@@ -176,7 +159,7 @@ async fn request_ipc(
     }
 
     // Forward all narraleaf: operations to NodeJS sidecar
-    println!("Forwarding narraleaf operation to sidecar: {}", request.request_type);
+    println!("Forwarding narraleaf operation to sidecar: {} (id: {})", request.request_type, request.id);
     forward_to_sidecar(request, state).await
 }
 
@@ -200,6 +183,7 @@ async fn forward_to_sidecar(
         Some(server) => server,
         None => {
             return Ok(IPCResponse {
+                id: request.id.clone(),
                 success: false,
                 data: None,
                 error: Some("IPC server not available - sidecar not running".to_string()),
@@ -211,14 +195,15 @@ async fn forward_to_sidecar(
     let connected_clients = ipc_server.get_connected_clients().await;
     if connected_clients.is_empty() {
         return Ok(IPCResponse {
+            id: request.id.clone(),
             success: false,
             data: None,
             error: Some("No sidecar clients connected".to_string()),
         });
     }
 
-    // Create a unique message ID for this request
-    let message_id = uuid::Uuid::new_v4().to_string();
+    // Use the request's ID for message correlation
+    let message_id = request.id.clone();
 
     // Create response channel for this request
     let (response_tx, response_rx) = oneshot::channel::<crate::communication::SidecarMessage>();
@@ -232,7 +217,7 @@ async fn forward_to_sidecar(
 
     // Create sidecar message
     let sidecar_message = crate::communication::SidecarMessage::Request {
-        id: message_id.clone(),
+        id: request.id.clone(),
         request_type: request.request_type.clone(),
         payload: request.payload.clone(),
     };
@@ -254,6 +239,7 @@ async fn forward_to_sidecar(
                         crate::communication::SidecarMessage::Response { id, success, data, error } => {
                             println!("Received response for {}: success={}", id, success);
                             Ok(IPCResponse {
+                                id,
                                 success,
                                 data,
                                 error,
@@ -262,6 +248,7 @@ async fn forward_to_sidecar(
                         _ => {
                             println!("Unexpected response message type");
                             Ok(IPCResponse {
+                                id: request.id.clone(),
                                 success: false,
                                 data: None,
                                 error: Some("Unexpected response message type".to_string()),
@@ -272,6 +259,7 @@ async fn forward_to_sidecar(
                 Ok(Err(_)) => {
                     println!("Response channel closed unexpectedly");
                     Ok(IPCResponse {
+                        id: request.id.clone(),
                         success: false,
                         data: None,
                         error: Some("Response channel closed unexpectedly".to_string()),
@@ -286,6 +274,7 @@ async fn forward_to_sidecar(
                         pending_requests.remove(&message_id);
                     }
                     Ok(IPCResponse {
+                        id: request.id.clone(),
                         success: false,
                         data: None,
                         error: Some("Timeout waiting for sidecar response".to_string()),
@@ -302,12 +291,23 @@ async fn forward_to_sidecar(
                 pending_requests.remove(&message_id);
             }
             Ok(IPCResponse {
+                id: request.id.clone(),
                 success: false,
                 data: None,
                 error: Some(format!("Failed to communicate with sidecar: {}", e)),
             })
         }
     }
+}
+
+/**
+ * Get the current protocol version
+ *
+ * This command allows the renderer to check the IPC protocol version
+ */
+#[tauri::command]
+async fn get_protocol_version() -> Result<u32, String> {
+    Ok(PROTOCOL_VERSION)
 }
 
 

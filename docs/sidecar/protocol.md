@@ -19,15 +19,15 @@ Request Type应该以命名空间开头，使用`:`分隔。
 
 任何以`narraleaf:`命名空间开头的请求由Sidecar进程处理。
 
-Sidecar可以从渲染器中获取该请求，然后转发至Sidecar进程。
+Rust Runtime可以从渲染器中获取该请求，然后转发至Sidecar进程。
 
 该命名空间下的请求类型包含：  
-- `narraleaf:game.save.list` -> `data: SavedGameData[]`
-- `narraleaf:game.save.read` -> `data: SavedGameData`
+- `narraleaf:game.save.list` -> `data: SavedGameMeta[]`
+- `narraleaf:game.save.read` -> `data: SavedGame`
   - `id: string`
 - `narraleaf:game.save.write` -> `void`
   - `id: string`
-  - `data: SavedGameData`
+  - `data: SavedGame`
 - `narraleaf:game.save.delete` -> `void`
   - `id: string`
 - `narraleaf:app.quit` -> `void`
@@ -40,7 +40,9 @@ Sidecar可以从渲染器中获取该请求，然后转发至Sidecar进程。
 
 任何以`tauri:`命名空间开头的请求由Tauri进程处理。该命名空间的请求仅能由Sidecar进程发送。
 
-该命名空间的请求类型包含：  
+该命名空间的请求类型包含：
+
+### 窗口管理 (Window Management)
 - `tauri:window.create` -> `void`
   - `config: WindowCreatePayload`
 - `tauri:window.maximize` -> `void`
@@ -49,6 +51,95 @@ Sidecar可以从渲染器中获取该请求，然后转发至Sidecar进程。
   - `config: WindowMinimizePayload`
 - `tauri:window.close` -> `void`
   - `config: WindowClosePayload`
+- `tauri:window.show` -> `void`
+  - `config: WindowShowPayload`
+- `tauri:window.hide` -> `void`
+  - `config: WindowHidePayload`
+- `tauri:window.set_focus` -> `void`
+  - `config: WindowFocusPayload`
+- `tauri:window.set_position` -> `void`
+  - `config: WindowPositionPayload`
+- `tauri:window.set_size` -> `void`
+  - `config: WindowSizePayload`
+- `tauri:window.set_title` -> `void`
+  - `config: WindowTitlePayload`
+- `tauri:window.center` -> `void`
+  - `config: WindowCenterPayload`
+- `tauri:window.set_decorations` -> `void`
+  - `config: WindowDecorationsPayload`
+
+### 对话框 (Dialog)
+- `tauri:dialog.open` -> `path: string | null`
+  - `options?: OpenDialogOptions`
+- `tauri:dialog.save` -> `path: string | null`
+  - `options?: SaveDialogOptions`
+- `tauri:dialog.message` -> `void`
+  - `message: string`
+  - `options?: MessageDialogOptions`
+- `tauri:dialog.ask` -> `confirmed: boolean`
+  - `message: string`
+  - `options?: ConfirmDialogOptions`
+
+### 剪贴板 (Clipboard)
+- `tauri:clipboard.write_text` -> `void`
+  - `text: string`
+- `tauri:clipboard.read_text` -> `text: string | null`
+
+### 通知 (Notification)
+- `tauri:notification.request_permission` -> `permission: Permission`
+- `tauri:notification.is_permission_granted` -> `granted: boolean`
+- `tauri:notification.show` -> `void`
+  - `options: NotificationOptions`
+
+### HTTP 请求 (HTTP)
+- `tauri:http.fetch` -> `response: Response`
+  - `url: string`
+  - `options?: FetchOptions`
+
+### 应用信息 (App)
+- `tauri:app.get_version` -> `version: string`
+- `tauri:app.get_name` -> `name: string`
+- `tauri:app.get_tauri_version` -> `version: string`
+- `tauri:app.show` -> `void`
+- `tauri:app.hide` -> `void`
 - `tauri:app.quit` -> `void`
   - `reason?: Error | null` 用于指定退出原因
+
+### 系统托盘 (System Tray)
+- `tauri:system_tray.set_icon` -> `void`
+  - `icon: string | Uint8Array`
+- `tauri:system_tray.set_menu` -> `void`
+  - `menu: Menu`
+- `tauri:system_tray.set_tooltip` -> `void`
+  - `tooltip: string`
+- `tauri:system_tray.set_title` -> `void`
+  - `title: string`
+
+### 全局快捷键 (Global Shortcut)
+- `tauri:global_shortcut.register` -> `void`
+  - `accelerator: string`
+  - `handler: Function`
+- `tauri:global_shortcut.unregister` -> `void`
+  - `accelerator: string`
+- `tauri:global_shortcut.is_registered` -> `registered: boolean`
+  - `accelerator: string`
+
+### 菜单 (Menu)
+- `tauri:menu.create` -> `menu: Menu`
+  - `options: MenuOptions`
+- `tauri:menu.append` -> `void`
+  - `menu_id: string`
+  - `item: MenuItem`
+- `tauri:menu.insert` -> `void`
+  - `menu_id: string`
+  - `position: number`
+  - `item: MenuItem`
+- `tauri:menu.remove` -> `void`
+  - `menu_id: string`
+  - `item_id: string`
+
+### 其他
 - `tauri:ping` -> `timestamp: number`
+- `tauri:shell.open` -> `void`
+  - `path: string`
+  - `options?: OpenOptions`

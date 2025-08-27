@@ -1,16 +1,16 @@
 [package]
-name = "narraleaf-host"
+name = "narraleaf-runtime"
 version = "0.1.0"
 authors = ["Nomen (helloyork) helloyork@icloud.com"]
 edition = "2024"
-description = "NarraLeaf Tauri Plugin Library - Provides secure IPC communication and sidecar management"
+description = "NarraLeaf Tauri Runtime Plugin"
 license = "MPL-2.0"
 repository = "https://github.com/NarraLeaf/NarraLeaf"
 keywords = ["tauri", "plugin", "ipc", "sidecar"]
-categories = ["gui", "api-bindings", "development-tools"]
+categories = ["api-bindings", "development-tools"]
 
 [dependencies]
-tauri = { version = "2.6", optional = true, features = ["unstable"] }
+tauri = { version = "2.6", features = ["unstable"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full", "net", "io-util", "time"] }
@@ -28,9 +28,4 @@ crate-type = ["lib"]
 name = "demo"
 path = "examples/demo.rs"
 
-[features]
-default = []
-# Enable Tauri integration features
-tauri-plugin = ["tauri"]
-# Enable full feature set for examples
-full = ["tauri-plugin"]
+

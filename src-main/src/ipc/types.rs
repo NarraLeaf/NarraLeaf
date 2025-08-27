@@ -10,10 +10,7 @@ use tokio::sync::RwLock;
 use tokio::sync::oneshot;
 
 
-/// Message handler trait for processing different message types
-pub trait MessageHandler {
-    fn handle_message(&self, message: &crate::communication::SidecarMessage) -> Result<Option<crate::communication::SidecarMessage>, String>;
-}
+
 
 /// Client connection information
 #[derive(Debug)]
@@ -47,18 +44,27 @@ pub type PendingRequest = oneshot::Sender<crate::communication::SidecarMessage>;
 /// Server state management
 pub struct ServerState {
     pub clients: Arc<RwLock<HashMap<String, ClientConnection>>>,
-    pub message_handlers: Arc<RwLock<HashMap<String, Box<dyn MessageHandler + Send + Sync>>>>,
     pub is_running: Arc<RwLock<bool>>,
     pub pending_requests: Arc<RwLock<HashMap<String, PendingRequest>>>,
+    pub app_handle: Option<tauri::AppHandle>,
 }
 
 impl ServerState {
     pub fn new() -> Self {
         Self {
             clients: Arc::new(RwLock::new(HashMap::new())),
-            message_handlers: Arc::new(RwLock::new(HashMap::new())),
             is_running: Arc::new(RwLock::new(false)),
             pending_requests: Arc::new(RwLock::new(HashMap::new())),
+            app_handle: None,
+        }
+    }
+
+    pub fn with_app_handle(app_handle: tauri::AppHandle) -> Self {
+        Self {
+            clients: Arc::new(RwLock::new(HashMap::new())),
+            is_running: Arc::new(RwLock::new(false)),
+            pending_requests: Arc::new(RwLock::new(HashMap::new())),
+            app_handle: Some(app_handle),
         }
     }
 }

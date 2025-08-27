@@ -35,9 +35,7 @@
 pub mod sidecar;
 pub mod communication;
 pub mod ipc;
-#[cfg(feature = "tauri-plugin")]
 pub mod tauri;
-#[cfg(feature = "tauri-plugin")]
 pub mod tauri_handlers;
 mod operations;
 
@@ -45,9 +43,6 @@ mod operations;
 pub use communication::{SidecarMessage, PROTOCOL_VERSION};
 pub use ipc::IPCServer;
 pub use sidecar::SidecarManager;
-
-#[cfg(feature = "tauri-plugin")]
 pub use tauri::{init, PluginState};
-#[cfg(feature = "tauri-plugin")]
 pub use tauri_handlers::{execute_tauri_operation, TauriOperationExecutor, OperationResult};
 
