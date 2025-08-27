@@ -1,6 +1,6 @@
 import { NarraLeaf } from "@/core/build/constants";
-import { CrashReport } from "@/main/app/types";
-import { CriticalRendererProcessError } from "@/main/utils/error";
+import { CrashReport } from "@/main_legacy/app/types";
+import { CriticalRendererProcessError } from "@/main_legacy/utils/error";
 import { EventEmitter } from "events";
 import { RootPath } from "narraleaf-react";
 import { AppAPI } from "./api";

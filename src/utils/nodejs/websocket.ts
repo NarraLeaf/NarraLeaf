@@ -1,6 +1,6 @@
 import {WebSocket, WebSocketServer} from "ws";
 import {EventEmitter} from "events";
-import { AppEventToken } from "@/main/app/types";
+import { AppEventToken } from "@/main_legacy/app/types";
 import url from "url";
 
 export type WSEventProp = {

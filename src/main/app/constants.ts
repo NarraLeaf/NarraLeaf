@@ -1,1 +1,0 @@
-export const MainServiceIPCName = "narraleaf-ipc";

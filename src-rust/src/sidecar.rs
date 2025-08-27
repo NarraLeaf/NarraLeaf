@@ -30,22 +30,9 @@ pub struct SidecarManager {
     connection_string: String,
     pub state: SidecarState,
     last_health_check: std::time::Instant,
-    last_heartbeat: std::time::Instant,
-    heartbeat_interval: std::time::Duration,
-    initial_response_received: bool,
-    sidecar_metadata: Option<SidecarMetadata>,
 }
 
-/**
- * Sidecar metadata from initial response
- */
-#[derive(Debug, Clone)]
-pub struct SidecarMetadata {
-    pub language: String,
-    pub version: String,
-    pub ipc_protocol_version: u32,
-    pub capabilities: Vec<String>,
-}
+
 
 impl SidecarManager {
     pub fn new() -> Self {
@@ -57,10 +44,6 @@ impl SidecarManager {
             connection_string,
             state: SidecarState::Stopped,
             last_health_check: std::time::Instant::now(),
-            last_heartbeat: std::time::Instant::now(),
-            heartbeat_interval: std::time::Duration::from_secs(30),
-            initial_response_received: false,
-            sidecar_metadata: None,
         }
     }
 
@@ -71,10 +54,6 @@ impl SidecarManager {
             connection_string,
             state: SidecarState::Stopped,
             last_health_check: std::time::Instant::now(),
-            last_heartbeat: std::time::Instant::now(),
-            heartbeat_interval: std::time::Duration::from_secs(30),
-            initial_response_received: false,
-            sidecar_metadata: None,
         }
     }
 
@@ -112,10 +91,6 @@ impl SidecarManager {
 
         // Start sidecar process
         self.start_sidecar_process(sidecar_path, connection_string).await?;
-
-        // Wait for initial response from sidecar
-        println!("⏳ Waiting for initial response from sidecar...");
-        self.wait_for_initial_response().await?;
 
         self.state = SidecarState::Running;
         self.last_health_check = std::time::Instant::now();
@@ -193,49 +168,9 @@ impl SidecarManager {
         &self.connection_string
     }
 
-    /**
-     * Wait for initial response from sidecar
-     * This ensures the sidecar is properly initialized and reports its metadata
-     */
-    async fn wait_for_initial_response(&mut self) -> Result<(), String> {
-        let start_time = std::time::Instant::now();
-        let timeout = std::time::Duration::from_secs(30); // 30 second timeout
 
-        while start_time.elapsed() < timeout {
-            // Check if we have any connected clients
-            if let Some(ipc_server) = &self.ipc_server {
-                let connected_clients = ipc_server.get_connected_clients().await;
 
-                if !connected_clients.is_empty() {
-                    // We have connected clients, but we need to wait for the initial response
-                    // The initial response will be processed in the message handler
-                    // For now, we'll just wait a bit more to ensure the sidecar has time to send it
-                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                    continue;
-                }
-            }
 
-            // Sleep and check again
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-        }
-
-        // Check if initial response was received
-        if !self.initial_response_received {
-            return Err("Timeout waiting for initial response from sidecar".to_string());
-        }
-
-        println!("✅ Initial response received successfully");
-        Ok(())
-    }
-
-    /**
-     * Mark initial response as received and store metadata
-     */
-    pub fn set_initial_response_received(&mut self, metadata: SidecarMetadata) {
-        self.initial_response_received = true;
-        self.sidecar_metadata = Some(metadata);
-        println!("📡 Initial response processed and stored");
-    }
 
     fn generate_connection_string() -> String {
         use uuid::Uuid;
@@ -248,7 +183,7 @@ impl SidecarManager {
             if let Some(ref mut child) = self.child_process {
                 match child.try_wait() {
                     Ok(Some(exit_status)) => {
-                        println!("⚠️  Sidecar process exited with status: {}", exit_status);
+                        println!("!! Sidecar process exited with status: {}", exit_status);
                         self.state = SidecarState::Failed;
 
                         // Trigger main process shutdown since sidecar died
@@ -260,7 +195,7 @@ impl SidecarManager {
                         self.last_health_check = std::time::Instant::now();
                     }
                     Err(e) => {
-                        println!("⚠️  Error checking sidecar process status: {}", e);
+                        println!("!! Error checking sidecar process status: {}", e);
                         self.state = SidecarState::Failed;
                         self.trigger_main_process_shutdown().await;
                         break;
@@ -272,13 +207,7 @@ impl SidecarManager {
                 break;
             }
 
-            // Send heartbeat if interval has passed
-            if self.last_heartbeat.elapsed() >= self.heartbeat_interval {
-                if let Err(e) = self.send_heartbeat().await {
-                    println!("Heartbeat failed: {}", e);
-                    // Continue monitoring even if heartbeat fails
-                }
-            }
+
 
             // Sleep for a shorter interval to check heartbeat timing
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
@@ -370,47 +299,7 @@ impl SidecarManager {
         }
     }
 
-    /**
-     * Send a heartbeat ping to the main Rust process
-     */
-    pub async fn send_heartbeat(&mut self) -> Result<(), String> {
-        if let Some(ipc_server) = &self.ipc_server {
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64;
 
-            let message = crate::communication::SidecarMessage::SidecarRequest {
-                id: uuid::Uuid::new_v4().to_string(),
-                request_type: "tauri:ping".to_string(),
-                payload: serde_json::json!({
-                    "timestamp": timestamp,
-                    "source": "sidecar"
-                }),
-                response_channel: format!("heartbeat_response_{}", timestamp),
-            };
-
-            let connected_clients = ipc_server.get_connected_clients().await;
-            if connected_clients.is_empty() {
-                return Err("No Rust clients connected for heartbeat".to_string());
-            }
-
-            let client_id = &connected_clients[0];
-            match ipc_server.send_to_client(client_id, &message).await {
-                Ok(_) => {
-                    println!("Heartbeat sent to Rust process at {}", timestamp);
-                    self.last_heartbeat = std::time::Instant::now();
-                    Ok(())
-                },
-                Err(e) => {
-                    println!("Failed to send heartbeat: {}", e);
-                    Err(format!("Failed to send heartbeat: {}", e))
-                }
-            }
-        } else {
-            Err("IPC server not available for heartbeat".to_string())
-        }
-    }
 
     /**
      * Send a sidecar message to connected Rust processes

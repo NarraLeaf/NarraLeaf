@@ -8,13 +8,13 @@ use std::sync::Arc;
 use crate::ipc::types::ServerState;
 use crate::ipc::client::send_message_to_client_by_id;
 use crate::communication::{SidecarMessage, PROTOCOL_VERSION};
+use crate::operations::OperationExecutor;
 
 /// Process incoming message
 pub async fn process_message(
     message: &SidecarMessage,
     client_id: &str,
     server_state: &Arc<ServerState>,
-    sidecar_manager: Option<std::sync::Weak<tokio::sync::Mutex<crate::sidecar::SidecarManager>>>,
 ) {
     match message {
         SidecarMessage::Request { id, request_type, payload: _ } => {
@@ -85,45 +85,16 @@ pub async fn process_message(
             // Handle request from sidecar (e.g., tauri: operations)
             println!("Received sidecar request: {} -> {}", request_type, id);
 
-            // Special handling for heartbeat ping
-            if request_type == "tauri:ping" {
-                // Reset the global heartbeat timer
-                #[cfg(feature = "tauri-plugin")]
-                crate::tauri::reset_global_heartbeat();
-
-                // This is a heartbeat ping - create a simple success response
-                let response = SidecarMessage::Response {
-                    id: id.clone(),
-                    success: true,
-                    data: Some(serde_json::json!({
-                        "timestamp": std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_millis(),
-                        "status": "heartbeat_acknowledged"
-                    })),
-                    error: None,
-                };
-
-                if let Err(e) = send_message_to_client_by_id(
-                    client_id, server_state, &response
-                ).await {
-                    println!("Failed to send heartbeat response: {}", e);
-                }
-
-                return;
-            }
-
             // Process the sidecar request using the operations framework
             #[cfg(feature = "tauri-plugin")]
-            let result = crate::operations::OperationExecutor::execute_from_ipc(
+            let result = OperationExecutor::execute_from_ipc(
                 &request_type,
                 payload.clone(),
                 None, // No app handle in IPC context
             ).await;
 
             #[cfg(not(feature = "tauri-plugin"))]
-            let result = crate::operations::OperationExecutor::execute_from_ipc(
+            let result = OperationExecutor::execute_from_ipc(
                 &request_type,
                 payload.clone(),
             ).await;
@@ -142,30 +113,7 @@ pub async fn process_message(
                 println!("Failed to send sidecar request response: {}", e);
             }
         }
-        
-        SidecarMessage::Ping { timestamp } => {
-            // Respond with pong
-            let pong = SidecarMessage::Pong { timestamp: *timestamp };
-            if let Err(e) = send_message_to_client_by_id(
-                client_id, server_state, &pong
-            ).await {
-                println!("Failed to send pong to client {}: {}", client_id, e);
-            }
-        }
 
-        SidecarMessage::Pong { timestamp } => {
-            // Handle pong response from sidecar
-            let now = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64;
-
-            let round_trip_time = now - timestamp;
-            println!("🏓 Pong received from client {} (RTT: {}ms)", client_id, round_trip_time);
-
-            // TODO: Update heartbeat timestamp in monitoring state
-            // This would require access to the monitoring state from the IPC layer
-        }
         
         SidecarMessage::VersionCheck { version } => {
             // Check protocol compatibility
@@ -181,34 +129,7 @@ pub async fn process_message(
                 println!("Failed to send version response to client {}: {}", client_id, e);
             }
         }
-        
-        SidecarMessage::InitialResponse { language, version, ipc_protocol_version, capabilities } => {
-            // Handle initial response from sidecar
-            println!("📡 Initial response from sidecar client {}:", client_id);
-            println!("  - Language: {}", language);
-            println!("  - Version: {}", version);
-            println!("  - IPC Protocol: {}", ipc_protocol_version);
-            println!("  - Capabilities: {:?}", capabilities);
 
-            // Check protocol compatibility
-            if *ipc_protocol_version != PROTOCOL_VERSION {
-                println!("⚠️  Protocol version mismatch! Sidecar: {}, Expected: {}", ipc_protocol_version, PROTOCOL_VERSION);
-            }
-
-            // Store sidecar metadata if sidecar_manager is available
-            if let Some(sidecar_manager_weak) = sidecar_manager {
-                if let Some(sidecar_manager_arc) = sidecar_manager_weak.upgrade() {
-                    let mut sidecar_manager = sidecar_manager_arc.lock().await;
-                    let metadata = crate::sidecar::SidecarMetadata {
-                        language: language.clone(),
-                        version: version.clone(),
-                        ipc_protocol_version: *ipc_protocol_version,
-                        capabilities: capabilities.clone(),
-                    };
-                    sidecar_manager.set_initial_response_received(metadata);
-                }
-            }
-        }
 
         _ => {
             // Handle other message types

@@ -13,7 +13,6 @@ pub mod types;
 pub mod platform;
 pub mod config;
 pub mod error;
-pub mod logging;
 
 // Re-export main types for convenience
 pub use server::IPCServer;

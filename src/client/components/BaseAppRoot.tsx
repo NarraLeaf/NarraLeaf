@@ -1,5 +1,5 @@
 import { NarraLeaf } from "@/core/build/constants";
-import { CriticalRendererProcessError } from "@/main/utils/error";
+import { CriticalRendererProcessError } from "@/main_legacy/utils/error";
 import React from "react";
 import { RendererAppRootProps } from "./components.types";
 import { AppInfo } from "@/core/@types/global";

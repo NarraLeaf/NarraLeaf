@@ -1,7 +1,7 @@
 import { AppInfo } from "@core/@types/global";
-import { CrashReport } from "@/main/app/types";
+import { CrashReport } from "@/main_legacy/app/types";
 import { Game } from "narraleaf-react";
-import { CriticalRendererProcessError } from "@/main/utils/error";
+import { CriticalRendererProcessError } from "@/main_legacy/utils/error";
 import { GamePlaybackState } from "../providers/game-state-provider";
 import { EventEmitter } from "events";
 import { EventToken } from "../types";

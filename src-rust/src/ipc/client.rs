@@ -15,7 +15,6 @@ use crate::ipc::message::process_message;
 pub async fn handle_client(
     client_id: String,
     server_state: Arc<ServerState>,
-    sidecar_manager: Option<std::sync::Weak<tokio::sync::Mutex<crate::sidecar::SidecarManager>>>,
 ) {
     let mut buffer = Vec::new();
     
@@ -71,7 +70,7 @@ pub async fn handle_client(
             };
 
             // Handle message
-            process_message(&message, &client_id, &server_state, sidecar_manager.clone()).await;
+            process_message(&message, &client_id, &server_state).await;
 
             // Remove processed message
             buffer.drain(..total_length);

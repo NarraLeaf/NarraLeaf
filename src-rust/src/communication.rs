@@ -49,14 +49,7 @@ pub enum SidecarMessage {
         data: Option<Value>,
         error: Option<String>,
     },
-    /// Health check ping
-    Ping {
-        timestamp: u64,
-    },
-    /// Health check pong
-    Pong {
-        timestamp: u64,
-    },
+
     /// Protocol version check
     VersionCheck {
         version: u32,
@@ -70,13 +63,7 @@ pub enum SidecarMessage {
     Connected {
         timestamp: u64,
     },
-    /// Initial response from sidecar with metadata
-    InitialResponse {
-        language: String,
-        version: String,
-        ipc_protocol_version: u32,
-        capabilities: Vec<String>,
-    },
+
 }
 
 /**

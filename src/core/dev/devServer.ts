@@ -1,7 +1,7 @@
 import {RendererProject} from "@core/project/renderer/rendererProject";
 import {ElectronDevServerToken} from "@core/dev/electron";
 import {Server, WSEventType} from "@/utils/nodejs/websocket";
-import {AppMeta} from "@/main/app/app";
+import {AppMeta} from "@/main_legacy/app/app";
 import {createServer, IncomingMessage, ServerResponse} from "http";
 import {readFile, stat} from "fs/promises";
 import path from "path";

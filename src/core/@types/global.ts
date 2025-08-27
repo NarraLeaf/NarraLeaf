@@ -2,7 +2,7 @@ import { PlatformInfo } from "@/utils/pure/os";
 import { SavedGameMeta } from "@core/game/save";
 import { RequestStatus } from "@core/ipc/events";
 import { SavedGameResult } from "@/core/game/SavedGameResult";
-import { CrashReport } from "@/main/app/mgr/crashManager";
+import { CrashReport } from "@/main_legacy/app/mgr/crashManager";
 import { SavedGame } from "narraleaf-react";
 
 export interface ClientAppConfiguration {

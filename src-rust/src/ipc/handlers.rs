@@ -7,19 +7,6 @@
 use crate::ipc::types::MessageHandler;
 use crate::communication::SidecarMessage;
 
-/// Default ping handler
-pub struct PingHandler;
-
-impl MessageHandler for PingHandler {
-    fn handle_message(&self, message: &SidecarMessage) -> Result<Option<SidecarMessage>, String> {
-        match message {
-            SidecarMessage::Ping { timestamp } => {
-                Ok(Some(SidecarMessage::Pong { timestamp: *timestamp }))
-            }
-            _ => Ok(None)
-        }
-    }
-}
 
 /// Default version check handler
 pub struct VersionHandler;

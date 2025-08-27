@@ -1,7 +1,7 @@
 import {PlatformBuildTarget} from "./base";
 import {TargetConfiguration, TargetSpecificOptions, MacConfiguration} from "electron-builder";
 import {IBaseTargetConfig} from "./types";
-import {MainPlatform} from "@/main/app/config";
+import {MainPlatform} from "@/main_legacy/app/config";
 
 export enum MacBuildTarget {
     dmg = "dmg",

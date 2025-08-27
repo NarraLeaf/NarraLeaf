@@ -11,7 +11,7 @@ Tauri进程只应该处理和Tauri API相关的内容，并且负责渲染器行
 在用户将该插件应用于Tauri后，开始以下内容：
 - 生成随机的socket连接字符串，启动IPC服务器
 - 拉起Sidecar进程，在启动参数中加入socket连接字符串
-- 等待Sidecar进程发出初始响应，报告其基础信息：使用的语言、运行的NarraLeaf兼容版本、使用的IPC内部协议版本
+
 
 ## 2. 转发
 
@@ -23,11 +23,13 @@ Sidecar进程响应后，将响应转发给渲染器世界。
 
 ## 3. 资源获取
 
-当渲染器尝试访问`app://`开头的路径时，将路径转发给Sidecar进程。
+当渲染器尝试访问`app://`开头的路径时，直接将其转换为`tauri://`协议路径，无需通过Sidecar进程。
 
-Sidecar进程有义务对路径进行解析，并且返回一个`tauri://`或网络协议开头的路径。
+转换规则：
+- `app://path/to/resource` → `tauri://localhost/path/to/resource`
+- 如果包含查询参数，会一并保留
 
-如果Sidecar进程解析的路径符合Tauri的资源协议，则返回该资源。否则尝试从网络获取资源。
+Tauri进程直接处理转换后的`tauri://`资源，或从网络获取资源。
 
 ## 4. Tauri请求
 
@@ -41,8 +43,7 @@ Sidecar进程的生命周期与Tauri进程的生命周期相同。
 
 任何一方的终止和连接断开都会导致各方销毁本身所管理的资源并且退出。
 
-Tauri进程通过监听连接状态和收听30秒一次的心跳包来确定Sidecar进程是否存活。如果监听超时，则退出。  
-Sidecar进程应该每30秒向Tauri进程发送一次`tauri:ping`请求。
+Tauri进程通过监听连接状态来确定Sidecar进程是否存活。如果连接断开，则退出。
 
 ## 预期行为
 
@@ -50,6 +51,4 @@ Sidecar进程应该每30秒向Tauri进程发送一次`tauri:ping`请求。
 
 与其来讲，Sidecar进程在Socket通讯中至少能：
 - 接收`narraleaf:`命名空间开头的请求，并且返回应用所预期的响应
-- 接收类型为`resolve_app_resource`的请求，并且返回解析的`tauri://`或网络协议开头的路径
 - 向Tauri进程发送`tauri:`命名空间开头的请求以调用Tauri API
-- 每30秒向Tauri进程发送一次`tauri:ping`请求

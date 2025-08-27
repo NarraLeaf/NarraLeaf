@@ -23,8 +23,6 @@
  *
  * Then in your `main.rs`:
  * ```rust
- * use narraleaf_host::NarraleafPlugin;
- *
  * fn main() {
  *     tauri::Builder::default()
  *         .plugin(narraleaf_host::init())
@@ -39,10 +37,9 @@ pub mod communication;
 pub mod ipc;
 #[cfg(feature = "tauri-plugin")]
 pub mod tauri;
-pub mod app_protocol;
-mod operations;
 #[cfg(feature = "tauri-plugin")]
-pub mod logging;
+pub mod tauri_handlers;
+mod operations;
 
 // Re-export main types for convenience
 pub use communication::{SidecarMessage, PROTOCOL_VERSION};
@@ -50,5 +47,7 @@ pub use ipc::IPCServer;
 pub use sidecar::SidecarManager;
 
 #[cfg(feature = "tauri-plugin")]
-pub use tauri::{init, NarraleafPlugin, PluginState};
+pub use tauri::{init, PluginState};
+#[cfg(feature = "tauri-plugin")]
+pub use tauri_handlers::{execute_tauri_operation, TauriOperationExecutor, OperationResult};
 

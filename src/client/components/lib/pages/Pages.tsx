@@ -10,7 +10,7 @@ import {
 } from "@/client/app/app.types";
 import { RouterErrorBoundary } from "@/client/components/errorHandling/RouterErrorBoundary";
 import { useApp } from "@/client/components/lib/providers/AppProvider";
-import { CriticalRendererProcessError } from "@/main/utils/error";
+import { CriticalRendererProcessError } from "@/main_legacy/utils/error";
 import { AnimatePresence } from "motion/react";
 import { Layout, LayoutRouterProvider, Page } from "narraleaf-react";
 import React from "react";
