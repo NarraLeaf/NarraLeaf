@@ -6,499 +6,67 @@
  * requested from the NodeJS sidecar via the tauri:* namespace.
  */
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Manager};
+use clipboard::{ClipboardProvider, windows_clipboard::WindowsClipboardContext};
 
-/**
- * Window creation payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowCreatePayload {
-    pub label: String,
-    pub title: String,
-    pub width: f64,
-    pub height: f64,
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-    pub center: Option<bool>,
-    pub decorations: Option<bool>,
-    pub always_on_top: Option<bool>,
-    pub skip_taskbar: Option<bool>,
-}
+pub use crate::handler_types::*;
 
-/**
- * Window maximization payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowMaximizePayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window minimization payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowMinimizePayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window close payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowClosePayload {
-    pub label: Option<String>,
-}
-
-/**
- * Application quit payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppQuitPayload {
-    pub reason: Option<String>,
-}
-
-/**
- * Window show payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowShowPayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window hide payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowHidePayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window focus payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowFocusPayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window position payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowPositionPayload {
-    pub label: Option<String>,
-    pub x: f64,
-    pub y: f64,
-}
-
-/**
- * Window size payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowSizePayload {
-    pub label: Option<String>,
-    pub width: f64,
-    pub height: f64,
-}
-
-/**
- * Window title payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowTitlePayload {
-    pub label: Option<String>,
-    pub title: String,
-}
-
-/**
- * Window center payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowCenterPayload {
-    pub label: Option<String>,
-}
-
-/**
- * Window decorations payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowDecorationsPayload {
-    pub label: Option<String>,
-    pub decorations: bool,
-}
-
-/**
- * File system read text file payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsReadTextFilePayload {
-    pub path: String,
-}
-
-/**
- * File system write text file payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsWriteTextFilePayload {
-    pub path: String,
-    pub contents: String,
-}
-
-/**
- * File system read binary file payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsReadBinaryFilePayload {
-    pub path: String,
-}
-
-/**
- * File system write binary file payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsWriteBinaryFilePayload {
-    pub path: String,
-    pub contents: Vec<u8>,
-}
-
-/**
- * File system exists payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsExistsPayload {
-    pub path: String,
-}
-
-/**
- * File system mkdir payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsMkdirPayload {
-    pub path: String,
-    pub options: Option<MkdirOptions>,
-}
-
-/**
- * File system remove payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsRemovePayload {
-    pub path: String,
-    pub options: Option<RemoveOptions>,
-}
-
-/**
- * File system copy file payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsCopyFilePayload {
-    pub from: String,
-    pub to: String,
-}
-
-/**
- * File system rename payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsRenamePayload {
-    pub from: String,
-    pub to: String,
-}
-
-/**
- * File system read dir payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FsReadDirPayload {
-    pub path: String,
-    pub options: Option<ReadDirOptions>,
-}
-
-/**
- * Dialog open payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogOpenPayload {
-    pub options: Option<DialogOpenOptions>,
-}
-
-/**
- * Dialog save payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogSavePayload {
-    pub options: Option<DialogSaveOptions>,
-}
-
-/**
- * Dialog message payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogMessagePayload {
-    pub message: String,
-    pub options: Option<DialogMessageOptions>,
-}
-
-/**
- * Dialog ask payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogAskPayload {
-    pub message: String,
-    pub options: Option<DialogAskOptions>,
-}
-
-/**
- * Clipboard write text payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClipboardWriteTextPayload {
-    pub text: String,
-}
-
-/**
- * Notification request permission payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotificationRequestPermissionPayload {}
-
-/**
- * Notification is permission granted payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotificationIsPermissionGrantedPayload {}
-
-/**
- * Notification show payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotificationShowPayload {
-    pub options: NotificationOptions,
-}
-
-/**
- * HTTP fetch payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HttpFetchPayload {
-    pub url: String,
-    pub options: Option<FetchOptions>,
-}
-
-/**
- * App get version payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppGetVersionPayload {}
-
-/**
- * App get name payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppGetNamePayload {}
-
-/**
- * App get tauri version payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppGetTauriVersionPayload {}
-
-/**
- * App show payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppShowPayload {}
-
-/**
- * App hide payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppHidePayload {}
-
-/**
- * System tray set icon payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SystemTraySetIconPayload {
-    pub icon: String, // base64 string or path
-}
-
-/**
- * System tray set menu payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SystemTraySetMenuPayload {
-    pub menu: Value, // Menu structure
-}
-
-/**
- * System tray set tooltip payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SystemTraySetTooltipPayload {
-    pub tooltip: String,
-}
-
-/**
- * System tray set title payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SystemTraySetTitlePayload {
-    pub title: String,
-}
-
-/**
- * Global shortcut register payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GlobalShortcutRegisterPayload {
-    pub accelerator: String,
-}
-
-/**
- * Global shortcut unregister payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GlobalShortcutUnregisterPayload {
-    pub accelerator: String,
-}
-
-/**
- * Global shortcut is registered payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GlobalShortcutIsRegisteredPayload {
-    pub accelerator: String,
-}
-
-/**
- * Menu create payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuCreatePayload {
-    pub options: MenuOptions,
-}
-
-/**
- * Menu append payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuAppendPayload {
-    pub menu_id: String,
-    pub item: MenuItem,
-}
-
-/**
- * Menu insert payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuInsertPayload {
-    pub menu_id: String,
-    pub position: usize,
-    pub item: MenuItem,
-}
-
-/**
- * Menu remove payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuRemovePayload {
-    pub menu_id: String,
-    pub item_id: String,
-}
-
-/**
- * Shell open payload
- */
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ShellOpenPayload {
-    pub path: String,
-    pub options: Option<ShellOpenOptions>,
-}
-
-// Supporting structs for options
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MkdirOptions {
-    pub recursive: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RemoveOptions {
-    pub recursive: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReadDirOptions {
-    pub recursive: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogOpenOptions {
-    pub default_path: Option<String>,
-    pub filters: Option<Vec<FileFilter>>,
-    pub multiple: Option<bool>,
-    pub directory: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogSaveOptions {
-    pub default_path: Option<String>,
-    pub filters: Option<Vec<FileFilter>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogMessageOptions {
-    pub title: Option<String>,
-    pub kind: Option<String>, // "info", "warning", "error"
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DialogAskOptions {
-    pub title: Option<String>,
-    pub kind: Option<String>, // "info", "warning", "error"
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FileFilter {
-    pub name: String,
-    pub extensions: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotificationOptions {
-    pub title: Option<String>,
-    pub body: Option<String>,
-    pub icon: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FetchOptions {
-    pub method: Option<String>,
-    pub headers: Option<Value>,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuOptions {
-    pub items: Vec<MenuItem>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuItem {
-    pub id: String,
-    pub title: String,
-    pub enabled: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ShellOpenOptions {
-    pub with: Option<String>, // command to use for opening
-}
 
 // Re-export OperationResult from operations module
 pub use crate::operations::OperationResult;
+
+/**
+ * Trait for payloads that provide window labels
+ */
+trait WindowLabelProvider {
+    fn get_label(&self) -> &Option<String>;
+}
+
+// Implement WindowLabelProvider for all window-related payloads
+impl WindowLabelProvider for WindowMaximizePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowMinimizePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowClosePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowShowPayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowHidePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowFocusPayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowPositionPayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowSizePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowTitlePayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowCenterPayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
+
+impl WindowLabelProvider for WindowDecorationsPayload {
+    fn get_label(&self) -> &Option<String> { &self.label }
+}
 
 /**
  * Tauri Operation Executor
@@ -508,6 +76,120 @@ pub use crate::operations::OperationResult;
 pub struct TauriOperationExecutor;
 
 impl TauriOperationExecutor {
+    /**
+     * Helper function to get a window by label or return main window as default
+     */
+    fn get_window(app_handle: &AppHandle, label: &Option<String>) -> Option<tauri::WebviewWindow> {
+        if let Some(label) = label {
+            app_handle.get_webview_window(label)
+        } else {
+            None
+        }
+    }
+
+    /**
+     * Helper function to get window label or default to "main"
+     */
+    fn get_window_label(label: &Option<String>) -> String {
+        label.as_deref().unwrap_or("main").to_string()
+    }
+
+    /**
+     * Helper function to create success OperationResult
+     */
+    fn create_success_result(message: String, data: Option<Value>) -> OperationResult {
+        OperationResult {
+            success: true,
+            message: Some(message),
+            data,
+        }
+    }
+
+    /**
+     * Helper function to create error OperationResult
+     */
+    fn create_error_result(message: String, data: Option<Value>) -> OperationResult {
+        OperationResult {
+            success: false,
+            message: Some(message),
+            data,
+        }
+    }
+
+    /**
+     * Helper function to create app handle not available error
+     */
+    fn create_app_handle_error() -> OperationResult {
+        Self::create_error_result("App handle not available".to_string(), None)
+    }
+
+    /**
+     * Helper function to create window not found error
+     */
+    fn create_window_not_found_error(window_label: &str) -> OperationResult {
+        Self::create_error_result(format!("Window '{}' not found", window_label), None)
+    }
+
+    /**
+     * Helper function to create invalid payload error
+     */
+    fn create_invalid_payload_error(operation: &str, error: &serde_json::Error) -> OperationResult {
+        Self::create_error_result(format!("Invalid payload for {}: {}", operation, error), None)
+    }
+
+    /**
+     * Helper function to safely deserialize payload with error handling
+     */
+    fn deserialize_payload<T: for<'de> serde::Deserialize<'de>>(payload: Value, operation: &str) -> Result<T, OperationResult> {
+        match serde_json::from_value::<T>(payload) {
+            Ok(deserialized) => Ok(deserialized),
+            Err(e) => Err(Self::create_invalid_payload_error(operation, &e)),
+        }
+    }
+
+    /**
+     * Helper function to deserialize payload with fallback to default
+     */
+    fn deserialize_payload_or_default<T: for<'de> serde::Deserialize<'de> + Default>(payload: Value, _operation: &str) -> T {
+        match serde_json::from_value::<T>(payload) {
+            Ok(deserialized) => deserialized,
+            Err(_) => T::default(),
+        }
+    }
+
+    /**
+     * Helper function to execute window operation with common error handling
+     */
+    async fn execute_window_operation<F, Fut>(
+        app_handle: Option<&AppHandle>,
+        payload: &impl WindowLabelProvider,
+        operation: F,
+        operation_name: &str,
+    ) -> OperationResult
+    where
+        F: FnOnce(tauri::WebviewWindow) -> Fut,
+        Fut: std::future::Future<Output = Result<(), tauri::Error>>,
+    {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.get_label());
+            if let Some(window) = Self::get_window(app, &payload.get_label()) {
+                match operation(window).await {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' {} successfully", window_label, operation_name),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to {} window '{}': {}", operation_name, window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
     /**
      * Execute a window creation operation
      */
@@ -575,41 +257,9 @@ impl TauriOperationExecutor {
         payload: WindowMaximizePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let window_label = payload.label.as_deref().unwrap_or("main").to_string();
-            let window = if let Some(label) = &payload.label {
-                app.get_webview_window(&label)
-            } else {
-                None
-            };
-
-            if let Some(window) = window {
-                match window.maximize() {
-                    Ok(_) => OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' maximized successfully", window_label)),
-                        data: None,
-                    },
-                    Err(e) => OperationResult {
-                        success: false,
-                        message: Some(format!("Failed to maximize window '{}': {}", window_label, e)),
-                        data: None,
-                    },
-                }
-            } else {
-                OperationResult {
-                    success: false,
-                    message: Some(format!("Window '{}' not found", window_label)),
-                    data: None,
-                }
-            }
-        } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
-            }
-        }
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.maximize()
+        }, "maximized").await
     }
 
     /**
@@ -619,41 +269,9 @@ impl TauriOperationExecutor {
         payload: WindowMinimizePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let window_label = payload.label.as_deref().unwrap_or("main").to_string();
-            let window = if let Some(label) = &payload.label {
-                app.get_webview_window(&label)
-            } else {
-                None
-            };
-
-            if let Some(window) = window {
-                match window.minimize() {
-                    Ok(_) => OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' minimized successfully", window_label)),
-                        data: None,
-                    },
-                    Err(e) => OperationResult {
-                        success: false,
-                        message: Some(format!("Failed to minimize window '{}': {}", window_label, e)),
-                        data: None,
-                    },
-                }
-            } else {
-                OperationResult {
-                    success: false,
-                    message: Some(format!("Window '{}' not found", window_label)),
-                    data: None,
-                }
-            }
-        } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
-            }
-        }
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.minimize()
+        }, "minimized").await
     }
 
     /**
@@ -663,41 +281,9 @@ impl TauriOperationExecutor {
         payload: WindowClosePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let window_label = payload.label.as_deref().unwrap_or("main").to_string();
-            let window = if let Some(label) = &payload.label {
-                app.get_webview_window(&label)
-            } else {
-                None
-            };
-
-            if let Some(window) = window {
-                match window.close() {
-                    Ok(_) => OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' closed successfully", window_label)),
-                        data: None,
-                    },
-                    Err(e) => OperationResult {
-                        success: false,
-                        message: Some(format!("Failed to close window '{}': {}", window_label, e)),
-                        data: None,
-                    },
-                }
-            } else {
-                OperationResult {
-                    success: false,
-                    message: Some(format!("Window '{}' not found", window_label)),
-                    data: None,
-                }
-            }
-        } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
-            }
-        }
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.close()
+        }, "closed").await
     }
 
     /**
@@ -734,41 +320,9 @@ impl TauriOperationExecutor {
         payload: WindowShowPayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let window_label = payload.label.as_deref().unwrap_or("main").to_string();
-            let window = if let Some(label) = &payload.label {
-                app.get_webview_window(&label)
-            } else {
-                None
-            };
-
-            if let Some(window) = window {
-                match window.show() {
-                    Ok(_) => OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' shown successfully", window_label)),
-                        data: None,
-                    },
-                    Err(e) => OperationResult {
-                        success: false,
-                        message: Some(format!("Failed to show window '{}': {}", window_label, e)),
-                        data: None,
-                    },
-                }
-            } else {
-                OperationResult {
-                    success: false,
-                    message: Some(format!("Window '{}' not found", window_label)),
-                    data: None,
-                }
-            }
-        } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
-            }
-        }
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.show()
+        }, "shown").await
     }
 
     /**
@@ -778,40 +332,150 @@ impl TauriOperationExecutor {
         payload: WindowHidePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let window_label = payload.label.as_deref().unwrap_or("main").to_string();
-            let window = if let Some(label) = &payload.label {
-                app.get_webview_window(&label)
-            } else {
-                None
-            };
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.hide()
+        }, "hidden").await
+    }
 
-            if let Some(window) = window {
-                match window.hide() {
-                    Ok(_) => OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' hidden successfully", window_label)),
-                        data: None,
-                    },
-                    Err(e) => OperationResult {
-                        success: false,
-                        message: Some(format!("Failed to hide window '{}': {}", window_label, e)),
-                        data: None,
-                    },
+    /**
+     * Execute a window focus operation
+     */
+    pub async fn focus_window(
+        payload: WindowFocusPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.set_focus()
+        }, "focused").await
+    }
+
+    /**
+     * Execute a window position operation
+     */
+    pub async fn set_window_position(
+        payload: WindowPositionPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                    x: payload.x as i32,
+                    y: payload.y as i32,
+                })) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' position set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' position: {}", window_label, e),
+                        None,
+                    ),
                 }
             } else {
-                OperationResult {
-                    success: false,
-                    message: Some(format!("Window '{}' not found", window_label)),
-                    data: None,
-                }
+                Self::create_window_not_found_error(&window_label)
             }
         } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window size operation
+     */
+    pub async fn set_window_size(
+        payload: WindowSizePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                    width: payload.width as u32,
+                    height: payload.height as u32,
+                })) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' size set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' size: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
             }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window title operation
+     */
+    pub async fn set_window_title(
+        payload: WindowTitlePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_title(&payload.title) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' title set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' title: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window center operation
+     */
+    pub async fn center_window(
+        payload: WindowCenterPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        Self::execute_window_operation(app_handle, &payload, |window| async move {
+            window.center()
+        }, "centered").await
+    }
+
+    /**
+     * Execute a window decorations operation
+     */
+    pub async fn set_window_decorations(
+        payload: WindowDecorationsPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_decorations(payload.decorations) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' decorations set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' decorations: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
         }
     }
 
@@ -916,12 +580,23 @@ impl TauriOperationExecutor {
         payload: ClipboardWriteTextPayload,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement clipboard functionality when Tauri clipboard API is available
-        println!("Clipboard write requested: {}", payload.text);
-        OperationResult {
-            success: false,
-            message: Some("Clipboard functionality not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        match WindowsClipboardContext::new() {
+            Ok(mut clipboard) => {
+                match clipboard.set_contents(payload.text.clone()) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Text '{}' written to clipboard successfully", payload.text),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to write text to clipboard: {}", e),
+                        None,
+                    ),
+                }
+            }
+            Err(e) => Self::create_error_result(
+                format!("Failed to access clipboard: {}", e),
+                None,
+            ),
         }
     }
 
@@ -932,11 +607,23 @@ impl TauriOperationExecutor {
         _payload: Value,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement clipboard functionality when Tauri clipboard API is available
-        OperationResult {
-            success: false,
-            message: Some("Clipboard functionality not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        match WindowsClipboardContext::new() {
+            Ok(mut clipboard) => {
+                match clipboard.get_contents() {
+                    Ok(text) => Self::create_success_result(
+                        "Text read from clipboard successfully".to_string(),
+                        Some(serde_json::json!(text)),
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to read text from clipboard: {}", e),
+                        None,
+                    ),
+                }
+            }
+            Err(e) => Self::create_error_result(
+                format!("Failed to access clipboard: {}", e),
+                None,
+            ),
         }
     }
 
@@ -1006,13 +693,29 @@ impl TauriOperationExecutor {
      */
     pub async fn show_app(
         _payload: AppShowPayload,
-        _app_handle: Option<&AppHandle>,
+        app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement app show functionality when Tauri app API is available
-        OperationResult {
-            success: false,
-            message: Some("App show functionality not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        if let Some(app) = app_handle {
+            // Show the main window to make the app visible
+            if let Some(main_window) = app.get_webview_window("main") {
+                match main_window.show() {
+                    Ok(_) => Self::create_success_result(
+                        "Application shown successfully".to_string(),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to show application: {}", e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_error_result(
+                    "Main window not found".to_string(),
+                    None,
+                )
+            }
+        } else {
+            Self::create_app_handle_error()
         }
     }
 
@@ -1021,13 +724,29 @@ impl TauriOperationExecutor {
      */
     pub async fn hide_app(
         _payload: AppHidePayload,
-        _app_handle: Option<&AppHandle>,
+        app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement app hide functionality when Tauri app API is available
-        OperationResult {
-            success: false,
-            message: Some("App hide functionality not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        if let Some(app) = app_handle {
+            // Hide the main window to hide the app
+            if let Some(main_window) = app.get_webview_window("main") {
+                match main_window.hide() {
+                    Ok(_) => Self::create_success_result(
+                        "Application hidden successfully".to_string(),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to hide application: {}", e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_error_result(
+                    "Main window not found".to_string(),
+                    None,
+                )
+            }
+        } else {
+            Self::create_app_handle_error()
         }
     }
 
@@ -1035,14 +754,78 @@ impl TauriOperationExecutor {
      * Execute a dialog open operation
      */
     pub async fn open_dialog(
-        _payload: DialogOpenPayload,
+        payload: DialogOpenPayload,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement file dialog when Tauri dialog API is properly configured
-        OperationResult {
-            success: false,
-            message: Some("File dialog not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        let mut dialog = rfd::FileDialog::new();
+
+        // Set default path if provided
+        if let Some(options) = &payload.options {
+            if let Some(default_path) = &options.default_path {
+                dialog = dialog.set_directory(default_path);
+            }
+
+            // Set filters if provided
+            if let Some(filters) = &options.filters {
+                for filter in filters {
+                    let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+                    dialog = dialog.add_filter(&filter.name, &extensions);
+                }
+            }
+
+            // Set dialog properties
+            if let Some(multiple) = options.multiple {
+                if multiple {
+                    // For multiple selection, we'll use pick_files
+                    match dialog.pick_files() {
+                        Some(paths) => {
+                            let path_strings: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
+                            return Self::create_success_result(
+                                format!("Selected {} files", path_strings.len()),
+                                Some(serde_json::json!(path_strings)),
+                            );
+                        }
+                        None => {
+                            return Self::create_success_result(
+                                "No files selected".to_string(),
+                                Some(serde_json::json!(null)),
+                            );
+                        }
+                    }
+                }
+            }
+
+            if let Some(directory) = options.directory {
+                if directory {
+                    // Directory selection
+                    match dialog.pick_folder() {
+                        Some(path) => {
+                            return Self::create_success_result(
+                                format!("Selected directory: {}", path.display()),
+                                Some(serde_json::json!(path.to_string_lossy().to_string())),
+                            );
+                        }
+                        None => {
+                            return Self::create_success_result(
+                                "No directory selected".to_string(),
+                                Some(serde_json::json!(null)),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Single file selection
+        match dialog.pick_file() {
+            Some(path) => Self::create_success_result(
+                format!("Selected file: {}", path.display()),
+                Some(serde_json::json!(path.to_string_lossy().to_string())),
+            ),
+            None => Self::create_success_result(
+                "No file selected".to_string(),
+                Some(serde_json::json!(null)),
+            ),
         }
     }
 
@@ -1050,14 +833,36 @@ impl TauriOperationExecutor {
      * Execute a dialog save operation
      */
     pub async fn save_dialog(
-        _payload: DialogSavePayload,
+        payload: DialogSavePayload,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement file save dialog when Tauri dialog API is properly configured
-        OperationResult {
-            success: false,
-            message: Some("File save dialog not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        let mut dialog = rfd::FileDialog::new();
+
+        // Set default path if provided
+        if let Some(options) = &payload.options {
+            if let Some(default_path) = &options.default_path {
+                dialog = dialog.set_directory(default_path);
+            }
+
+            // Set filters if provided
+            if let Some(filters) = &options.filters {
+                for filter in filters {
+                    let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+                    dialog = dialog.add_filter(&filter.name, &extensions);
+                }
+            }
+        }
+
+        // Show save dialog
+        match dialog.save_file() {
+            Some(path) => Self::create_success_result(
+                format!("File will be saved as: {}", path.display()),
+                Some(serde_json::json!(path.to_string_lossy().to_string())),
+            ),
+            None => Self::create_success_result(
+                "Save cancelled by user".to_string(),
+                Some(serde_json::json!(null)),
+            ),
         }
     }
 
@@ -1068,13 +873,34 @@ impl TauriOperationExecutor {
         payload: DialogMessagePayload,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement message dialog when Tauri dialog API is properly configured
-        println!("Message dialog requested: {}", payload.message);
-        OperationResult {
-            success: false,
-            message: Some("Message dialog not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        let mut dialog = rfd::MessageDialog::new();
+
+        // Set message
+        dialog = dialog.set_description(&payload.message);
+
+        // Set title if provided
+        if let Some(options) = &payload.options {
+            if let Some(title) = &options.title {
+                dialog = dialog.set_title(title);
+            }
+
+            // Set dialog type based on kind
+            if let Some(kind) = &options.kind {
+                dialog = match kind.as_str() {
+                    "warning" => dialog.set_level(rfd::MessageLevel::Warning),
+                    "error" => dialog.set_level(rfd::MessageLevel::Error),
+                    _ => dialog.set_level(rfd::MessageLevel::Info),
+                };
+            }
         }
+
+        // Show the dialog
+        dialog.show();
+
+        Self::create_success_result(
+            format!("Message dialog shown: {}", payload.message),
+            None,
+        )
     }
 
     /**
@@ -1084,16 +910,69 @@ impl TauriOperationExecutor {
         payload: DialogAskPayload,
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        // TODO: Implement ask dialog when Tauri dialog API is properly configured
-        println!("Ask dialog requested: {}", payload.message);
-        OperationResult {
-            success: false,
-            message: Some("Ask dialog not yet implemented - requires proper Tauri setup".to_string()),
-            data: None,
+        let mut dialog = rfd::MessageDialog::new();
+
+        // Set message
+        dialog = dialog.set_description(&payload.message);
+
+        // Set title if provided
+        if let Some(options) = &payload.options {
+            if let Some(title) = &options.title {
+                dialog = dialog.set_title(title);
+            }
+
+            // Set dialog type based on kind
+            if let Some(kind) = &options.kind {
+                dialog = match kind.as_str() {
+                    "warning" => dialog.set_level(rfd::MessageLevel::Warning),
+                    "error" => dialog.set_level(rfd::MessageLevel::Error),
+                    _ => dialog.set_level(rfd::MessageLevel::Info),
+                };
+            }
         }
+
+        // Add buttons
+        dialog = dialog.set_buttons(rfd::MessageButtons::YesNo);
+
+        // Show the dialog and get response
+        let result = dialog.show();
+
+        Self::create_success_result(
+            format!("Ask dialog shown: {}", payload.message),
+            Some(serde_json::json!(result == rfd::MessageDialogResult::Yes)),
+        )
     }
 
+    /**
+     * Execute a shell open operation
+     */
+    pub async fn shell_open(
+        payload: ShellOpenPayload,
+        _app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        use std::process::Command;
 
+        match Command::new(if cfg!(target_os = "windows") {
+            "cmd"
+        } else if cfg!(target_os = "macos") {
+            "open"
+        } else {
+            "xdg-open"
+        })
+        .arg(if cfg!(target_os = "windows") { "/c" } else { "" })
+        .arg(if cfg!(target_os = "windows") { "start" } else { "" })
+        .arg(&payload.path)
+        .spawn() {
+            Ok(_) => Self::create_success_result(
+                format!("Opened path: {}", payload.path),
+                None,
+            ),
+            Err(e) => Self::create_error_result(
+                format!("Failed to open path '{}': {}", payload.path, e),
+                None,
+            ),
+        }
+    }
 }
 
 /**
@@ -1119,35 +998,21 @@ pub async fn execute_tauri_operation(
             }
         }
         "tauri:window.maximize" => {
-            match serde_json::from_value::<WindowMaximizePayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::maximize_window(window_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::maximize_window(WindowMaximizePayload {
-                    label: None,
-                }, app_handle).await,
-            }
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowMaximizePayload>(payload, "tauri:window.maximize");
+            TauriOperationExecutor::maximize_window(window_payload, app_handle).await
         }
         "tauri:window.minimize" => {
-            match serde_json::from_value::<WindowMinimizePayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::minimize_window(window_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::minimize_window(WindowMinimizePayload {
-                    label: None,
-                }, app_handle).await,
-            }
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowMinimizePayload>(payload, "tauri:window.minimize");
+            TauriOperationExecutor::minimize_window(window_payload, app_handle).await
         }
         "tauri:window.close" => {
-            match serde_json::from_value::<WindowClosePayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::close_window(window_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::close_window(WindowClosePayload {
-                    label: None,
-                }, app_handle).await,
-            }
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowClosePayload>(payload, "tauri:window.close");
+            TauriOperationExecutor::close_window(window_payload, app_handle).await
         }
         "tauri:app.quit" => {
-            match serde_json::from_value::<AppQuitPayload>(payload) {
-                Ok(quit_payload) => TauriOperationExecutor::quit_app(Some(quit_payload), app_handle).await,
-                Err(_) => TauriOperationExecutor::quit_app(None, app_handle).await,
-            }
-        },
+            let quit_payload = TauriOperationExecutor::deserialize_payload_or_default::<AppQuitPayload>(payload, "tauri:app.quit");
+            TauriOperationExecutor::quit_app(Some(quit_payload), app_handle).await
+        }
         "tauri:ping" => {
             // Return timestamp as per protocol.md specification
             OperationResult {
@@ -1162,20 +1027,24 @@ pub async fn execute_tauri_operation(
             }
         },
         "tauri:window.show" => {
-            match serde_json::from_value::<WindowShowPayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::show_window(window_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::show_window(WindowShowPayload {
-                    label: None,
-                }, app_handle).await,
-            }
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowShowPayload>(payload, "tauri:window.show");
+            TauriOperationExecutor::show_window(window_payload, app_handle).await
         },
         "tauri:window.hide" => {
-            match serde_json::from_value::<WindowHidePayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::hide_window(window_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::hide_window(WindowHidePayload {
-                    label: None,
-                }, app_handle).await,
-            }
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowHidePayload>(payload, "tauri:window.hide");
+            TauriOperationExecutor::hide_window(window_payload, app_handle).await
+        },
+        "tauri:window.set_focus" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowFocusPayload>(payload, "tauri:window.set_focus");
+            TauriOperationExecutor::focus_window(window_payload, app_handle).await
+        },
+        "tauri:window.set_position" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowPositionPayload>(payload, "tauri:window.set_position");
+            TauriOperationExecutor::set_window_position(window_payload, app_handle).await
+        },
+        "tauri:window.set_size" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowSizePayload>(payload, "tauri:window.set_size");
+            TauriOperationExecutor::set_window_size(window_payload, app_handle).await
         },
         "tauri:fs.read_text_file" => {
             match serde_json::from_value::<FsReadTextFilePayload>(payload) {
@@ -1218,15 +1087,11 @@ pub async fn execute_tauri_operation(
             }
         },
         "tauri:clipboard.write_text" => {
-            match serde_json::from_value::<ClipboardWriteTextPayload>(payload) {
+            match TauriOperationExecutor::deserialize_payload::<ClipboardWriteTextPayload>(payload, "tauri:clipboard.write_text") {
                 Ok(clipboard_payload) => TauriOperationExecutor::write_clipboard_text(clipboard_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:clipboard.write_text: {}", e)),
-                    data: None,
-                },
+                Err(error_result) => error_result,
             }
-        },
+        }
         "tauri:clipboard.read_text" => {
             TauriOperationExecutor::read_clipboard_text(payload, app_handle).await
         },
@@ -1298,6 +1163,16 @@ pub async fn execute_tauri_operation(
             match serde_json::from_value::<AppHidePayload>(payload) {
                 Ok(app_payload) => TauriOperationExecutor::hide_app(app_payload, app_handle).await,
                 Err(_) => TauriOperationExecutor::hide_app(AppHidePayload {}, app_handle).await,
+            }
+        },
+        "tauri:shell.open" => {
+            match serde_json::from_value::<ShellOpenPayload>(payload) {
+                Ok(shell_payload) => TauriOperationExecutor::shell_open(shell_payload, app_handle).await,
+                Err(e) => OperationResult {
+                    success: false,
+                    message: Some(format!("Invalid payload for tauri:shell.open: {}", e)),
+                    data: None,
+                },
             }
         },
         _ => OperationResult {

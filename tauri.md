@@ -41,7 +41,7 @@
 * **Rust 进程**
 
   * 在用户视角是 "Tauri runtime"
-  * 仅暴露一个通用的 `request_ipc(type, payload)` API 给渲染器
+  * 仅暴露`ipc://rpc`协议给渲染器
   * 对渲染器请求进行鉴权与转发
   * 负责召唤并管理 njs Sidecar
 
@@ -67,6 +67,10 @@
 * 与 Node runtime 一起封装为独立 exe
 * 在 `tauri.conf.json` 中注册为 Sidecar，由 Rust 进程调用
 
+#### request_ipc
+
+`request_ipc`函数可以直接在客户端实现，其原理是访问特权协议`ipc`，也就是向`ipc://`发送请求，从而被rust进程捕获，然后转发给njs进程。
+
 ---
 
 ### 2. 渲染器
@@ -84,24 +88,13 @@
 * **权限控制**：
 
   * 使用 `allowlist` 与 `dangerousDisableIsolation`
-  * 禁止渲染器访问任何 Tauri API（除了 `request_ipc`）
-  * 每次请求携带启动时生成的 **token**
-  * Rust 进程验证 token，未通过则拒绝转发
+  * 禁止渲染器访问任何 Tauri API
 
 * **预设 API**：
 
   * 窗口管理
   * 存档管理
   * 游戏逻辑（配置、状态）
-
-#### 资源获取
-
-* 使用自定义协议 `app://` 替代直接文件路径
-
-* 流程：
-
-  1. 渲染器请求 `app://assets/bg.png`
-  2. Rust 捕获 并且立即更改为`tauri:`协议
 
 ---
 

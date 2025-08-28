@@ -16,8 +16,11 @@ serde_json = "1.0"
 tokio = { version = "1.0", features = ["full", "net", "io-util", "time"] }
 uuid = { version = "1.0", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
+nanoid = "0.4"
 windows-sys = { version = "0.60.2", features = ["Win32_System_Pipes", "Win32_Foundation", "Win32_Security"] }
 urlencoding = "2.1"
+clipboard = "0.5"
+rfd = "0.14"
 
 [lib]
 name = "narraleaf_host"

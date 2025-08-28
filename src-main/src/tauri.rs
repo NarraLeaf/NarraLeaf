@@ -6,14 +6,30 @@
  * to Tauri applications.
  */
 
-use tauri::{plugin::Builder, plugin::TauriPlugin, AppHandle, Manager, State};
+use tauri::{plugin::Builder, plugin::TauriPlugin, AppHandle, Manager};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 
 use crate::sidecar::SidecarManager;
 use crate::communication::PROTOCOL_VERSION;
+use crate::privilege_protocol::PrivilegeProtocolHandler;
+
+use std::sync::OnceLock;
+
+/**
+ * Global reference to plugin state for IPC protocol handler
+ */
+static GLOBAL_PLUGIN_STATE: OnceLock<Arc<PluginState>> = OnceLock::new();
+
+/**
+ * Get global plugin state safely
+ */
+pub fn get_global_plugin_state() -> Option<Arc<PluginState>> {
+    GLOBAL_PLUGIN_STATE.get().cloned()
+}
 
 /**
  * Plugin state shared across the Tauri app
@@ -54,16 +70,13 @@ pub struct IPCResponse {
  */
 pub fn init() -> TauriPlugin<tauri::Wry> {
     Builder::new("narraleaf")
-        .invoke_handler(tauri::generate_handler![
-            request_ipc,
-            get_protocol_version,
-        ])
+        .invoke_handler(tauri::generate_handler![])
         .setup(move |app, _api| {
             println!("Initializing NarraLeaf Tauri Runtime plugin...");
             println!("Protocol version: {}", PROTOCOL_VERSION);
 
             // Generate random socket connection string and start IPC server
-            let connection_string = format!("narraleaf-ipc-{}", uuid::Uuid::new_v4().simple());
+            let connection_string = format!("narraleaf-ipc-{}", Uuid::new_v4().simple());
 
             // Create plugin state
             let sidecar_manager = Arc::new(Mutex::new(SidecarManager::new(connection_string.clone(), app.app_handle().clone())));
@@ -97,8 +110,11 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             });
 
             // Store the plugin state
-            app.manage(plugin_state);
+            let plugin_state_arc = Arc::new(plugin_state);
+            app.manage(plugin_state_arc.clone());
 
+            // Store global reference for IPC protocol handler
+            let _ = GLOBAL_PLUGIN_STATE.set(plugin_state_arc);
 
             println!("NarraLeaf plugin initialized successfully");
             Ok(())
@@ -126,189 +142,9 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                 _ => {}
             }
         })
+        .register_uri_scheme_protocol("ipc", |_ctx, request| {
+            // Handle ipc://rpc requests using PrivilegeProtocolHandler
+            PrivilegeProtocolHandler::handle_uri_scheme_request(&request)
+        })
         .build()
 }
-
-/**
- * Handle IPC requests from renderer
- *
- * Security: Only narraleaf: namespace requests are allowed from renderer
- * All other requests are rejected for security reasons
- */
-#[tauri::command]
-async fn request_ipc(
-    request: IPCRequest,
-    state: State<'_, PluginState>,
-) -> Result<IPCResponse, String> {
-    // Basic request logging
-    let current_time = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    println!("IPC Request: {} (id: {}) at {}", request.request_type, request.id, current_time);
-
-    // Security check: Only allow narraleaf: namespace requests from renderer
-    if !request.request_type.starts_with("narraleaf:") {
-        println!("Rejected non-narraleaf request: {}", request.request_type);
-        return Ok(IPCResponse {
-            id: request.id.clone(),
-            success: false,
-            data: None,
-            error: Some(format!("Access denied: Only 'narraleaf:' namespace requests are allowed from renderer. Got: {}", request.request_type)),
-        });
-    }
-
-    // Forward all narraleaf: operations to NodeJS sidecar
-    println!("Forwarding narraleaf operation to sidecar: {} (id: {})", request.request_type, request.id);
-    forward_to_sidecar(request, state).await
-}
-
-/**
- * Forward request to NodeJS sidecar process
- *
- * This function implements the complete request-response cycle with the NodeJS sidecar.
- */
-async fn forward_to_sidecar(
-    request: IPCRequest,
-    state: State<'_, PluginState>,
-) -> Result<IPCResponse, String> {
-    use std::time::Duration;
-    use tokio::sync::oneshot;
-
-    // Get sidecar manager
-    let manager = state.sidecar_manager.lock().await;
-
-    // Check if IPC server is available
-    let ipc_server = match &manager.ipc_server {
-        Some(server) => server,
-        None => {
-            return Ok(IPCResponse {
-                id: request.id.clone(),
-                success: false,
-                data: None,
-                error: Some("IPC server not available - sidecar not running".to_string()),
-            });
-        }
-    };
-
-    // Check if any clients are connected to the sidecar
-    let connected_clients = ipc_server.get_connected_clients().await;
-    if connected_clients.is_empty() {
-        return Ok(IPCResponse {
-            id: request.id.clone(),
-            success: false,
-            data: None,
-            error: Some("No sidecar clients connected".to_string()),
-        });
-    }
-
-    // Use the request's ID for message correlation
-    let message_id = request.id.clone();
-
-    // Create response channel for this request
-    let (response_tx, response_rx) = oneshot::channel::<crate::communication::SidecarMessage>();
-
-    // Register the pending request
-    {
-        let server_state = ipc_server.get_server_state();
-        let mut pending_requests = server_state.pending_requests.write().await;
-        pending_requests.insert(message_id.clone(), response_tx);
-    }
-
-    // Create sidecar message
-    let sidecar_message = crate::communication::SidecarMessage::Request {
-        id: request.id.clone(),
-        request_type: request.request_type.clone(),
-        payload: request.payload.clone(),
-    };
-
-    println!("Forwarding to sidecar: {} -> {:?}", request.request_type, sidecar_message);
-
-    // Send the message to the first connected client
-    let client_id = &connected_clients[0];
-
-    match ipc_server.send_to_client(client_id, &sidecar_message).await {
-        Ok(_) => {
-            println!("Message sent to sidecar client: {}", client_id);
-
-            // Wait for response with timeout
-            match tokio::time::timeout(Duration::from_secs(30), response_rx).await {
-                Ok(Ok(response_message)) => {
-                    // Process the response
-                    match response_message {
-                        crate::communication::SidecarMessage::Response { id, success, data, error } => {
-                            println!("Received response for {}: success={}", id, success);
-                            Ok(IPCResponse {
-                                id,
-                                success,
-                                data,
-                                error,
-                            })
-                        }
-                        _ => {
-                            println!("Unexpected response message type");
-                            Ok(IPCResponse {
-                                id: request.id.clone(),
-                                success: false,
-                                data: None,
-                                error: Some("Unexpected response message type".to_string()),
-                            })
-                        }
-                    }
-                }
-                Ok(Err(_)) => {
-                    println!("Response channel closed unexpectedly");
-                    Ok(IPCResponse {
-                        id: request.id.clone(),
-                        success: false,
-                        data: None,
-                        error: Some("Response channel closed unexpectedly".to_string()),
-                    })
-                }
-                Err(_) => {
-                    println!("Timeout waiting for sidecar response");
-                    // Clean up the pending request
-                    {
-                        let server_state = ipc_server.get_server_state();
-                        let mut pending_requests = server_state.pending_requests.write().await;
-                        pending_requests.remove(&message_id);
-                    }
-                    Ok(IPCResponse {
-                        id: request.id.clone(),
-                        success: false,
-                        data: None,
-                        error: Some("Timeout waiting for sidecar response".to_string()),
-                    })
-                }
-            }
-        },
-        Err(e) => {
-            println!("Failed to send message to sidecar client: {}", e);
-            // Clean up the pending request
-            {
-                let server_state = ipc_server.get_server_state();
-                let mut pending_requests = server_state.pending_requests.write().await;
-                pending_requests.remove(&message_id);
-            }
-            Ok(IPCResponse {
-                id: request.id.clone(),
-                success: false,
-                data: None,
-                error: Some(format!("Failed to communicate with sidecar: {}", e)),
-            })
-        }
-    }
-}
-
-/**
- * Get the current protocol version
- *
- * This command allows the renderer to check the IPC protocol version
- */
-#[tauri::command]
-async fn get_protocol_version() -> Result<u32, String> {
-    Ok(PROTOCOL_VERSION)
-}
-
-
-

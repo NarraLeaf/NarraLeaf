@@ -85,16 +85,7 @@ Rust Runtime可以从渲染器中获取该请求，然后转发至Sidecar进程�
   - `text: string`
 - `tauri:clipboard.read_text` -> `text: string | null`
 
-### 通知 (Notification)
-- `tauri:notification.request_permission` -> `permission: Permission`
-- `tauri:notification.is_permission_granted` -> `granted: boolean`
-- `tauri:notification.show` -> `void`
-  - `options: NotificationOptions`
 
-### HTTP 请求 (HTTP)
-- `tauri:http.fetch` -> `response: Response`
-  - `url: string`
-  - `options?: FetchOptions`
 
 ### 应用信息 (App)
 - `tauri:app.get_version` -> `version: string`
@@ -105,38 +96,7 @@ Rust Runtime可以从渲染器中获取该请求，然后转发至Sidecar进程�
 - `tauri:app.quit` -> `void`
   - `reason?: Error | null` 用于指定退出原因
 
-### 系统托盘 (System Tray)
-- `tauri:system_tray.set_icon` -> `void`
-  - `icon: string | Uint8Array`
-- `tauri:system_tray.set_menu` -> `void`
-  - `menu: Menu`
-- `tauri:system_tray.set_tooltip` -> `void`
-  - `tooltip: string`
-- `tauri:system_tray.set_title` -> `void`
-  - `title: string`
 
-### 全局快捷键 (Global Shortcut)
-- `tauri:global_shortcut.register` -> `void`
-  - `accelerator: string`
-  - `handler: Function`
-- `tauri:global_shortcut.unregister` -> `void`
-  - `accelerator: string`
-- `tauri:global_shortcut.is_registered` -> `registered: boolean`
-  - `accelerator: string`
-
-### 菜单 (Menu)
-- `tauri:menu.create` -> `menu: Menu`
-  - `options: MenuOptions`
-- `tauri:menu.append` -> `void`
-  - `menu_id: string`
-  - `item: MenuItem`
-- `tauri:menu.insert` -> `void`
-  - `menu_id: string`
-  - `position: number`
-  - `item: MenuItem`
-- `tauri:menu.remove` -> `void`
-  - `menu_id: string`
-  - `item_id: string`
 
 ### 其他
 - `tauri:ping` -> `timestamp: number`

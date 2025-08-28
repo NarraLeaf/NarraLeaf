@@ -162,11 +162,6 @@ impl SidecarManager {
         &self.connection_string
     }
 
-    pub(crate) fn generate_connection_string() -> String {
-        use uuid::Uuid;
-        format!("narraleaf-ipc-{}", Uuid::new_v4().simple())
-    }
-
     pub async fn listen_sidecar_status(&mut self) {
         while self.state == SidecarState::Running {
             // Check if child process is still running

@@ -35,13 +35,17 @@
 pub mod sidecar;
 pub mod communication;
 pub mod ipc;
+pub mod ipc_protocol;
+pub mod privilege_protocol;
 pub mod tauri;
 pub mod tauri_handlers;
 mod operations;
+mod handler_types;
 
 // Re-export main types for convenience
 pub use communication::{SidecarMessage, PROTOCOL_VERSION};
 pub use ipc::IPCServer;
+pub use ipc_protocol::IPCProtocolHandler;
 pub use sidecar::SidecarManager;
 pub use tauri::{init, PluginState};
 pub use tauri_handlers::{execute_tauri_operation, TauriOperationExecutor, OperationResult};

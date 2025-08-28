@@ -1,7 +1,6 @@
 import { SavedGameMeta } from "@/client";
 import { SavedGame } from "narraleaf-react";
 import {
-  Permission,
   WindowCreatePayload,
   WindowMaximizePayload,
   WindowMinimizePayload,
@@ -18,15 +17,13 @@ import {
   SaveDialogOptions,
   MessageDialogOptions,
   ConfirmDialogOptions,
-  NotificationOptions,
-  FetchOptions,
   OpenOptions,
-  Menu,
-  MenuOptions,
-  MenuItem,
-  ShortcutHandler,
   Error
 } from "./types";
+
+/**
+ * "narraleaf:" namespace
+ */
 
 export type ServiceRequestResult = {
     "narraleaf:game.save.list": SavedGameMeta[];
@@ -48,6 +45,10 @@ export type ServiceRequestPayload = {
     "narraleaf:app.request": [payload: any];
 };
 
+/**
+ * "tauri:" namespace
+ */
+
 export type RuntimeRequestResult = {
     "tauri:window.create": void;
     "tauri:window.maximize": void;
@@ -67,27 +68,14 @@ export type RuntimeRequestResult = {
     "tauri:dialog.ask": boolean;
     "tauri:clipboard.write_text": void;
     "tauri:clipboard.read_text": string | null;
-    "tauri:notification.request_permission": Permission;
-    "tauri:notification.is_permission_granted": boolean;
-    "tauri:notification.show": void;
-    "tauri:http.fetch": Response;
+
     "tauri:app.get_version": string;
     "tauri:app.get_name": string;
     "tauri:app.get_tauri_version": string;
     "tauri:app.show": void;
     "tauri:app.hide": void;
     "tauri:app.quit": void;
-    "tauri:system_tray.set_icon": void;
-    "tauri:system_tray.set_menu": void;
-    "tauri:system_tray.set_tooltip": void;
-    "tauri:system_tray.set_title": void;
-    "tauri:global_shortcut.register": void;
-    "tauri:global_shortcut.unregister": void;
-    "tauri:global_shortcut.is_registered": boolean;
-    "tauri:menu.create": Menu;
-    "tauri:menu.append": void;
-    "tauri:menu.insert": void;
-    "tauri:menu.remove": void;
+
     "tauri:ping": number;
     "tauri:shell.open": void;
 };
@@ -111,27 +99,14 @@ export type RuntimeRequestPayload = {
     "tauri:dialog.ask": [string, ConfirmDialogOptions | undefined];
     "tauri:clipboard.write_text": [string];
     "tauri:clipboard.read_text": [void];
-    "tauri:notification.request_permission": [void];
-    "tauri:notification.is_permission_granted": [void];
-    "tauri:notification.show": [NotificationOptions];
-    "tauri:http.fetch": [string, FetchOptions | undefined];
+
     "tauri:app.get_version": [void];
     "tauri:app.get_name": [void];
     "tauri:app.get_tauri_version": [void];
     "tauri:app.show": [void];
     "tauri:app.hide": [void];
     "tauri:app.quit": [void];
-    "tauri:system_tray.set_icon": [string | Uint8Array];
-    "tauri:system_tray.set_menu": [Menu];
-    "tauri:system_tray.set_tooltip": [string];
-    "tauri:system_tray.set_title": [string];
-    "tauri:global_shortcut.register": [string, ShortcutHandler];
-    "tauri:global_shortcut.unregister": [string];
-    "tauri:global_shortcut.is_registered": [string];
-    "tauri:menu.create": [MenuOptions];
-    "tauri:menu.append": [string, MenuItem];
-    "tauri:menu.insert": [string, number, MenuItem];
-    "tauri:menu.remove": [string, string];
+
     "tauri:ping": [void];
     "tauri:shell.open": [string, OpenOptions | undefined];
 };

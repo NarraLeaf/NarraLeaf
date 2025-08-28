@@ -108,23 +108,7 @@ export interface TransmittedMessage {
   data: Buffer;
 }
 
-// ============================================================================
-// Notification Permission Types
-// ============================================================================
 
-/**
- * Notification permission types
- */
-export type Permission = 'granted' | 'denied' | 'default';
-
-/**
- * Notification options
- */
-export interface NotificationOptions {
-  title?: string;
-  body?: string;
-  icon?: string;
-}
 
 // ============================================================================
 // Window Management Types
@@ -282,74 +266,6 @@ export interface ConfirmDialogOptions {
 }
 
 // ============================================================================
-// HTTP Types
-// ============================================================================
-
-/**
- * HTTP request options
- */
-export interface FetchOptions {
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string | Uint8Array;
-  timeout?: number;
-}
-
-/**
- * HTTP response
- */
-export interface Response {
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  data: any;
-}
-
-// ============================================================================
-// System Tray Types
-// ============================================================================
-
-/**
- * System tray menu item
- */
-export interface MenuItem {
-  id: string;
-  text: string;
-  enabled?: boolean;
-  checked?: boolean;
-  submenu?: MenuItem[];
-}
-
-/**
- * System tray menu
- */
-export interface Menu {
-  id: string;
-  items: MenuItem[];
-}
-
-// ============================================================================
-// Global Shortcut Types
-// ============================================================================
-
-/**
- * Shortcut handler function
- */
-export type ShortcutHandler = () => void;
-
-// ============================================================================
-// Menu Types
-// ============================================================================
-
-/**
- * Menu options
- */
-export interface MenuOptions {
-  id: string;
-  items?: MenuItem[];
-}
-
-// ============================================================================
 // Shell Types
 // ============================================================================
 
@@ -371,26 +287,4 @@ export interface Error {
   message: string;
   code?: string;
   details?: any;
-}
-
-/**
- * Game save metadata
- */
-export interface SavedGameMeta {
-  id: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-  size?: number;
-}
-
-/**
- * Game save data
- */
-export interface SavedGame {
-  id: string;
-  name: string;
-  data: any;
-  createdAt: Date;
-  updatedAt: Date;
 }
