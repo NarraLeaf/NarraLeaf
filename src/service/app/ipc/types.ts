@@ -18,8 +18,6 @@ export const MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB
 export type SidecarMessage =
   | RequestMessage
   | ResponseMessage
-  | SidecarRequestMessage
-  | SidecarResponseMessage
   | VersionCheckMessage
   | VersionResponseMessage;
 
@@ -36,35 +34,19 @@ export interface RequestMessage<T extends RuntimeRequestTypes = any> {
 /**
  * Response from Rust to TypeScript
  */
-export interface ResponseMessage<T = any> {
-  type: 'Response';
-  id: string;
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-/**
- * Request from TypeScript to Rust (for tauri: operations)
- */
-export interface SidecarRequestMessage {
-  type: 'SidecarRequest';
-  id: string;
-  request_type: string;
-  payload: any;
-  response_channel: string;
-}
-
-/**
- * Response from Rust to TypeScript (for tauri: operations)
- */
-export interface SidecarResponseMessage {
-  type: 'SidecarResponse';
-  id: string;
-  success: boolean;
-  data?: any;
-  error?: string;
-}
+export type ResponseMessage<T = any> =
+  | {
+    type: 'Response';
+    id: string;
+    success: true;
+    data: T;
+  }
+  | {
+    type: 'Response';
+    id: string;
+    success: false;
+    error: string;
+  };
 
 /**
  * Protocol version check

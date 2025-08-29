@@ -689,6 +689,35 @@ impl TauriOperationExecutor {
     }
 
     /**
+     * Execute an app get metadata operation
+     */
+    pub async fn get_app_metadata(
+        _payload: AppGetMetadataPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let metadata = serde_json::json!({
+                "userDir": std::env::var("APPDATA").unwrap_or_default(),
+                "appDir": std::env::current_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default(),
+                "appName": app.package_info().name.clone(),
+                "appVersion": app.package_info().version.to_string(),
+            });
+            
+            OperationResult {
+                success: true,
+                message: Some("App metadata retrieved successfully".to_string()),
+                data: Some(metadata),
+            }
+        } else {
+            OperationResult {
+                success: false,
+                message: Some("App handle not available".to_string()),
+                data: None,
+            }
+        }
+    }
+
+    /**
      * Execute an app show operation
      */
     pub async fn show_app(
@@ -1151,6 +1180,12 @@ pub async fn execute_tauri_operation(
             match serde_json::from_value::<AppGetTauriVersionPayload>(payload) {
                 Ok(app_payload) => TauriOperationExecutor::get_tauri_version(app_payload, app_handle).await,
                 Err(_) => TauriOperationExecutor::get_tauri_version(AppGetTauriVersionPayload {}, app_handle).await,
+            }
+        },
+        "tauri:app.get_metadata" => {
+            match serde_json::from_value::<AppGetMetadataPayload>(payload) {
+                Ok(app_payload) => TauriOperationExecutor::get_app_metadata(app_payload, app_handle).await,
+                Err(_) => TauriOperationExecutor::get_app_metadata(AppGetMetadataPayload {}, app_handle).await,
             }
         },
         "tauri:app.show" => {

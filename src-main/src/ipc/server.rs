@@ -171,6 +171,10 @@ impl IPCServer {
 
         println!("IPC Server started on: {}", connection_string);
 
+        // Track last client activity for auto-shutdown
+        let mut last_client_activity = std::time::Instant::now();
+        let auto_shutdown_timeout = Duration::from_secs(15); // 15 seconds timeout
+
         loop {
             // Check for shutdown signal
             if shutdown_rx.try_recv().is_ok() {
@@ -186,6 +190,9 @@ impl IPCServer {
                 Ok(Ok(stream)) => {
                     let client_id = Uuid::new_v4().to_string();
                     println!("New client connected: {}", client_id);
+
+                    // Update last activity time
+                    last_client_activity = std::time::Instant::now();
 
                     // Add client to list
                     {
@@ -222,6 +229,25 @@ impl IPCServer {
 
             // Clean up disconnected clients
             cleanup_disconnected_clients(&server_state).await;
+
+            // Check for auto-shutdown condition
+            let current_clients = {
+                let clients_guard = server_state.clients.read().await;
+                clients_guard.len()
+            };
+
+            if current_clients == 0 {
+                // No clients connected, check if we should auto-shutdown
+                let time_since_last_activity = last_client_activity.elapsed();
+                if time_since_last_activity >= auto_shutdown_timeout {
+                    println!("No clients connected for {} seconds, auto-shutting down IPC server", 
+                             time_since_last_activity.as_secs());
+                    break;
+                }
+            } else {
+                // Clients are connected, update activity time
+                last_client_activity = std::time::Instant::now();
+            }
 
             // Small delay to prevent busy waiting
             sleep(Duration::from_millis(10)).await;

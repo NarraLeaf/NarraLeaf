@@ -375,6 +375,12 @@ pub struct AppShowPayload {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppHidePayload {}
 
+/**
+ * App get metadata payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppGetMetadataPayload {}
+
 
 
 

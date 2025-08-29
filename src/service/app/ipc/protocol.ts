@@ -45,10 +45,16 @@ export type ServiceRequestPayload = {
     "narraleaf:app.request": [payload: any];
 };
 
+export type RuntimeAppMetadata = {
+    userDir: string;
+    appDir: string;
+    appName: string;
+    appVersion: string;
+};
+
 /**
  * "tauri:" namespace
  */
-
 export type RuntimeRequestResult = {
     "tauri:window.create": void;
     "tauri:window.maximize": void;
@@ -78,6 +84,7 @@ export type RuntimeRequestResult = {
 
     "tauri:ping": number;
     "tauri:shell.open": void;
+    "tauri:app.get_metadata": RuntimeAppMetadata;
 };
 
 export type RuntimeRequestPayload = {
@@ -109,6 +116,7 @@ export type RuntimeRequestPayload = {
 
     "tauri:ping": [void];
     "tauri:shell.open": [string, OpenOptions | undefined];
+    "tauri:app.get_metadata": [void];
 };
 
 export type ServiceRequestTypes = Extract<keyof ServiceRequestResult, keyof ServiceRequestPayload>;

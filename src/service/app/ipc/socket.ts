@@ -1,25 +1,51 @@
-import { Logger } from '@/main_legacy/utils/logger';
+import { Logger } from '@/service/utils/logger';
 import { EventEmitter } from 'events';
-import net from 'net';
+import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
-import { RuntimeRequestPayload, RuntimeRequestTypes } from './protocol';
+import { RuntimeRequestPayload, RuntimeRequestResult, RuntimeRequestTypes } from './protocol';
 import {
     ConnectionStatus,
     MAX_MESSAGE_SIZE,
     MessageHandler,
     RequestMessage,
     ResponseMessage,
-    SidecarRequestMessage,
-    SidecarResponseMessage,
-    SidecarMessage
+    SidecarMessage,
+    VersionResponseMessage
 } from './types';
+import { IPC_PROTOCOL_VERSION } from '../constants';
+
+/**
+ * Event types that can be emitted by the IPC client
+ */
+export interface IPCEvents {
+    // Connection events
+    connected: () => void;
+    disconnected: () => void;
+    connecting: () => void;
+    reconnectFailed: () => void;
+    reconnected: () => void;
+    
+    // Message events
+    message: (message: SidecarMessage) => void;
+    request: (message: RequestMessage) => void;
+    response: (message: ResponseMessage) => void;
+    versionResponse: (message: any) => void;
+    
+    // Error events
+    error: (error: Error) => void;
+    ipcError: (error: Error) => void;
+    clientError: (error: Error) => void;
+    
+    // State events
+    stateChanged: (status: ConnectionStatus) => void;
+}
 
 /**
  * Cross-platform IPC communication class using Unix Domain Socket (Linux/macOS) 
  * or Named Pipe (Windows) for Tauri main process communication
  * 
- * Now implements the same protocol as Rust communication.rs
+ * Now implements the same protocol as Rust communication.rs with enhanced event handling
  */
 export class MainServiceIPCClient extends EventEmitter {
     private client: net.Socket | null = null;
@@ -32,18 +58,71 @@ export class MainServiceIPCClient extends EventEmitter {
     private messageHandlers: Map<string, MessageHandler> = new Map();
     private messageBuffer: Buffer = Buffer.alloc(0);
     private messageIdCounter: number = 0;
+    private pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map();
+    private eventListeners: Map<string, Set<Function>> = new Map();
+    private autoReconnect: boolean = true;
 
     constructor(socketName: string, private logger: Logger) {
         super();
         this.socketPath = this.getSocketPath(socketName);
         this.setupEventHandlers();
+        this.setupDefaultHandlers();
     }
 
     /**
-     * Register a custom message handler
+     * Register a custom message handler for specific request types
      */
     public registerHandler(requestType: string, handler: MessageHandler): void {
+        if (this.messageHandlers.has(requestType)) {
+            this.logger.warn(`Handler for ${requestType} already registered`);
+        }
+
         this.messageHandlers.set(requestType, handler);
+        this.logger.debug(`Registered handler for: ${requestType}`);
+    }
+
+    /**
+     * Unregister a message handler
+     */
+    public unregisterHandler(requestType: string): boolean {
+        const removed = this.messageHandlers.delete(requestType);
+        if (removed) {
+            this.logger.debug(`Unregistered handler for: ${requestType}`);
+        }
+        return removed;
+    }
+
+    /**
+     * Add event listener with type safety
+     */
+    public addEventListener<K extends keyof IPCEvents>(event: K, listener: IPCEvents[K]): void {
+        if (!this.eventListeners.has(event)) {
+            this.eventListeners.set(event, new Set());
+        }
+        this.eventListeners.get(event)!.add(listener);
+        this.on(event, listener);
+    }
+
+    /**
+     * Remove event listener
+     */
+    public removeEventListener<K extends keyof IPCEvents>(event: K, listener: IPCEvents[K]): void {
+        const listeners = this.eventListeners.get(event);
+        if (listeners) {
+            listeners.delete(listener);
+            this.off(event, listener);
+        }
+    }
+
+    /**
+     * Set auto-reconnect behavior
+     */
+    public setAutoReconnect(enabled: boolean): void {
+        this.autoReconnect = enabled;
+        if (!enabled && this.reconnectInterval) {
+            clearTimeout(this.reconnectInterval);
+            this.reconnectInterval = null;
+        }
     }
 
     /**
@@ -53,6 +132,9 @@ export class MainServiceIPCClient extends EventEmitter {
         if (this.client) {
             throw new Error('Already connected');
         }
+
+        this.emit('connecting');
+        this.emit('stateChanged', ConnectionStatus.Connecting);
 
         return new Promise((resolve, reject) => {
             try {
@@ -99,7 +181,7 @@ export class MainServiceIPCClient extends EventEmitter {
     /**
      * Send a request message and wait for response
      */
-    public async sendRequest<T extends RuntimeRequestTypes = any>(requestType: T, ...payload: RuntimeRequestPayload[T]): Promise<ResponseMessage<T>> {
+    public async sendRequest<T extends RuntimeRequestTypes = any>(requestType: T, ...payload: RuntimeRequestPayload[T]): Promise<ResponseMessage<RuntimeRequestResult[T]>> {
         return new Promise((resolve, reject) => {
             const requestId = (++this.messageIdCounter).toString();
             const request: RequestMessage = {
@@ -109,46 +191,51 @@ export class MainServiceIPCClient extends EventEmitter {
                 payload
             };
 
-            // Set up one-time response handler
-            const responseHandler = (message: SidecarMessage) => {
-                if (message.type === 'Response' && message.id === requestId) {
-                    this.removeListener('message', responseHandler);
-                    resolve(message as ResponseMessage);
-                }
-            };
+            // Set up timeout
+            const timeout = setTimeout(() => {
+                this.pendingRequests.delete(requestId);
+                reject(new Error(`Request timeout for ${requestType}`));
+            }, 10000); // 10 second timeout
 
-            this.on('message', responseHandler);
+            // Store pending request
+            this.pendingRequests.set(requestId, { resolve, reject, timeout });
 
             // Send request
             if (!this.send(request)) {
-                this.removeListener('message', responseHandler);
+                this.pendingRequests.delete(requestId);
+                clearTimeout(timeout);
                 reject(new Error('Failed to send request'));
                 return;
             }
 
-            // Set timeout for response
-            setTimeout(() => {
-                this.removeListener('message', responseHandler);
-                reject(new Error('Request timeout'));
-            }, 10000); // 10 second timeout
+            this.logger.debug(`Sent request: ${requestType} (ID: ${requestId})`);
         });
     }
 
     /**
      * Send ping message
      */
-    public ping(): Promise<ResponseMessage> {
-        return this.sendRequest("tauri:ping")
+    public ping(): Promise<ResponseMessage<RuntimeRequestResult["tauri:ping"]>> {
+        return this.sendRequest("tauri:ping");
     }
 
     /**
      * Close the connection and cleanup
      */
     public async close(): Promise<void> {
+        this.setAutoReconnect(false);
+        
         if (this.reconnectInterval) {
             clearTimeout(this.reconnectInterval);
             this.reconnectInterval = null;
         }
+
+        // Clear pending requests
+        this.pendingRequests.forEach(({ reject, timeout }) => {
+            clearTimeout(timeout);
+            reject(new Error('Connection closed'));
+        });
+        this.pendingRequests.clear();
 
         if (this.client) {
             this.client.destroy();
@@ -157,6 +244,7 @@ export class MainServiceIPCClient extends EventEmitter {
 
         this.connected = false;
         this.messageBuffer = Buffer.alloc(0);
+        this.emit('stateChanged', ConnectionStatus.Disconnected);
     }
 
     /**
@@ -188,6 +276,19 @@ export class MainServiceIPCClient extends EventEmitter {
     }
 
     /**
+     * Get statistics about the connection
+     */
+    public getStats() {
+        return {
+            connected: this.connected,
+            reconnectAttempts: this.reconnectAttempts,
+            pendingRequests: this.pendingRequests.size,
+            registeredHandlers: this.messageHandlers.size,
+            socketPath: this.socketPath
+        };
+    }
+
+    /**
      * Connect to Windows named pipe
      */
     private connectToNamedPipe(resolve: () => void, reject: (error: Error) => void): void {
@@ -201,6 +302,7 @@ export class MainServiceIPCClient extends EventEmitter {
             this.connected = true;
             this.reconnectAttempts = 0;
             this.emit('connected');
+            this.emit('stateChanged', ConnectionStatus.Connected);
             
             resolve();
         });
@@ -236,7 +338,27 @@ export class MainServiceIPCClient extends EventEmitter {
         this.on('close', () => {
             this.connected = false;
             this.emit('disconnected');
-            this.attemptReconnect();
+            this.emit('stateChanged', ConnectionStatus.Disconnected);
+            if (this.autoReconnect) {
+                this.attemptReconnect();
+            }
+        });
+    }
+
+    /**
+     * Setup default message handlers
+     */
+    private setupDefaultHandlers(): void {
+        // Register default handlers for common request types
+        this.registerHandler('tauri:ping', {
+            handleMessage: async (message) => {
+                return {
+                    type: 'Response',
+                    id: (message as RequestMessage).id,
+                    success: true,
+                    data: Date.now()
+                } as ResponseMessage;
+            }
         });
     }
 
@@ -254,6 +376,7 @@ export class MainServiceIPCClient extends EventEmitter {
             this.connected = true;
             this.reconnectAttempts = 0;
             this.emit('connected');
+            this.emit('stateChanged', ConnectionStatus.Connected);
             
             resolve();
         });
@@ -281,11 +404,15 @@ export class MainServiceIPCClient extends EventEmitter {
         this.client.on('close', () => {
             this.connected = false;
             this.emit('disconnected');
-            this.attemptReconnect();
+            this.emit('stateChanged', ConnectionStatus.Disconnected);
+            if (this.autoReconnect) {
+                this.attemptReconnect();
+            }
         });
 
         this.client.on('error', (error: Error) => {
             this.logger.error('Client error:' + (error as Error).message);
+            this.emit('clientError', error);
             reject(error);
         });
     }
@@ -325,34 +452,103 @@ export class MainServiceIPCClient extends EventEmitter {
     }
 
     /**
-     * Handle incoming message
+     * Handle incoming message with enhanced routing
      */
     private async handleIncomingMessage(message: SidecarMessage): Promise<void> {
         this.logger.debug(`Received message: ${message.type}`);
         
-        // Emit message event for external handlers
+        // Emit general message event
         this.emit('message', message);
 
         // Handle specific message types
         switch (message.type) {
-            case 'VersionResponse':
-                this.emit('versionResponse', message);
+            case 'Request':
+                this.emit('request', message);
+                await this.handleRequest(message as RequestMessage);
                 break;
             case 'Response':
                 this.emit('response', message);
+                await this.handleResponse(message as ResponseMessage);
+                break;
+            case 'VersionResponse':
+                this.emit('versionResponse', message);
+                break;
+            case 'VersionCheck':
+                await this.handleVersionCheck(message);
                 break;
             default:
-                this.logger.debug('Unhandled message type:' + message.type);
+                this.logger.debug('Unhandled message type:' + (message as any).type);
         }
+    }
+
+    /**
+     * Handle incoming request messages
+     */
+    private async handleRequest(request: RequestMessage): Promise<void> {
+        const handler = this.messageHandlers.get(request.request_type);
+        if (handler) {
+            try {
+                const response = await handler.handleMessage(request);
+                if (response) {
+                    this.send(response);
+                }
+            } catch (error) {
+                this.logger.error(`Handler error for ${request.request_type}:` + (error as Error).message);
+                // Send error response
+                const errorResponse: ResponseMessage<never> = {
+                    type: 'Response',
+                    id: request.id,
+                    success: false as false,
+                    error: (error as Error).message
+                };
+                this.send(errorResponse);
+            }
+        } else {
+            this.logger.debug(`No handler registered for request type: ${request.request_type}`);
+        }
+    }
+
+    /**
+     * Handle incoming response messages
+     */
+    private async handleResponse(response: ResponseMessage): Promise<void> {
+        const pending = this.pendingRequests.get(response.id);
+        if (pending) {
+            clearTimeout(pending.timeout);
+            this.pendingRequests.delete(response.id);
+            
+            if (response.success) {
+                pending.resolve(response);
+            } else {
+                pending.reject(new Error(response.error || 'Request failed'));
+            }
+        }
+    }
+
+    /**
+     * Handle version check messages
+     */
+    private async handleVersionCheck(message: any): Promise<void> {
+        const versionResponse: VersionResponseMessage = {
+            type: 'VersionResponse',
+            version: message.version,
+            compatible: message.version === IPC_PROTOCOL_VERSION
+        };
+        this.send(versionResponse);
     }
 
     /**
      * Attempt to reconnect after disconnection
      */
     private attemptReconnect(): void {
+        if (!this.autoReconnect) {
+            return;
+        }
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             this.logger.warn('Max reconnection attempts reached');
             this.emit('reconnectFailed');
+            this.emit('stateChanged', ConnectionStatus.Failed);
             return;
         }
 
@@ -363,11 +559,13 @@ export class MainServiceIPCClient extends EventEmitter {
         this.reconnectInterval = setTimeout(async () => {
             this.reconnectAttempts++;
             this.logger.info(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            this.emit('stateChanged', ConnectionStatus.Connecting);
 
             try {
                 await this.connect();
                 this.logger.info('Reconnected successfully');
                 this.emit('reconnected');
+                this.emit('stateChanged', ConnectionStatus.Connected);
             } catch (error) {
                 this.logger.error('Reconnection failed:' + (error as Error).message);
                 this.attemptReconnect();
@@ -403,5 +601,3 @@ export class IPCManager {
         this.instances.clear();
     }
 }
-
-export default MainServiceIPCClient;
