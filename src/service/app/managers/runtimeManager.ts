@@ -2,12 +2,18 @@ import { SidecarRuntimeError } from "@/service/utils/error";
 import { RuntimeAppMetadata } from "../ipc/protocol";
 import { MainServiceIPCClient } from "../ipc/socket";
 import { Manager } from "./manager";
+import { Translation, TranslationKey } from "./runtime/translation";
 
 export class RuntimeManager extends Manager<null> {
-    public appMetadata: RuntimeAppMetadata | null = null;
+    public _appMetadata: RuntimeAppMetadata | null = null;
 
     constructor(private ipcClient: MainServiceIPCClient) {
         super();
+    }
+
+    public get appMetadata(): RuntimeAppMetadata {
+        this.assertAppMetadata();
+        return this._appMetadata;
     }
 
     async init() {
@@ -20,7 +26,7 @@ export class RuntimeManager extends Manager<null> {
             throw new Error(`Failed to get app metadata: ${metadata.error}`);
         }
 
-        this.appMetadata = metadata.data;
+        this._appMetadata = metadata.data;
     }
 
     public getUserDir(): string {
@@ -29,8 +35,35 @@ export class RuntimeManager extends Manager<null> {
         return this.appMetadata.userDir;
     }
 
-    private assertAppMetadata(): asserts this is { appMetadata: RuntimeAppMetadata } {
-        if (!this.appMetadata) {
+    public async showErrorDialog(title: string, message: string): Promise<void> {
+        this.assertAppMetadata();
+
+        this.ipcClient.sendRequest<"tauri:dialog.message">("tauri:dialog.message", {    
+            message,
+            options: { title }
+        });
+    }
+
+    public t(k: TranslationKey): string {
+        this.assertAppMetadata();
+
+        return Translation.translate(k, this.appMetadata.preferredSystemLanguage);
+    }
+
+    public quit(ok: boolean = true) {
+        const code = ok ? 0 : 1;
+
+        if (this.ipcClient.getStats().connected) {
+            this.ipcClient.sendRequest<"tauri:app.quit">("tauri:app.quit")
+                .then(() => this.ipcClient.close())
+                .then(() => process.exit(code));
+        } else {
+            process.exit(code);
+        }
+    }
+
+    private assertAppMetadata(): asserts this is { _appMetadata: RuntimeAppMetadata } {
+        if (!this._appMetadata) {
             throw new SidecarRuntimeError("App metadata not initialized");
         }
     }

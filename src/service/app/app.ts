@@ -65,6 +65,10 @@ export class App {
     public getConfig(): AppConfig {
         return this.config;
     }
+
+    public quit() {
+        this.runtimeManager.quit();
+    }
 }
 
 function getConnectionString(): string {

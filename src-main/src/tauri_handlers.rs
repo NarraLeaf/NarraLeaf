@@ -6,12 +6,15 @@
  * requested from the NodeJS sidecar via the tauri:* namespace.
  */
 
+use clipboard::{ClipboardProvider, windows_clipboard::WindowsClipboardContext};
 use serde_json::Value;
 use tauri::{AppHandle, Manager};
-use clipboard::{ClipboardProvider, windows_clipboard::WindowsClipboardContext};
+use serde_json::json;
+use os_info;
+use sys_locale;
+
 
 pub use crate::handler_types::*;
-
 
 // Re-export OperationResult from operations module
 pub use crate::operations::OperationResult;
@@ -25,47 +28,69 @@ trait WindowLabelProvider {
 
 // Implement WindowLabelProvider for all window-related payloads
 impl WindowLabelProvider for WindowMaximizePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowMinimizePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowClosePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowShowPayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowHidePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowFocusPayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowPositionPayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowSizePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowTitlePayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowCenterPayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 impl WindowLabelProvider for WindowDecorationsPayload {
-    fn get_label(&self) -> &Option<String> { &self.label }
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
 }
 
 /**
@@ -134,13 +159,19 @@ impl TauriOperationExecutor {
      * Helper function to create invalid payload error
      */
     fn create_invalid_payload_error(operation: &str, error: &serde_json::Error) -> OperationResult {
-        Self::create_error_result(format!("Invalid payload for {}: {}", operation, error), None)
+        Self::create_error_result(
+            format!("Invalid payload for {}: {}", operation, error),
+            None,
+        )
     }
 
     /**
      * Helper function to safely deserialize payload with error handling
      */
-    fn deserialize_payload<T: for<'de> serde::Deserialize<'de>>(payload: Value, operation: &str) -> Result<T, OperationResult> {
+    fn deserialize_payload<T: for<'de> serde::Deserialize<'de>>(
+        payload: Value,
+        operation: &str,
+    ) -> Result<T, OperationResult> {
         match serde_json::from_value::<T>(payload) {
             Ok(deserialized) => Ok(deserialized),
             Err(e) => Err(Self::create_invalid_payload_error(operation, &e)),
@@ -150,7 +181,10 @@ impl TauriOperationExecutor {
     /**
      * Helper function to deserialize payload with fallback to default
      */
-    fn deserialize_payload_or_default<T: for<'de> serde::Deserialize<'de> + Default>(payload: Value, _operation: &str) -> T {
+    fn deserialize_payload_or_default<T: for<'de> serde::Deserialize<'de> + Default>(
+        payload: Value,
+        _operation: &str,
+    ) -> T {
         match serde_json::from_value::<T>(payload) {
             Ok(deserialized) => deserialized,
             Err(_) => T::default(),
@@ -179,7 +213,10 @@ impl TauriOperationExecutor {
                         None,
                     ),
                     Err(e) => Self::create_error_result(
-                        format!("Failed to {} window '{}': {}", operation_name, window_label, e),
+                        format!(
+                            "Failed to {} window '{}': {}",
+                            operation_name, window_label, e
+                        ),
                         None,
                     ),
                 }
@@ -257,9 +294,13 @@ impl TauriOperationExecutor {
         payload: WindowMaximizePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.maximize()
-        }, "maximized").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.maximize() },
+            "maximized",
+        )
+        .await
     }
 
     /**
@@ -269,9 +310,13 @@ impl TauriOperationExecutor {
         payload: WindowMinimizePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.minimize()
-        }, "minimized").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.minimize() },
+            "minimized",
+        )
+        .await
     }
 
     /**
@@ -281,15 +326,22 @@ impl TauriOperationExecutor {
         payload: WindowClosePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.close()
-        }, "closed").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.close() },
+            "closed",
+        )
+        .await
     }
 
     /**
      * Execute an application quit operation
      */
-    pub async fn quit_app(payload: Option<AppQuitPayload>, app_handle: Option<&AppHandle>) -> OperationResult {
+    pub async fn quit_app(
+        payload: Option<AppQuitPayload>,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
         if let Some(app) = app_handle {
             // Log quit reason if provided
             if let Some(quit_payload) = payload {
@@ -320,9 +372,13 @@ impl TauriOperationExecutor {
         payload: WindowShowPayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.show()
-        }, "shown").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.show() },
+            "shown",
+        )
+        .await
     }
 
     /**
@@ -332,9 +388,13 @@ impl TauriOperationExecutor {
         payload: WindowHidePayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.hide()
-        }, "hidden").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.hide() },
+            "hidden",
+        )
+        .await
     }
 
     /**
@@ -344,9 +404,13 @@ impl TauriOperationExecutor {
         payload: WindowFocusPayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.set_focus()
-        }, "focused").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.set_focus() },
+            "focused",
+        )
+        .await
     }
 
     /**
@@ -446,9 +510,13 @@ impl TauriOperationExecutor {
         payload: WindowCenterPayload,
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        Self::execute_window_operation(app_handle, &payload, |window| async move {
-            window.center()
-        }, "centered").await
+        Self::execute_window_operation(
+            app_handle,
+            &payload,
+            |window| async move { window.center() },
+            "centered",
+        )
+        .await
     }
 
     /**
@@ -551,7 +619,11 @@ impl TauriOperationExecutor {
     ) -> OperationResult {
         use std::fs;
 
-        let recursive = payload.options.as_ref().and_then(|o| o.recursive).unwrap_or(false);
+        let recursive = payload
+            .options
+            .as_ref()
+            .and_then(|o| o.recursive)
+            .unwrap_or(false);
 
         let result = if recursive {
             fs::create_dir_all(&payload.path)
@@ -567,7 +639,10 @@ impl TauriOperationExecutor {
             },
             Err(e) => OperationResult {
                 success: false,
-                message: Some(format!("Failed to create directory '{}': {}", payload.path, e)),
+                message: Some(format!(
+                    "Failed to create directory '{}': {}",
+                    payload.path, e
+                )),
                 data: None,
             },
         }
@@ -581,22 +656,17 @@ impl TauriOperationExecutor {
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
         match WindowsClipboardContext::new() {
-            Ok(mut clipboard) => {
-                match clipboard.set_contents(payload.text.clone()) {
-                    Ok(_) => Self::create_success_result(
-                        format!("Text '{}' written to clipboard successfully", payload.text),
-                        None,
-                    ),
-                    Err(e) => Self::create_error_result(
-                        format!("Failed to write text to clipboard: {}", e),
-                        None,
-                    ),
-                }
-            }
-            Err(e) => Self::create_error_result(
-                format!("Failed to access clipboard: {}", e),
-                None,
-            ),
+            Ok(mut clipboard) => match clipboard.set_contents(payload.text.clone()) {
+                Ok(_) => Self::create_success_result(
+                    format!("Text '{}' written to clipboard successfully", payload.text),
+                    None,
+                ),
+                Err(e) => Self::create_error_result(
+                    format!("Failed to write text to clipboard: {}", e),
+                    None,
+                ),
+            },
+            Err(e) => Self::create_error_result(format!("Failed to access clipboard: {}", e), None),
         }
     }
 
@@ -608,22 +678,17 @@ impl TauriOperationExecutor {
         _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
         match WindowsClipboardContext::new() {
-            Ok(mut clipboard) => {
-                match clipboard.get_contents() {
-                    Ok(text) => Self::create_success_result(
-                        "Text read from clipboard successfully".to_string(),
-                        Some(serde_json::json!(text)),
-                    ),
-                    Err(e) => Self::create_error_result(
-                        format!("Failed to read text from clipboard: {}", e),
-                        None,
-                    ),
-                }
-            }
-            Err(e) => Self::create_error_result(
-                format!("Failed to access clipboard: {}", e),
-                None,
-            ),
+            Ok(mut clipboard) => match clipboard.get_contents() {
+                Ok(text) => Self::create_success_result(
+                    "Text read from clipboard successfully".to_string(),
+                    Some(serde_json::json!(text)),
+                ),
+                Err(e) => Self::create_error_result(
+                    format!("Failed to read text from clipboard: {}", e),
+                    None,
+                ),
+            },
+            Err(e) => Self::create_error_result(format!("Failed to access clipboard: {}", e), None),
         }
     }
 
@@ -696,13 +761,53 @@ impl TauriOperationExecutor {
         app_handle: Option<&AppHandle>,
     ) -> OperationResult {
         if let Some(app) = app_handle {
-            let metadata = serde_json::json!({
-                "userDir": std::env::var("APPDATA").unwrap_or_default(),
-                "appDir": std::env::current_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default(),
+            // Preferred system language(s)
+            let system_languages = vec![sys_locale::get_locale()
+                .unwrap_or_else(|| "en-US".to_string())];
+    
+            // OS info
+            let os_info = os_info::get();
+            let os_type = os_info.os_type().to_string();
+            let os_version = os_info.version().to_string();
+    
+            // Architecture
+            let arch = std::env::consts::ARCH.to_string();
+    
+            // Timezone (real local timezone if possible)
+            let timezone = chrono::Local::now().offset().to_string();
+    
+            // userDir → app.getPath("userData")
+            let user_dir = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+    
+            // appDir → app.getAppPath()
+            let app_dir = app
+                .path()
+                .resource_dir()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+    
+            // isPackage → app.isPackaged
+            let is_package = std::env::var("TAURI_ENV_DEBUG").is_err();
+    
+            let metadata = json!({
+                "userDir": user_dir,
+                "appDir": app_dir,
                 "appName": app.package_info().name.clone(),
                 "appVersion": app.package_info().version.to_string(),
+                "preferredSystemLanguage": system_languages,
+                "osType": os_type,
+                "osVersion": os_version,
+                "architecture": arch,
+                "timezone": timezone,
+                "isPackage": is_package,
             });
-            
+    
             OperationResult {
                 success: true,
                 message: Some("App metadata retrieved successfully".to_string()),
@@ -738,10 +843,7 @@ impl TauriOperationExecutor {
                     ),
                 }
             } else {
-                Self::create_error_result(
-                    "Main window not found".to_string(),
-                    None,
-                )
+                Self::create_error_result("Main window not found".to_string(), None)
             }
         } else {
             Self::create_app_handle_error()
@@ -769,10 +871,7 @@ impl TauriOperationExecutor {
                     ),
                 }
             } else {
-                Self::create_error_result(
-                    "Main window not found".to_string(),
-                    None,
-                )
+                Self::create_error_result("Main window not found".to_string(), None)
             }
         } else {
             Self::create_app_handle_error()
@@ -797,7 +896,8 @@ impl TauriOperationExecutor {
             // Set filters if provided
             if let Some(filters) = &options.filters {
                 for filter in filters {
-                    let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+                    let extensions: Vec<&str> =
+                        filter.extensions.iter().map(|s| s.as_str()).collect();
                     dialog = dialog.add_filter(&filter.name, &extensions);
                 }
             }
@@ -808,7 +908,10 @@ impl TauriOperationExecutor {
                     // For multiple selection, we'll use pick_files
                     match dialog.pick_files() {
                         Some(paths) => {
-                            let path_strings: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
+                            let path_strings: Vec<String> = paths
+                                .iter()
+                                .map(|p| p.to_string_lossy().to_string())
+                                .collect();
                             return Self::create_success_result(
                                 format!("Selected {} files", path_strings.len()),
                                 Some(serde_json::json!(path_strings)),
@@ -876,7 +979,8 @@ impl TauriOperationExecutor {
             // Set filters if provided
             if let Some(filters) = &options.filters {
                 for filter in filters {
-                    let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+                    let extensions: Vec<&str> =
+                        filter.extensions.iter().map(|s| s.as_str()).collect();
                     dialog = dialog.add_filter(&filter.name, &extensions);
                 }
             }
@@ -926,10 +1030,7 @@ impl TauriOperationExecutor {
         // Show the dialog
         dialog.show();
 
-        Self::create_success_result(
-            format!("Message dialog shown: {}", payload.message),
-            None,
-        )
+        Self::create_success_result(format!("Message dialog shown: {}", payload.message), None)
     }
 
     /**
@@ -988,14 +1089,20 @@ impl TauriOperationExecutor {
         } else {
             "xdg-open"
         })
-        .arg(if cfg!(target_os = "windows") { "/c" } else { "" })
-        .arg(if cfg!(target_os = "windows") { "start" } else { "" })
+        .arg(if cfg!(target_os = "windows") {
+            "/c"
+        } else {
+            ""
+        })
+        .arg(if cfg!(target_os = "windows") {
+            "start"
+        } else {
+            ""
+        })
         .arg(&payload.path)
-        .spawn() {
-            Ok(_) => Self::create_success_result(
-                format!("Opened path: {}", payload.path),
-                None,
-            ),
+        .spawn()
+        {
+            Ok(_) => Self::create_success_result(format!("Opened path: {}", payload.path), None),
             Err(e) => Self::create_error_result(
                 format!("Failed to open path '{}': {}", payload.path, e),
                 None,
@@ -1016,30 +1123,38 @@ pub async fn execute_tauri_operation(
     app_handle: Option<&AppHandle>,
 ) -> OperationResult {
     match request_type {
-        "tauri:window.create" => {
-            match serde_json::from_value::<WindowCreatePayload>(payload) {
-                Ok(window_payload) => TauriOperationExecutor::create_window(window_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:window.create: {}", e)),
-                    data: None,
-                },
+        "tauri:window.create" => match serde_json::from_value::<WindowCreatePayload>(payload) {
+            Ok(window_payload) => {
+                TauriOperationExecutor::create_window(window_payload, app_handle).await
             }
-        }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:window.create: {}", e)),
+                data: None,
+            },
+        },
         "tauri:window.maximize" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowMaximizePayload>(payload, "tauri:window.maximize");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowMaximizePayload,
+            >(payload, "tauri:window.maximize");
             TauriOperationExecutor::maximize_window(window_payload, app_handle).await
         }
         "tauri:window.minimize" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowMinimizePayload>(payload, "tauri:window.minimize");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowMinimizePayload,
+            >(payload, "tauri:window.minimize");
             TauriOperationExecutor::minimize_window(window_payload, app_handle).await
         }
         "tauri:window.close" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowClosePayload>(payload, "tauri:window.close");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowClosePayload,
+            >(payload, "tauri:window.close");
             TauriOperationExecutor::close_window(window_payload, app_handle).await
         }
         "tauri:app.quit" => {
-            let quit_payload = TauriOperationExecutor::deserialize_payload_or_default::<AppQuitPayload>(payload, "tauri:app.quit");
+            let quit_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                AppQuitPayload,
+            >(payload, "tauri:app.quit");
             TauriOperationExecutor::quit_app(Some(quit_payload), app_handle).await
         }
         "tauri:ping" => {
@@ -1054,161 +1169,192 @@ pub async fn execute_tauri_operation(
                         .as_millis()
                 )),
             }
-        },
+        }
         "tauri:window.show" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowShowPayload>(payload, "tauri:window.show");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowShowPayload,
+            >(payload, "tauri:window.show");
             TauriOperationExecutor::show_window(window_payload, app_handle).await
-        },
+        }
         "tauri:window.hide" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowHidePayload>(payload, "tauri:window.hide");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowHidePayload,
+            >(payload, "tauri:window.hide");
             TauriOperationExecutor::hide_window(window_payload, app_handle).await
-        },
+        }
         "tauri:window.set_focus" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowFocusPayload>(payload, "tauri:window.set_focus");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowFocusPayload,
+            >(payload, "tauri:window.set_focus");
             TauriOperationExecutor::focus_window(window_payload, app_handle).await
-        },
+        }
         "tauri:window.set_position" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowPositionPayload>(payload, "tauri:window.set_position");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowPositionPayload,
+            >(payload, "tauri:window.set_position");
             TauriOperationExecutor::set_window_position(window_payload, app_handle).await
-        },
+        }
         "tauri:window.set_size" => {
-            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<WindowSizePayload>(payload, "tauri:window.set_size");
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowSizePayload,
+            >(payload, "tauri:window.set_size");
             TauriOperationExecutor::set_window_size(window_payload, app_handle).await
-        },
+        }
         "tauri:fs.read_text_file" => {
             match serde_json::from_value::<FsReadTextFilePayload>(payload) {
-                Ok(fs_payload) => TauriOperationExecutor::read_text_file(fs_payload, app_handle).await,
+                Ok(fs_payload) => {
+                    TauriOperationExecutor::read_text_file(fs_payload, app_handle).await
+                }
                 Err(e) => OperationResult {
                     success: false,
-                    message: Some(format!("Invalid payload for tauri:fs.read_text_file: {}", e)),
+                    message: Some(format!(
+                        "Invalid payload for tauri:fs.read_text_file: {}",
+                        e
+                    )),
                     data: None,
                 },
             }
-        },
+        }
         "tauri:fs.write_text_file" => {
             match serde_json::from_value::<FsWriteTextFilePayload>(payload) {
-                Ok(fs_payload) => TauriOperationExecutor::write_text_file(fs_payload, app_handle).await,
+                Ok(fs_payload) => {
+                    TauriOperationExecutor::write_text_file(fs_payload, app_handle).await
+                }
                 Err(e) => OperationResult {
                     success: false,
-                    message: Some(format!("Invalid payload for tauri:fs.write_text_file: {}", e)),
+                    message: Some(format!(
+                        "Invalid payload for tauri:fs.write_text_file: {}",
+                        e
+                    )),
                     data: None,
                 },
             }
+        }
+        "tauri:fs.exists" => match serde_json::from_value::<FsExistsPayload>(payload) {
+            Ok(fs_payload) => TauriOperationExecutor::exists_file(fs_payload, app_handle).await,
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:fs.exists: {}", e)),
+                data: None,
+            },
         },
-        "tauri:fs.exists" => {
-            match serde_json::from_value::<FsExistsPayload>(payload) {
-                Ok(fs_payload) => TauriOperationExecutor::exists_file(fs_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:fs.exists: {}", e)),
-                    data: None,
-                },
-            }
-        },
-        "tauri:fs.mkdir" => {
-            match serde_json::from_value::<FsMkdirPayload>(payload) {
-                Ok(fs_payload) => TauriOperationExecutor::mkdir_file(fs_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:fs.mkdir: {}", e)),
-                    data: None,
-                },
-            }
+        "tauri:fs.mkdir" => match serde_json::from_value::<FsMkdirPayload>(payload) {
+            Ok(fs_payload) => TauriOperationExecutor::mkdir_file(fs_payload, app_handle).await,
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:fs.mkdir: {}", e)),
+                data: None,
+            },
         },
         "tauri:clipboard.write_text" => {
-            match TauriOperationExecutor::deserialize_payload::<ClipboardWriteTextPayload>(payload, "tauri:clipboard.write_text") {
-                Ok(clipboard_payload) => TauriOperationExecutor::write_clipboard_text(clipboard_payload, app_handle).await,
+            match TauriOperationExecutor::deserialize_payload::<ClipboardWriteTextPayload>(
+                payload,
+                "tauri:clipboard.write_text",
+            ) {
+                Ok(clipboard_payload) => {
+                    TauriOperationExecutor::write_clipboard_text(clipboard_payload, app_handle)
+                        .await
+                }
                 Err(error_result) => error_result,
             }
         }
         "tauri:clipboard.read_text" => {
             TauriOperationExecutor::read_clipboard_text(payload, app_handle).await
+        }
+        "tauri:dialog.open" => match serde_json::from_value::<DialogOpenPayload>(payload) {
+            Ok(dialog_payload) => {
+                TauriOperationExecutor::open_dialog(dialog_payload, app_handle).await
+            }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:dialog.open: {}", e)),
+                data: None,
+            },
         },
-        "tauri:dialog.open" => {
-            match serde_json::from_value::<DialogOpenPayload>(payload) {
-                Ok(dialog_payload) => TauriOperationExecutor::open_dialog(dialog_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:dialog.open: {}", e)),
-                    data: None,
-                },
+        "tauri:dialog.save" => match serde_json::from_value::<DialogSavePayload>(payload) {
+            Ok(dialog_payload) => {
+                TauriOperationExecutor::save_dialog(dialog_payload, app_handle).await
+            }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:dialog.save: {}", e)),
+                data: None,
+            },
+        },
+        "tauri:dialog.message" => match serde_json::from_value::<DialogMessagePayload>(payload) {
+            Ok(dialog_payload) => {
+                TauriOperationExecutor::message_dialog(dialog_payload, app_handle).await
+            }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:dialog.message: {}", e)),
+                data: None,
+            },
+        },
+        "tauri:dialog.ask" => match serde_json::from_value::<DialogAskPayload>(payload) {
+            Ok(dialog_payload) => {
+                TauriOperationExecutor::ask_dialog(dialog_payload, app_handle).await
+            }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:dialog.ask: {}", e)),
+                data: None,
+            },
+        },
+        "tauri:app.get_version" => match serde_json::from_value::<AppGetVersionPayload>(payload) {
+            Ok(app_payload) => {
+                TauriOperationExecutor::get_app_version(app_payload, app_handle).await
+            }
+            Err(_) => {
+                TauriOperationExecutor::get_app_version(AppGetVersionPayload {}, app_handle).await
             }
         },
-        "tauri:dialog.save" => {
-            match serde_json::from_value::<DialogSavePayload>(payload) {
-                Ok(dialog_payload) => TauriOperationExecutor::save_dialog(dialog_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:dialog.save: {}", e)),
-                    data: None,
-                },
-            }
-        },
-        "tauri:dialog.message" => {
-            match serde_json::from_value::<DialogMessagePayload>(payload) {
-                Ok(dialog_payload) => TauriOperationExecutor::message_dialog(dialog_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:dialog.message: {}", e)),
-                    data: None,
-                },
-            }
-        },
-        "tauri:dialog.ask" => {
-            match serde_json::from_value::<DialogAskPayload>(payload) {
-                Ok(dialog_payload) => TauriOperationExecutor::ask_dialog(dialog_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:dialog.ask: {}", e)),
-                    data: None,
-                },
-            }
-        },
-        "tauri:app.get_version" => {
-            match serde_json::from_value::<AppGetVersionPayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::get_app_version(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::get_app_version(AppGetVersionPayload {}, app_handle).await,
-            }
-        },
-        "tauri:app.get_name" => {
-            match serde_json::from_value::<AppGetNamePayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::get_app_name(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::get_app_name(AppGetNamePayload {}, app_handle).await,
-            }
+        "tauri:app.get_name" => match serde_json::from_value::<AppGetNamePayload>(payload) {
+            Ok(app_payload) => TauriOperationExecutor::get_app_name(app_payload, app_handle).await,
+            Err(_) => TauriOperationExecutor::get_app_name(AppGetNamePayload {}, app_handle).await,
         },
         "tauri:app.get_tauri_version" => {
             match serde_json::from_value::<AppGetTauriVersionPayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::get_tauri_version(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::get_tauri_version(AppGetTauriVersionPayload {}, app_handle).await,
+                Ok(app_payload) => {
+                    TauriOperationExecutor::get_tauri_version(app_payload, app_handle).await
+                }
+                Err(_) => {
+                    TauriOperationExecutor::get_tauri_version(
+                        AppGetTauriVersionPayload {},
+                        app_handle,
+                    )
+                    .await
+                }
             }
-        },
+        }
         "tauri:app.get_metadata" => {
             match serde_json::from_value::<AppGetMetadataPayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::get_app_metadata(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::get_app_metadata(AppGetMetadataPayload {}, app_handle).await,
+                Ok(app_payload) => {
+                    TauriOperationExecutor::get_app_metadata(app_payload, app_handle).await
+                }
+                Err(_) => {
+                    TauriOperationExecutor::get_app_metadata(AppGetMetadataPayload {}, app_handle)
+                        .await
+                }
             }
+        }
+        "tauri:app.show" => match serde_json::from_value::<AppShowPayload>(payload) {
+            Ok(app_payload) => TauriOperationExecutor::show_app(app_payload, app_handle).await,
+            Err(_) => TauriOperationExecutor::show_app(AppShowPayload {}, app_handle).await,
         },
-        "tauri:app.show" => {
-            match serde_json::from_value::<AppShowPayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::show_app(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::show_app(AppShowPayload {}, app_handle).await,
-            }
+        "tauri:app.hide" => match serde_json::from_value::<AppHidePayload>(payload) {
+            Ok(app_payload) => TauriOperationExecutor::hide_app(app_payload, app_handle).await,
+            Err(_) => TauriOperationExecutor::hide_app(AppHidePayload {}, app_handle).await,
         },
-        "tauri:app.hide" => {
-            match serde_json::from_value::<AppHidePayload>(payload) {
-                Ok(app_payload) => TauriOperationExecutor::hide_app(app_payload, app_handle).await,
-                Err(_) => TauriOperationExecutor::hide_app(AppHidePayload {}, app_handle).await,
+        "tauri:shell.open" => match serde_json::from_value::<ShellOpenPayload>(payload) {
+            Ok(shell_payload) => {
+                TauriOperationExecutor::shell_open(shell_payload, app_handle).await
             }
-        },
-        "tauri:shell.open" => {
-            match serde_json::from_value::<ShellOpenPayload>(payload) {
-                Ok(shell_payload) => TauriOperationExecutor::shell_open(shell_payload, app_handle).await,
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Invalid payload for tauri:shell.open: {}", e)),
-                    data: None,
-                },
-            }
+            Err(e) => OperationResult {
+                success: false,
+                message: Some(format!("Invalid payload for tauri:shell.open: {}", e)),
+                data: None,
+            },
         },
         _ => OperationResult {
             success: false,
@@ -1217,5 +1363,3 @@ pub async fn execute_tauri_operation(
         },
     }
 }
-
-

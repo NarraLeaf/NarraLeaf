@@ -341,10 +341,6 @@ impl Default for ClipboardWriteTextPayload {
     }
 }
 
-
-
-
-
 /**
  * App get version payload
  */

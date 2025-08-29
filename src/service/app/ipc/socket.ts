@@ -181,7 +181,17 @@ export class MainServiceIPCClient extends EventEmitter {
     /**
      * Send a request message and wait for response
      */
-    public async sendRequest<T extends RuntimeRequestTypes = any>(requestType: T, ...payload: RuntimeRequestPayload[T]): Promise<ResponseMessage<RuntimeRequestResult[T]>> {
+    public async sendRequest<T extends RuntimeRequestTypes = any>(
+        // requestType: T,
+        // payload: RuntimeRequestPayload[T]
+        ...args: [
+            T,
+            ...RuntimeRequestPayload[T] extends null ? [] : [RuntimeRequestPayload[T]]
+        ]
+    ): Promise<ResponseMessage<RuntimeRequestResult[T]>> {
+        const requestType = args[0];
+        const payload = args[1];
+
         return new Promise((resolve, reject) => {
             const requestId = (++this.messageIdCounter).toString();
             const request: RequestMessage = {
@@ -520,7 +530,8 @@ export class MainServiceIPCClient extends EventEmitter {
             if (response.success) {
                 pending.resolve(response);
             } else {
-                pending.reject(new Error(response.error || 'Request failed'));
+                const errorMessage = 'error' in response ? response.error : 'Request failed';
+                pending.reject(new Error(errorMessage));
             }
         }
     }

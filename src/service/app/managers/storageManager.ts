@@ -12,7 +12,6 @@ import type { RuntimeManager } from "./runtimeManager";
 
 export class StorageManager extends Manager<[RuntimeManager]> {
     private saveStorage: StoreProvider;
-    private exposedJsonStores: Record<string, JsonStore<any>> = {};
 
     constructor(private app: App) {
         super();
@@ -38,26 +37,6 @@ export class StorageManager extends Manager<[RuntimeManager]> {
             dir: path.join(runtimeManager.getUserDir(), AppDataNamespace.json),
             name,
         });
-    }
-
-    public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        const store = this.createJsonStore<T>(name);
-        this.exposeJsonStore(store);
-
-        return store;
-    }
-
-    public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
-        const name = store.config.name;
-        if (this.exposedJsonStores[name]) {
-            this.app.logger.warn(`Json store ${name} already exposed. Exposing again will override the existing store.`);
-        }
-
-        this.exposedJsonStores[name] = store;
-    }
-
-    public getExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> | null {
-        return this.exposedJsonStores[name] || null;
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {

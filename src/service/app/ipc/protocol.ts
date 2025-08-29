@@ -36,13 +36,13 @@ export type ServiceRequestResult = {
 };
 
 export type ServiceRequestPayload = {
-    "narraleaf:game.save.list": [void];
-    "narraleaf:game.save.read": [id: string];
-    "narraleaf:game.save.write": [id: string, data: SavedGame];
-    "narraleaf:game.save.delete": [id: string];
-    "narraleaf:app.quit": [reason?: Error | null];
-    "narraleaf:app.reload": [void];
-    "narraleaf:app.request": [payload: any];
+    "narraleaf:game.save.list": null;
+    "narraleaf:game.save.read": { id: string };
+    "narraleaf:game.save.write": { id: string; data: SavedGame };
+    "narraleaf:game.save.delete": { id: string };
+    "narraleaf:app.quit": { reason?: Error | null };
+    "narraleaf:app.reload": null;
+    "narraleaf:app.request": { payload: any };
 };
 
 export type RuntimeAppMetadata = {
@@ -50,6 +50,12 @@ export type RuntimeAppMetadata = {
     appDir: string;
     appName: string;
     appVersion: string;
+    preferredSystemLanguage: string;
+    osType: string;
+    osVersion: string;
+    architecture: string;
+    timezone: string;
+    isPackage: boolean;
 };
 
 /**
@@ -88,35 +94,35 @@ export type RuntimeRequestResult = {
 };
 
 export type RuntimeRequestPayload = {
-    "tauri:window.create": [WindowCreatePayload];
-    "tauri:window.maximize": [WindowMaximizePayload];
-    "tauri:window.minimize": [WindowMinimizePayload];
-    "tauri:window.close": [WindowClosePayload];
-    "tauri:window.show": [WindowShowPayload];
-    "tauri:window.hide": [WindowHidePayload];
-    "tauri:window.set_focus": [WindowFocusPayload];
-    "tauri:window.set_position": [WindowPositionPayload];
-    "tauri:window.set_size": [WindowSizePayload];
-    "tauri:window.set_title": [WindowTitlePayload];
-    "tauri:window.center": [WindowCenterPayload];
-    "tauri:window.set_decorations": [WindowDecorationsPayload];
-    "tauri:dialog.open": [OpenDialogOptions | undefined];
-    "tauri:dialog.save": [SaveDialogOptions | undefined];
-    "tauri:dialog.message": [string, MessageDialogOptions | undefined];
-    "tauri:dialog.ask": [string, ConfirmDialogOptions | undefined];
-    "tauri:clipboard.write_text": [string];
-    "tauri:clipboard.read_text": [void];
+    "tauri:window.create": WindowCreatePayload;
+    "tauri:window.maximize": WindowMaximizePayload;
+    "tauri:window.minimize": WindowMinimizePayload;
+    "tauri:window.close": WindowClosePayload;
+    "tauri:window.show": WindowShowPayload;
+    "tauri:window.hide": WindowHidePayload;
+    "tauri:window.set_focus": WindowFocusPayload;
+    "tauri:window.set_position": WindowPositionPayload;
+    "tauri:window.set_size": WindowSizePayload;
+    "tauri:window.set_title": WindowTitlePayload;
+    "tauri:window.center": WindowCenterPayload;
+    "tauri:window.set_decorations": WindowDecorationsPayload;
+    "tauri:dialog.open": OpenDialogOptions | undefined;
+    "tauri:dialog.save": SaveDialogOptions | undefined;
+    "tauri:dialog.message": { message: string; options?: MessageDialogOptions };
+    "tauri:dialog.ask": { message: string; options?: ConfirmDialogOptions };
+    "tauri:clipboard.write_text": { text: string };
+    "tauri:clipboard.read_text": null;
 
-    "tauri:app.get_version": [void];
-    "tauri:app.get_name": [void];
-    "tauri:app.get_tauri_version": [void];
-    "tauri:app.show": [void];
-    "tauri:app.hide": [void];
-    "tauri:app.quit": [void];
+    "tauri:app.get_version": null;
+    "tauri:app.get_name": null;
+    "tauri:app.get_tauri_version": null;
+    "tauri:app.show": null;
+    "tauri:app.hide": null;
+    "tauri:app.quit": null;
 
-    "tauri:ping": [void];
-    "tauri:shell.open": [string, OpenOptions | undefined];
-    "tauri:app.get_metadata": [void];
+    "tauri:ping": null;
+    "tauri:shell.open": { path: string; options?: OpenOptions };
+    "tauri:app.get_metadata": null;
 };
 
 export type ServiceRequestTypes = Extract<keyof ServiceRequestResult, keyof ServiceRequestPayload>;

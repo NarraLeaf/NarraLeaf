@@ -101,66 +101,64 @@ export interface TransmittedMessage {
  */
 export interface WindowCreatePayload {
   label: string;
-  title?: string;
-  width?: number;
-  height?: number;
+  title: string;
+  width: number;
+  height: number;
   x?: number;
   y?: number;
   center?: boolean;
   decorations?: boolean;
-  alwaysOnTop?: boolean;
-  skipTaskbar?: boolean;
-  theme?: 'Light' | 'Dark';
-  titleBarStyle?: 'Visible' | 'Transparent' | 'Overlay';
+  always_on_top?: boolean;
+  skip_taskbar?: boolean;
 }
 
 /**
  * Window maximize configuration
  */
 export interface WindowMaximizePayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window minimize configuration
  */
 export interface WindowMinimizePayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window close configuration
  */
 export interface WindowClosePayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window show configuration
  */
 export interface WindowShowPayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window hide configuration
  */
 export interface WindowHidePayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window focus configuration
  */
 export interface WindowFocusPayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window position configuration
  */
 export interface WindowPositionPayload {
-  label: string;
+  label?: string;
   x: number;
   y: number;
 }
@@ -169,7 +167,7 @@ export interface WindowPositionPayload {
  * Window size configuration
  */
 export interface WindowSizePayload {
-  label: string;
+  label?: string;
   width: number;
   height: number;
 }
@@ -178,7 +176,7 @@ export interface WindowSizePayload {
  * Window title configuration
  */
 export interface WindowTitlePayload {
-  label: string;
+  label?: string;
   title: string;
 }
 
@@ -186,14 +184,14 @@ export interface WindowTitlePayload {
  * Window center configuration
  */
 export interface WindowCenterPayload {
-  label: string;
+  label?: string;
 }
 
 /**
  * Window decorations configuration
  */
 export interface WindowDecorationsPayload {
-  label: string;
+  label?: string;
   decorations: boolean;
 }
 
@@ -205,18 +203,17 @@ export interface WindowDecorationsPayload {
  * Open dialog options
  */
 export interface OpenDialogOptions {
-  defaultPath?: string;
+  default_path?: string;
   filters?: FileFilter[];
   multiple?: boolean;
   directory?: boolean;
-  recursive?: boolean;
 }
 
 /**
  * Save dialog options
  */
 export interface SaveDialogOptions {
-  defaultPath?: string;
+  default_path?: string;
   filters?: FileFilter[];
 }
 
@@ -232,19 +229,16 @@ export interface FileFilter {
  * Message dialog options
  */
 export interface MessageDialogOptions {
-  type?: 'info' | 'warning' | 'error';
   title?: string;
-  okLabel?: string;
+  kind?: 'info' | 'warning' | 'error';
 }
 
 /**
  * Confirm dialog options
  */
 export interface ConfirmDialogOptions {
-  type?: 'info' | 'warning' | 'error';
   title?: string;
-  okLabel?: string;
-  cancelLabel?: string;
+  kind?: 'info' | 'warning' | 'error';
 }
 
 // ============================================================================
@@ -269,4 +263,177 @@ export interface Error {
   message: string;
   code?: string;
   details?: any;
+}
+
+// ============================================================================
+// File System Types
+// ============================================================================
+
+/**
+ * File system read text file payload
+ */
+export interface FsReadTextFilePayload {
+  path: string;
+}
+
+/**
+ * File system write text file payload
+ */
+export interface FsWriteTextFilePayload {
+  path: string;
+  contents: string;
+}
+
+/**
+ * File system read binary file payload
+ */
+export interface FsReadBinaryFilePayload {
+  path: string;
+}
+
+/**
+ * File system write binary file payload
+ */
+export interface FsWriteBinaryFilePayload {
+  path: string;
+  contents: Uint8Array;
+}
+
+/**
+ * File system exists payload
+ */
+export interface FsExistsPayload {
+  path: string;
+}
+
+/**
+ * File system mkdir payload
+ */
+export interface FsMkdirPayload {
+  path: string;
+  options?: MkdirOptions;
+}
+
+/**
+ * File system remove payload
+ */
+export interface FsRemovePayload {
+  path: string;
+  options?: RemoveOptions;
+}
+
+/**
+ * File system copy file payload
+ */
+export interface FsCopyFilePayload {
+  from: string;
+  to: string;
+}
+
+/**
+ * File system rename payload
+ */
+export interface FsRenamePayload {
+  from: string;
+  to: string;
+}
+
+/**
+ * File system read dir payload
+ */
+export interface FsReadDirPayload {
+  path: string;
+  options?: ReadDirOptions;
+}
+
+/**
+ * Mkdir options
+ */
+export interface MkdirOptions {
+  recursive?: boolean;
+}
+
+/**
+ * Remove options
+ */
+export interface RemoveOptions {
+  recursive?: boolean;
+}
+
+/**
+ * Read directory options
+ */
+export interface ReadDirOptions {
+  recursive?: boolean;
+}
+
+// ============================================================================
+// App Types
+// ============================================================================
+
+/**
+ * App quit payload
+ */
+export interface AppQuitPayload {
+  reason?: string;
+}
+
+/**
+ * App get version payload
+ */
+export interface AppGetVersionPayload {}
+
+/**
+ * App get name payload
+ */
+export interface AppGetNamePayload {}
+
+/**
+ * App get tauri version payload
+ */
+export interface AppGetTauriVersionPayload {}
+
+/**
+ * App show payload
+ */
+export interface AppShowPayload {}
+
+/**
+ * App hide payload
+ */
+export interface AppHidePayload {}
+
+/**
+ * App get metadata payload
+ */
+export interface AppGetMetadataPayload {}
+
+// ============================================================================
+// Clipboard Types
+// ============================================================================
+
+/**
+ * Clipboard write text payload
+ */
+export interface ClipboardWriteTextPayload {
+  text: string;
+}
+
+// ============================================================================
+// Shell Types
+// ============================================================================
+
+/**
+ * Shell open payload
+ */
+export interface ShellOpenPayload {
+  path: string;
+  options?: ShellOpenOptions;
+}
+
+/**
+ * Shell open options
+ */
+export interface ShellOpenOptions {
+  with?: string;
 }

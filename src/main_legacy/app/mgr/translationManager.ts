@@ -62,6 +62,3 @@ export function translate(app: App): (key: string) => string {
     const manager = new TranslationManager(app);
     return (key: string) => manager.translate(key);
 }
-
-
-
