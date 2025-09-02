@@ -8,38 +8,38 @@ import { SidecarRuntimeError } from "../utils/error";
 import { MainServiceIPCClient } from "./ipc/socket";
 import { RuntimeManager, StorageManager } from "./managers";
 import { StoreProvider } from "./managers/storage/storeProvider";
-import { AppEvents } from "./types";
+import { ServiceEvents } from "./types";
 
 
 export interface AppServices {
     runtime: RuntimeManager;
 }
 
-export interface AppConfig {
+export interface ServiceConfig {
     store: StoreProvider | undefined;
     deleteCorruptedSaves: boolean;
 }
 
-export class App {
-    private static readonly DefaultConfig: AppConfig = {
+export class Service {
+    private static readonly DefaultConfig: ServiceConfig = {
         store: undefined,
         deleteCorruptedSaves: true,
     };
 
-    private config: AppConfig;
+    private config: ServiceConfig;
 
     public readonly logger: Logger;
     public readonly hooks: Hooks;
-    public readonly events: EventEmitter<AppEvents>;
+    public readonly events: EventEmitter<ServiceEvents>;
 
     public readonly ipcClient: MainServiceIPCClient;
 
     public readonly runtimeManager: RuntimeManager;
     public readonly storageManager: StorageManager;
 
-    constructor(config: Partial<AppConfig> = {}) {
+    constructor(config: Partial<ServiceConfig> = {}) {
         this.config = {
-            ...App.DefaultConfig,
+            ...Service.DefaultConfig,
             ...config,
         };
 
@@ -62,7 +62,7 @@ export class App {
         this.events.emit("ready");
     }
 
-    public getConfig(): AppConfig {
+    public getConfig(): ServiceConfig {
         return this.config;
     }
 

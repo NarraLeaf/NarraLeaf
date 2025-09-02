@@ -118,3 +118,87 @@ export class Hooks {
 export function isFunction(value: unknown): value is (...args: any[]) => any {
     return typeof value === "function";
 }
+
+export interface TaskInfo {
+    promise: Promise<unknown>;
+    cancelCallback?: () => void;
+}
+
+export class Tasks {
+    private tasks: TaskInfo[] = [];
+
+    /**
+     * Add a task with optional cancel callback
+     * @param promise The promise to track
+     * @param cancelCallback Optional function to call when task is cancelled
+     */
+    push<T>(promise: Promise<T>, cancelCallback?: () => void): Promise<T> {
+        const task = { promise, cancelCallback };
+        this.tasks.push(task);
+        
+        // Auto cleanup when task completes
+        promise
+            .finally(() => {
+                this.removeTask(task);
+            });
+
+        return promise;
+    }
+
+    /**
+     * Remove a task from the list
+     * @param task Task to remove
+     */
+    private removeTask(task: TaskInfo): void {
+        const index = this.tasks.indexOf(task);
+        if (index > -1) {
+            this.tasks.splice(index, 1);
+        }
+    }
+
+    /**
+     * Cancel a specific task by index
+     * @param index Task index
+     * @returns Whether the task was found and cancelled
+     */
+    cancel(index: number): boolean {
+        if (index < 0 || index >= this.tasks.length) {
+            return false;
+        }
+
+        const task = this.tasks[index];
+        
+        // Call cancel callback if provided
+        if (task.cancelCallback) {
+            task.cancelCallback();
+        }
+
+        this.tasks.splice(index, 1);
+        return true;
+    }
+
+    /**
+     * Cancel all tasks
+     * @returns Number of tasks cancelled
+     */
+    cancelAll(): number {
+        const count = this.tasks.length;
+        
+        this.tasks.forEach(task => {
+            if (task.cancelCallback) {
+                task.cancelCallback();
+            }
+        });
+
+        this.tasks = [];
+        return count;
+    }
+
+    /**
+     * Get the number of active tasks
+     * @returns Number of active tasks
+     */
+    size(): number {
+        return this.tasks.length;
+    }
+}

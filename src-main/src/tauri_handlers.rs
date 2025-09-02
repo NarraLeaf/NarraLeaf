@@ -93,6 +93,42 @@ impl WindowLabelProvider for WindowDecorationsPayload {
     }
 }
 
+impl WindowLabelProvider for WindowResizablePayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
+impl WindowLabelProvider for WindowClosablePayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
+impl WindowLabelProvider for WindowMinimizablePayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
+impl WindowLabelProvider for WindowMaximizablePayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
+impl WindowLabelProvider for WindowTransparentPayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
+impl WindowLabelProvider for WindowFullscreenPayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
 /**
  * Tauri Operation Executor
  *
@@ -240,7 +276,8 @@ impl TauriOperationExecutor {
             let label_clone = payload.label.clone();
             let mut builder = WindowBuilder::new(app, payload.label)
                 .title(payload.title)
-                .inner_size(payload.width, payload.height);
+                .inner_size(payload.width, payload.height)
+                .visible(false); // Default to hidden
 
             if let Some(x) = payload.x {
                 if let Some(y) = payload.y {
@@ -266,11 +303,73 @@ impl TauriOperationExecutor {
                 builder = builder.skip_taskbar(skip_taskbar);
             }
 
+            // Set resizable property
+            if let Some(resizable) = payload.resizable {
+                builder = builder.resizable(resizable);
+            }
+
+            // Set closable property (affects window controls)
+            if let Some(closable) = payload.closable {
+                if !closable {
+                    builder = builder.closable(false);
+                }
+            }
+
+            // Set minimizable property
+            if let Some(minimizable) = payload.minimizable {
+                if !minimizable {
+                    builder = builder.minimizable(false);
+                }
+            }
+
+            // Set maximizable property
+            if let Some(maximizable) = payload.maximizable {
+                if !maximizable {
+                    builder = builder.maximizable(false);
+                }
+            }
+
+            // Set focus property
+            if let Some(focus) = payload.focus {
+                if focus {
+                    builder = builder.focused(true);
+                }
+            }
+
+            // Set transparent property
+            if let Some(transparent) = payload.transparent {
+                if transparent {
+                    builder = builder.transparent(true);
+                }
+            }
+
+            // Set fullscreen property
+            if let Some(fullscreen) = payload.fullscreen {
+                if fullscreen {
+                    builder = builder.fullscreen(true);
+                }
+            }
+
             match builder.build() {
-                Ok(_) => OperationResult {
-                    success: true,
-                    message: Some(format!("Window '{}' created successfully", label_clone)),
-                    data: None,
+                Ok(window) => {
+                    // Show window if show field is true
+                    if let Some(show) = payload.show {
+                        if show {
+                            if let Err(e) = window.show() {
+                                return OperationResult {
+                                    success: false,
+                                    message: Some(format!("Failed to show window '{}': {}", label_clone, e)),
+                                    data: None,
+                                };
+                            }
+                        }
+                    }
+
+                    OperationResult {
+                        success: true,
+                        message: Some(format!("Window '{}' created successfully", label_clone)),
+                        data: None,
+                    }
                 },
                 Err(e) => OperationResult {
                     success: false,
@@ -536,6 +635,161 @@ impl TauriOperationExecutor {
                     ),
                     Err(e) => Self::create_error_result(
                         format!("Failed to set window '{}' decorations: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window resizable operation
+     */
+    pub async fn set_window_resizable(
+        payload: WindowResizablePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_resizable(payload.resizable) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' resizable set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' resizable: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window closable operation
+     */
+    pub async fn set_window_closable(
+        payload: WindowClosablePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_closable(payload.closable) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' closable set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' closable: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window minimizable operation
+     */
+    pub async fn set_window_minimizable(
+        payload: WindowMinimizablePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_minimizable(payload.minimizable) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' minimizable set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' minimizable: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window maximizable operation
+     */
+    pub async fn set_window_maximizable(
+        payload: WindowMaximizablePayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_maximizable(payload.maximizable) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' maximizable set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' maximizable: {}", window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
+     * Execute a window transparent operation
+     */
+    pub async fn set_window_transparent(
+        _payload: WindowTransparentPayload,
+        _app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        // Note: Tauri 2.0 doesn't support setting transparency after window creation
+        // This property can only be set during window creation
+        Self::create_error_result(
+            "Window transparency cannot be changed after creation in Tauri 2.0".to_string(),
+            None,
+        )
+    }
+
+    /**
+     * Execute a window fullscreen operation
+     */
+    pub async fn set_window_fullscreen(
+        payload: WindowFullscreenPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match window.set_fullscreen(payload.fullscreen) {
+                    Ok(_) => Self::create_success_result(
+                        format!("Window '{}' fullscreen set successfully", window_label),
+                        None,
+                    ),
+                    Err(e) => Self::create_error_result(
+                        format!("Failed to set window '{}' fullscreen: {}", window_label, e),
                         None,
                     ),
                 }
@@ -1199,6 +1453,60 @@ pub async fn execute_tauri_operation(
                 WindowSizePayload,
             >(payload, "tauri:window.set_size");
             TauriOperationExecutor::set_window_size(window_payload, app_handle).await
+        }
+        "tauri:window.set_title" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowTitlePayload,
+            >(payload, "tauri:window.set_title");
+            TauriOperationExecutor::set_window_title(window_payload, app_handle).await
+        }
+        "tauri:window.center" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowCenterPayload,
+            >(payload, "tauri:window.center");
+            TauriOperationExecutor::center_window(window_payload, app_handle).await
+        }
+        "tauri:window.set_decorations" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowDecorationsPayload,
+            >(payload, "tauri:window.set_decorations");
+            TauriOperationExecutor::set_window_decorations(window_payload, app_handle).await
+        }
+        "tauri:window.set_resizable" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowResizablePayload,
+            >(payload, "tauri:window.set_resizable");
+            TauriOperationExecutor::set_window_resizable(window_payload, app_handle).await
+        }
+        "tauri:window.set_closable" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowClosablePayload,
+            >(payload, "tauri:window.set_closable");
+            TauriOperationExecutor::set_window_closable(window_payload, app_handle).await
+        }
+        "tauri:window.set_minimizable" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowMinimizablePayload,
+            >(payload, "tauri:window.set_minimizable");
+            TauriOperationExecutor::set_window_minimizable(window_payload, app_handle).await
+        }
+        "tauri:window.set_maximizable" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowMaximizablePayload,
+            >(payload, "tauri:window.set_maximizable");
+            TauriOperationExecutor::set_window_maximizable(window_payload, app_handle).await
+        }
+        "tauri:window.set_transparent" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowTransparentPayload,
+            >(payload, "tauri:window.set_transparent");
+            TauriOperationExecutor::set_window_transparent(window_payload, app_handle).await
+        }
+        "tauri:window.set_fullscreen" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowFullscreenPayload,
+            >(payload, "tauri:window.set_fullscreen");
+            TauriOperationExecutor::set_window_fullscreen(window_payload, app_handle).await
         }
         "tauri:fs.read_text_file" => {
             match serde_json::from_value::<FsReadTextFilePayload>(payload) {

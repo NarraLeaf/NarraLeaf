@@ -1,4 +1,4 @@
-import { App } from "../app";
+import type { Service } from "../service";
 import { FsFlag } from "@/utils/fsLogger";
 import path from "path";
 import { AppDataNamespace } from "../constants";
@@ -17,7 +17,7 @@ export class CrashManager extends Manager<[RuntimeManager]> {
     private initialized: boolean = false;
 
     constructor(
-        private app: App,
+        private app: Service,
     ) {
         super();
     }
