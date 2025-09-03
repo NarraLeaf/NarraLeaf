@@ -282,24 +282,107 @@ export class Window {
         this.label = config.label;
     }
 
+    /**
+     * Maximizes the window to fill the entire screen
+     */
     public maximize(): Promise<this> { return this.chainRequests("tauri:window.maximize", {}); }
+    
+    /**
+     * Minimizes the window to the taskbar
+     */
     public minimize(): Promise<this> { return this.chainRequests("tauri:window.minimize", {}); }
+    
+    /**
+     * Makes the window visible to the user
+     */
     public show(): Promise<this> { return this.chainRequests("tauri:window.show", {}); }
+    
+    /**
+     * Hides the window from view
+     */
     public hide(): Promise<this> { return this.chainRequests("tauri:window.hide", {}); }
+    
+    /**
+     * Brings the window to front and gives it keyboard focus
+     */
     public setFocus(): Promise<this> { return this.chainRequests("tauri:window.set_focus", {}); }
+    
+    /**
+     * Moves the window to the specified screen coordinates
+     * @param x Horizontal position in pixels from left edge
+     * @param y Vertical position in pixels from top edge
+     */
     public setPosition(x: number, y: number): Promise<this> { return this.chainRequests("tauri:window.set_position", { x, y }); }
+    
+    /**
+     * Resizes the window to the specified dimensions
+     * @param width New width in pixels
+     * @param height New height in pixels
+     */
     public setSize(width: number, height: number): Promise<this> { return this.chainRequests("tauri:window.set_size", { width, height }); }
+    
+    /**
+     * Changes the window title displayed in title bar and taskbar
+     * @param title New window title text
+     */
     public setTitle(title: string): Promise<this> { return this.chainRequests("tauri:window.set_title", { title }); }
+    
+    /**
+     * Centers the window on the primary display
+     */
     public center(): Promise<this> { return this.chainRequests("tauri:window.center", {}); }
+    
+    /**
+     * Shows or hides window decorations (title bar, borders, controls)
+     * @param decorations Whether to show window decorations
+     */
     public setDecorations(decorations: boolean): Promise<this> { return this.chainRequests("tauri:window.set_decorations", { decorations }); }
+    
+    /**
+     * Enables or disables window resizing by user
+     * @param resizable Whether the window can be resized
+     */
     public setResizable(resizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_resizable", { resizable }); }
+    
+    /**
+     * Enables or disables the close button
+     * @param closable Whether the window can be closed by user
+     */
     public setClosable(closable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_closable", { closable }); }
+    
+    /**
+     * Enables or disables the minimize button
+     * @param minimizable Whether the window can be minimized
+     */
     public setMinimizable(minimizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_minimizable", { minimizable }); }
+    
+    /**
+     * Enables or disables the maximize button
+     * @param maximizable Whether the window can be maximized
+     */
     public setMaximizable(maximizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_maximizable", { maximizable }); }
+    
+    /**
+     * Makes the window background transparent (only works during creation)
+     * @param transparent Whether the window should be transparent
+     */
     public setTransparent(transparent: boolean): Promise<this> { return this.chainRequests("tauri:window.set_transparent", { transparent }); }
+    
+    /**
+     * Switches the window to or from fullscreen mode
+     * @param fullscreen Whether the window should be fullscreen
+     */
     public setFullscreen(fullscreen: boolean): Promise<this> { return this.chainRequests("tauri:window.set_fullscreen", { fullscreen }); }
+    
+    /**
+     * Navigates the window to a new URL
+     * @param url The URL to navigate to
+     */
     public setUrl(url: string): Promise<this> { return this.chainRequests("tauri:window.set_url", { url }); }
 
+    /**
+     * Closes the window and cleans up resources
+     */
     public async close(): Promise<void> {
         if (this.closed) {
             return;
@@ -310,6 +393,10 @@ export class Window {
         this.dispose();
     }
 
+    /**
+     * Checks if the window has been closed
+     * @returns True if the window is closed, false otherwise
+     */
     public isClosed(): boolean {
         return this.closed;
     }

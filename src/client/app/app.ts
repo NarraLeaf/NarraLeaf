@@ -1,6 +1,5 @@
 import { NarraLeaf } from "@/core/build/constants";
-import { CrashReport } from "@/main_legacy/app/types";
-import { CriticalRendererProcessError } from "@/main_legacy/utils/error";
+import { CriticalRendererProcessError } from "@/client/components/lib/utils/error";
 import { EventEmitter } from "events";
 import { RootPath } from "narraleaf-react";
 import { AppAPI } from "./api";
@@ -28,7 +27,7 @@ export class App extends AppAPI {
         this.config = config;
     }
 
-    public getCrashReport(): CrashReport | null {
+    public getCrashReport(): any | null {
         return this.config.appInfo.crashReport;
     }
 

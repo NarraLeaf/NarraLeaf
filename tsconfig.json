@@ -13,10 +13,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@core/*": ["./src/core/*"]
-    },
-    "typeRoots": [
-      "./src/core/@types"
-    ]
+    }
   },
   "include": ["src"],
+  "exclude": ["src/core"]
 }

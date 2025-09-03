@@ -26,5 +26,4 @@
  * @author: Nomen (helloyork) https://github.com/helloyork
  * @license: MPL-2.0
  */
-export * from "@/main_legacy/index";
-export * from "@/core/core";
+export * from "@/service/index";

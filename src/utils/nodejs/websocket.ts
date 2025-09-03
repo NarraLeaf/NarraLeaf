@@ -1,7 +1,10 @@
 import {WebSocket, WebSocketServer} from "ws";
 import {EventEmitter} from "events";
-import { AppEventToken } from "@/main_legacy/app/types";
 import url from "url";
+
+export type AppEventToken = {
+    cancel: () => void;
+};
 
 export type WSEventProp = {
     type: WSEventType;

@@ -48,9 +48,11 @@
     "@swc/core-win32-x64-msvc": "^1.10.18",
     "@swc/wasm": "^1.10.18",
     "@tailwindcss/postcss": "^4.1.5",
+    "@tauri-apps/cli": "^2.8.3",
     "autoprefixer": "^10.4.17",
     "babel-loader": "^9.2.1",
     "chalk": "^4.1.2",
+    "chokidar": "^3.5.3",
     "commander": "^13.1.0",
     "css-loader": "^7.1.2",
     "ejs": "^3.1.10",
@@ -59,6 +61,7 @@
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "msgpack-lite": "^0.1.26",
+    "pkg": "^5.8.1",
     "postcss": "^8.4.35",
     "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.1",
@@ -66,10 +69,7 @@
     "uglify-js": "^3.19.3",
     "webpack": "^5.98.0",
     "ws": "^8.18.1",
-    "zod": "^3.24.2",
-    "chokidar": "^3.5.3",
-    "@tauri-apps/cli": "^2.8.3",
-    "pkg": "^5.8.1"
+    "zod": "^3.24.2"
   },
   "bundledDependencies": [
     "postcss-loader"
@@ -89,7 +89,7 @@
     "esbuild-css-modules-plugin": "^3.1.4",
     "fs-extra": "^11.3.0",
     "motion": "^11.15.10",
-    "narraleaf-react": "^0.6.0",
+    "narraleaf-react": "0.7.0",
     "tsc-alias": "^1.8.10",
     "webpack-node-externals": "^3.0.0"
   },

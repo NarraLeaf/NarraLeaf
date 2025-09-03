@@ -1,10 +1,9 @@
-import { SavedGame, SavedGameMetadata } from "@/client/_app/types";
-import { useFlush } from "@/client/_app/utils/flush";
-import { LiveGame, useGame } from "narraleaf-react";
+import { LiveGame, SavedGame, useGame } from "narraleaf-react";
 import React, { useEffect } from "react";
 import { NarraLeaf, QuickSaveId } from "@core/build/constants";
 import { safeClone } from "@/utils/pure/object";
 import { SavedGameMeta } from "@/core/game/save";
+import { useFlush } from "@/client/components/lib/utils/flush";
 
 export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;

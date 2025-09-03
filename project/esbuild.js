@@ -21,14 +21,15 @@ const external = [
   "react/jsx-runtime",
   "react",
   "react-dom",
+  "@core/*",
 ];
 
 const alias = {
   '@': './src',
-  '@core': './src/core',
+  // '@core': './src/core',
   '@cli': './src/cli',
   '@client': './src/client',
-  '@main': './src/main',
+  '@service': './src/service',
 };
 
 const common = {
@@ -88,14 +89,5 @@ Promise.all([
       '.css': 'css',
     },
     sourcemap: true,
-  }),
-  esbuild.build({
-    ...common,
-    entryPoints: ['src/preload.ts'],
-    external,
-    format: 'cjs',
-    outfile: 'dist/preload.js',
-    target: 'node16',
-    minify: !isDev,
   }),
 ]).catch(() => process.exit(1));
