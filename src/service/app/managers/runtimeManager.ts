@@ -21,7 +21,7 @@ export class RuntimeManager extends Manager<null> {
             await this.ipcClient.connect();
         }
 
-        const metadata = await this.ipcClient.sendRequest<"tauri:app.get_metadata">("tauri:app.get_metadata");
+        const metadata = await this.ipcClient.sendRuntimeRequest<"tauri:app.get_metadata">("tauri:app.get_metadata");
         if (!metadata.success) {
             throw new Error(`Failed to get app metadata: ${metadata.error}`);
         }
@@ -38,7 +38,7 @@ export class RuntimeManager extends Manager<null> {
     public async showErrorDialog(title: string, message: string): Promise<void> {
         this.assertAppMetadata();
 
-        this.ipcClient.sendRequest<"tauri:dialog.message">("tauri:dialog.message", {    
+        this.ipcClient.sendRuntimeRequest<"tauri:dialog.message">("tauri:dialog.message", {    
             message,
             options: { title }
         });
@@ -54,7 +54,7 @@ export class RuntimeManager extends Manager<null> {
         const code = ok ? 0 : 1;
 
         if (this.ipcClient.getStats().connected) {
-            this.ipcClient.sendRequest<"tauri:app.quit">("tauri:app.quit")
+            this.ipcClient.sendRuntimeRequest<"tauri:app.quit">("tauri:app.quit")
                 .then(() => this.ipcClient.close())
                 .then(() => process.exit(code));
         } else {

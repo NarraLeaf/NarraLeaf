@@ -19,6 +19,7 @@ import {
   WindowMaximizablePayload,
   WindowTransparentPayload,
   WindowFullscreenPayload,
+  WindowUrlPayload,
   OpenDialogOptions,
   SaveDialogOptions,
   MessageDialogOptions,
@@ -39,6 +40,8 @@ export type ServiceRequestResult = {
     "narraleaf:app.quit": void;
     "narraleaf:app.reload": void;
     "narraleaf:app.request": any;
+    "sidecar:window.on_close": { label: string; timestamp: number };
+    "sidecar:ping": void;
 };
 
 export type ServiceRequestPayload = {
@@ -49,6 +52,8 @@ export type ServiceRequestPayload = {
     "narraleaf:app.quit": { reason?: Error | null };
     "narraleaf:app.reload": null;
     "narraleaf:app.request": { payload: any };
+    "sidecar:window.on_close": { label: string; timestamp: number };
+    "sidecar:ping": null;
 };
 
 export type RuntimeAppMetadata = {
@@ -86,6 +91,7 @@ export type RuntimeRequestResult = {
     "tauri:window.set_maximizable": void;
     "tauri:window.set_transparent": void;
     "tauri:window.set_fullscreen": void;
+    "tauri:window.set_url": void;
     "tauri:dialog.open": string | null;
     "tauri:dialog.save": string | null;
     "tauri:dialog.message": void;
@@ -124,6 +130,7 @@ export type RuntimeRequestPayload = {
     "tauri:window.set_maximizable": WindowMaximizablePayload;
     "tauri:window.set_transparent": WindowTransparentPayload;
     "tauri:window.set_fullscreen": WindowFullscreenPayload;
+    "tauri:window.set_url": WindowUrlPayload;
     "tauri:dialog.open": OpenDialogOptions | undefined;
     "tauri:dialog.save": SaveDialogOptions | undefined;
     "tauri:dialog.message": { message: string; options?: MessageDialogOptions };
@@ -145,3 +152,13 @@ export type RuntimeRequestPayload = {
 
 export type ServiceRequestTypes = Extract<keyof ServiceRequestResult, keyof ServiceRequestPayload>;
 export type RuntimeRequestTypes = Extract<keyof RuntimeRequestResult, keyof RuntimeRequestPayload>;
+
+export type { 
+    SidecarMessage, 
+    ServiceRequestMessage, 
+    ServiceResponseMessage, 
+    RuntimeRequestMessage, 
+    RuntimeResponseMessage,
+    VersionCheckMessage,
+    VersionResponseMessage
+} from './types';

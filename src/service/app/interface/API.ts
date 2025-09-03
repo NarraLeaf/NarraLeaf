@@ -2,17 +2,20 @@ import type { AppConfig } from "./App";
 import { WindowConfig } from "./types";
 import { Window } from "./window/Window";
 import { MainServiceIPCClient } from "../ipc/socket";
-import { RuntimeRequestTypes, RuntimeRequestPayload, RuntimeRequestResult } from "../ipc/protocol";
-import { ResponseMessage } from "../ipc/types";
+import { RuntimeRequestTypes, RuntimeRequestPayload, RuntimeRequestResult, ServiceRequestTypes, ServiceRequestPayload, RuntimeResponseMessage } from "../ipc/protocol";
+import { WindowManager } from "./window/WindowManager";
 
 export class API {
+    protected readonly windowManager: WindowManager;
     constructor(
         protected readonly ipcClient: MainServiceIPCClient,
         protected readonly config: AppConfig
-    ) {}
+    ) {
+        this.windowManager = new WindowManager(this);
+    }
 
     public createWindow(config: WindowConfig): Promise<Window> {
-        return Window.create(config, this);
+        return this.windowManager.createWindow(config);
     }
 
     /**@internal */
@@ -21,7 +24,15 @@ export class API {
             T,
             ...RuntimeRequestPayload[T] extends null ? [] : [RuntimeRequestPayload[T]]
         ]
-    ): Promise<ResponseMessage<RuntimeRequestResult[T]>> {
-        return this.ipcClient.sendRequest(...args);
+    ): Promise<RuntimeResponseMessage<RuntimeRequestResult[T]>> {
+        return this.ipcClient.sendRuntimeRequest(...args);
+    }
+
+    /**@internal */
+    public onMessage<T extends ServiceRequestTypes = any>(
+        requestType: T,
+        callback: (payload: ServiceRequestPayload[T]) => void
+    ): VoidFunction {
+        return this.ipcClient.onMessage(requestType, callback);
     }
 }

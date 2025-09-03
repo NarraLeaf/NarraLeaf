@@ -3,14 +3,16 @@ import { EventEmitter } from 'events';
 import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
-import { RuntimeRequestPayload, RuntimeRequestResult, RuntimeRequestTypes } from './protocol';
+import { RuntimeRequestPayload, RuntimeRequestResult, RuntimeRequestTypes, ServiceRequestPayload, ServiceRequestTypes } from './protocol';
 import {
     ConnectionStatus,
     MAX_MESSAGE_SIZE,
     MessageHandler,
-    RequestMessage,
-    ResponseMessage,
+    ServiceRequestMessage,
+    ServiceResponseMessage,
     SidecarMessage,
+    RuntimeRequestMessage,
+    RuntimeResponseMessage,
     VersionResponseMessage
 } from './types';
 import { IPC_PROTOCOL_VERSION } from '../constants';
@@ -28,8 +30,10 @@ export interface IPCEvents {
     
     // Message events
     message: (message: SidecarMessage) => void;
-    request: (message: RequestMessage) => void;
-    response: (message: ResponseMessage) => void;
+    serviceRequest: (message: ServiceRequestMessage) => void;
+    serviceResponse: (message: ServiceResponseMessage) => void;
+    runtimeRequest: (message: RuntimeRequestMessage) => void;
+    runtimeResponse: (message: RuntimeResponseMessage) => void;
     versionResponse: (message: any) => void;
     
     // Error events
@@ -72,7 +76,7 @@ export class MainServiceIPCClient extends EventEmitter {
     /**
      * Register a custom message handler for specific request types
      */
-    public registerHandler(requestType: string, handler: MessageHandler): void {
+    public registerHandler<T extends ServiceRequestTypes = any>(requestType: T, handler: MessageHandler): void {
         if (this.messageHandlers.has(requestType)) {
             this.logger.warn(`Handler for ${requestType} already registered`);
         }
@@ -84,7 +88,7 @@ export class MainServiceIPCClient extends EventEmitter {
     /**
      * Unregister a message handler
      */
-    public unregisterHandler(requestType: string): boolean {
+    public unregisterHandler(requestType: ServiceRequestTypes): boolean {
         const removed = this.messageHandlers.delete(requestType);
         if (removed) {
             this.logger.debug(`Unregistered handler for: ${requestType}`);
@@ -112,6 +116,20 @@ export class MainServiceIPCClient extends EventEmitter {
             listeners.delete(listener);
             this.off(event, listener);
         }
+    }
+
+    public onMessage<T extends ServiceRequestTypes = any>(requestType: T, callback: (payload: ServiceRequestPayload[T]) => void): VoidFunction {
+        const handler = (message: ServiceRequestMessage) => {
+            if (message.request_type === requestType) {
+                callback(message.payload);
+            }
+        };
+        
+        this.addEventListener('serviceRequest', handler);
+
+        return () => {
+            this.removeEventListener('serviceRequest', handler);
+        };
     }
 
     /**
@@ -179,52 +197,56 @@ export class MainServiceIPCClient extends EventEmitter {
     }
 
     /**
-     * Send a request message and wait for response
+     * Send a runtime request message and wait for response (tauri: operations)
      */
-    public async sendRequest<T extends RuntimeRequestTypes = any>(
+    public async sendRuntimeRequest<T extends RuntimeRequestTypes = any>(
         ...args: [
             T,
             ...RuntimeRequestPayload[T] extends null ? [] : [RuntimeRequestPayload[T]]
         ]
-    ): Promise<ResponseMessage<RuntimeRequestResult[T]>> {
+    ): Promise<RuntimeResponseMessage<RuntimeRequestResult[T]>> {
         const requestType = args[0];
         const payload = args[1];
 
         return new Promise((resolve, reject) => {
             const requestId = (++this.messageIdCounter).toString();
-            const request: RequestMessage = {
-                type: 'Request',
+            const responseChannel = `response_${requestId}`;
+            const request: RuntimeRequestMessage = {
+                type: 'RuntimeRequest',
                 id: requestId,
                 request_type: requestType,
-                payload
+                payload,
+                response_channel: responseChannel
             };
 
             // Set up timeout
             const timeout = setTimeout(() => {
                 this.pendingRequests.delete(requestId);
-                reject(new Error(`Request timeout for ${requestType}`));
+                reject(new Error(`Runtime request timeout for ${requestType}`));
             }, 10000); // 10 second timeout
 
             // Store pending request
             this.pendingRequests.set(requestId, { resolve, reject, timeout });
 
-            // Send request
+            // Send runtime request
             if (!this.send(request)) {
                 this.pendingRequests.delete(requestId);
                 clearTimeout(timeout);
-                reject(new Error('Failed to send request'));
+                reject(new Error('Failed to send runtime request'));
                 return;
             }
 
-            this.logger.debug(`Sent request: ${requestType} (ID: ${requestId})`);
+            this.logger.debug(`Sent runtime request: ${requestType} (ID: ${requestId})`);
         });
     }
+
+
 
     /**
      * Send ping message
      */
-    public ping(): Promise<ResponseMessage<RuntimeRequestResult["tauri:ping"]>> {
-        return this.sendRequest("tauri:ping");
+    public ping(): Promise<RuntimeResponseMessage<RuntimeRequestResult["tauri:ping"]>> {
+        return this.sendRuntimeRequest("tauri:ping");
     }
 
     /**
@@ -358,14 +380,14 @@ export class MainServiceIPCClient extends EventEmitter {
      */
     private setupDefaultHandlers(): void {
         // Register default handlers for common request types
-        this.registerHandler('tauri:ping', {
+        this.registerHandler("sidecar:ping", {
             handleMessage: async (message) => {
                 return {
-                    type: 'Response',
-                    id: (message as RequestMessage).id,
+                    type: 'ServiceResponse',
+                    id: (message as ServiceRequestMessage).id,
                     success: true,
                     data: Date.now()
-                } as ResponseMessage;
+                } as ServiceResponseMessage;
             }
         });
     }
@@ -470,13 +492,13 @@ export class MainServiceIPCClient extends EventEmitter {
 
         // Handle specific message types
         switch (message.type) {
-            case 'Request':
-                this.emit('request', message);
-                await this.handleRequest(message as RequestMessage);
+            case 'ServiceRequest':
+                this.emit('serviceRequest', message);
+                await this.handleServiceRequest(message as ServiceRequestMessage);
                 break;
-            case 'Response':
-                this.emit('response', message);
-                await this.handleResponse(message as ResponseMessage);
+            case 'RuntimeResponse':
+                this.emit('runtimeResponse', message);
+                await this.handleRuntimeResponse(message as RuntimeResponseMessage);
                 break;
             case 'VersionResponse':
                 this.emit('versionResponse', message);
@@ -485,14 +507,14 @@ export class MainServiceIPCClient extends EventEmitter {
                 await this.handleVersionCheck(message);
                 break;
             default:
-                this.logger.debug('Unhandled message type:' + (message as any).type);
+                this.logger.error('Unhandled message type:' + (message as any).type);
         }
     }
 
     /**
-     * Handle incoming request messages
+     * Handle incoming service request messages (from Rust to Sidecar)
      */
-    private async handleRequest(request: RequestMessage): Promise<void> {
+    private async handleServiceRequest(request: ServiceRequestMessage): Promise<void> {
         const handler = this.messageHandlers.get(request.request_type);
         if (handler) {
             try {
@@ -503,8 +525,8 @@ export class MainServiceIPCClient extends EventEmitter {
             } catch (error) {
                 this.logger.error(`Handler error for ${request.request_type}:` + (error as Error).message);
                 // Send error response
-                const errorResponse: ResponseMessage<never> = {
-                    type: 'Response',
+                const errorResponse: ServiceResponseMessage<never> = {
+                    type: 'ServiceResponse',
                     id: request.id,
                     success: false as false,
                     error: (error as Error).message
@@ -512,14 +534,22 @@ export class MainServiceIPCClient extends EventEmitter {
                 this.send(errorResponse);
             }
         } else {
-            this.logger.debug(`No handler registered for request type: ${request.request_type}`);
+            const errorResponse: ServiceResponseMessage<never> = {
+                type: 'ServiceResponse',
+                id: request.id,
+                success: false as false,
+                error: `No handler registered for service request type: ${request.request_type}`
+            };
+            this.send(errorResponse);
+
+            this.logger.error(`No handler registered for service request type: ${request.request_type}`);
         }
     }
 
     /**
-     * Handle incoming response messages
+     * Handle incoming runtime response messages (from Rust to Sidecar)
      */
-    private async handleResponse(response: ResponseMessage): Promise<void> {
+    private async handleRuntimeResponse(response: RuntimeResponseMessage): Promise<void> {
         const pending = this.pendingRequests.get(response.id);
         if (pending) {
             clearTimeout(pending.timeout);
@@ -528,7 +558,7 @@ export class MainServiceIPCClient extends EventEmitter {
             if (response.success) {
                 pending.resolve(response);
             } else {
-                const errorMessage = 'error' in response ? response.error : 'Request failed';
+                const errorMessage = 'error' in response ? response.error : 'Runtime request failed';
                 pending.reject(new Error(errorMessage));
             }
         }
@@ -540,7 +570,7 @@ export class MainServiceIPCClient extends EventEmitter {
     private async handleVersionCheck(message: any): Promise<void> {
         const versionResponse: VersionResponseMessage = {
             type: 'VersionResponse',
-            version: message.version,
+            version: IPC_PROTOCOL_VERSION,
             compatible: message.version === IPC_PROTOCOL_VERSION
         };
         this.send(versionResponse);

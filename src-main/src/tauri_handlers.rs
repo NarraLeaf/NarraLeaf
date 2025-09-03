@@ -129,6 +129,12 @@ impl WindowLabelProvider for WindowFullscreenPayload {
     }
 }
 
+impl WindowLabelProvider for WindowUrlPayload {
+    fn get_label(&self) -> &Option<String> {
+        &self.label
+    }
+}
+
 /**
  * Tauri Operation Executor
  *
@@ -868,6 +874,42 @@ pub async fn create_window(
     }
 
     /**
+     * Execute a window URL operation
+     */
+    pub async fn set_window_url(
+        payload: WindowUrlPayload,
+        app_handle: Option<&AppHandle>,
+    ) -> OperationResult {
+        if let Some(app) = app_handle {
+            let window_label = Self::get_window_label(&payload.label);
+            if let Some(window) = Self::get_window(app, &payload.label) {
+                match Url::parse(&payload.url) {
+                    Ok(url) => {
+                        match window.navigate(url) {
+                            Ok(_) => Self::create_success_result(
+                                format!("Window '{}' URL set successfully to '{}'", window_label, payload.url),
+                                None,
+                            ),
+                            Err(e) => Self::create_error_result(
+                                format!("Failed to navigate window '{}' to '{}': {}", window_label, payload.url, e),
+                                None,
+                            ),
+                        }
+                    }
+                    Err(e) => Self::create_error_result(
+                        format!("Invalid URL '{}' for window '{}': {}", payload.url, window_label, e),
+                        None,
+                    ),
+                }
+            } else {
+                Self::create_window_not_found_error(&window_label)
+            }
+        } else {
+            Self::create_app_handle_error()
+        }
+    }
+
+    /**
      * Execute a file system read text file operation
      */
     pub async fn read_text_file(
@@ -1573,6 +1615,12 @@ pub async fn execute_tauri_operation(
                 WindowFullscreenPayload,
             >(payload, "tauri:window.set_fullscreen");
             TauriOperationExecutor::set_window_fullscreen(window_payload, app_handle).await
+        }
+        "tauri:window.set_url" => {
+            let window_payload = TauriOperationExecutor::deserialize_payload_or_default::<
+                WindowUrlPayload,
+            >(payload, "tauri:window.set_url");
+            TauriOperationExecutor::set_window_url(window_payload, app_handle).await
         }
         "tauri:fs.read_text_file" => {
             match serde_json::from_value::<FsReadTextFilePayload>(payload) {

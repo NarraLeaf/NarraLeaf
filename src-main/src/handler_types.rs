@@ -323,6 +323,24 @@ impl Default for WindowFullscreenPayload {
 }
 
 /**
+ * Window URL payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowUrlPayload {
+    pub label: Option<String>,
+    pub url: String,
+}
+
+impl Default for WindowUrlPayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            url: String::new(),
+        }
+    }
+}
+
+/**
  * File system read text file payload
  */
 #[derive(Debug, Clone, Serialize, Deserialize)]

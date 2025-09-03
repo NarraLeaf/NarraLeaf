@@ -22,28 +22,28 @@ pub const MAX_MESSAGE_SIZE: usize = 1024 * 1024; // 1MB
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SidecarMessage {
-    /// Request from Rust to NodeJS (narraleaf: operations)
-    Request {
+    /// Service Request: Rust → Sidecar (narraleaf: and sidecar: operations)
+    ServiceRequest {
         id: String,
         request_type: String,
         payload: Value,
     },
-    /// Response from NodeJS to Rust
-    Response {
+    /// Service Response: Sidecar → Rust (response to narraleaf: and sidecar: operations)
+    ServiceResponse {
         id: String,
         success: bool,
         data: Option<Value>,
         error: Option<String>,
     },
-    /// Request from NodeJS to Rust (tauri: operations)
-    SidecarRequest {
+    /// Runtime Request: Sidecar → Rust (tauri: operations)
+    RuntimeRequest {
         id: String,
         request_type: String,
         payload: Value,
         response_channel: String, // Channel for sidecar to receive response
     },
-    /// Response from Rust to NodeJS (for tauri: operations)
-    SidecarResponse {
+    /// Runtime Response: Rust → Sidecar (response to tauri: operations)
+    RuntimeResponse {
         id: String,
         success: bool,
         data: Option<Value>,

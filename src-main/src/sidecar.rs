@@ -223,7 +223,7 @@ impl SidecarManager {
             let message_id = uuid::Uuid::new_v4().to_string();
             let response_channel = format!("sidecar_response_{}", message_id);
 
-            let message = crate::communication::SidecarMessage::SidecarRequest {
+            let message = crate::communication::SidecarMessage::RuntimeRequest {
                 id: message_id.clone(),
                 request_type: request_type.to_string(),
                 payload: payload.clone(),

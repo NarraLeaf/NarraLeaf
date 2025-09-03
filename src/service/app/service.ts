@@ -30,6 +30,7 @@ export class Service {
     
     public readonly hooks: Hooks;
     public readonly events: EventEmitter<ServiceEvents>;
+    public readonly logger: Logger;
 
     public readonly ipcClient: MainServiceIPCClient;
 
@@ -44,6 +45,7 @@ export class Service {
 
         this.hooks = new Hooks();
         this.events = new EventEmitter();
+        this.logger = new Logger("Service");
 
         this.ipcClient = ipcClient;
 

@@ -153,7 +153,7 @@ impl IPCProtocolHandler {
         }
 
         // Create sidecar message
-        let sidecar_message = crate::communication::SidecarMessage::Request {
+        let sidecar_message = crate::communication::SidecarMessage::ServiceRequest {
             id: request.id.clone(),
             request_type: request.request_type.clone(),
             payload: request.payload.clone(),
@@ -173,7 +173,7 @@ impl IPCProtocolHandler {
                     Ok(Ok(response_message)) => {
                         // Process the response
                         match response_message {
-                            crate::communication::SidecarMessage::Response { id, success, data, error } => {
+                            crate::communication::SidecarMessage::ServiceResponse { id, success, data, error } => {
                                 println!("Received response for {}: success={}", id, success);
                                 Ok(IPCResponse {
                                     id,

@@ -1,9 +1,7 @@
 import { mergeConfig } from "@/service/utils/data";
-import { App } from "../App";
-import { API } from "../API";
-import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
-import { ResponseMessage } from "../../ipc/types";
 import { SidecarServiceError } from "@/service/utils/error";
+import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
+import { API } from "../API";
 
 export interface WindowConfig {
     /**
@@ -217,6 +215,12 @@ export interface WindowConfig {
      * @default false
      */
     fullscreen?: boolean;
+
+    /**
+     * The URL to load into the window. 
+     * @optional
+     */
+    url?: string;
 };
 
 export type WindowRequestTypes = 
@@ -237,12 +241,14 @@ export type WindowRequestTypes =
    "tauri:window.set_minimizable" |
    "tauri:window.set_maximizable" |
    "tauri:window.set_transparent" |
-   "tauri:window.set_fullscreen";
+   "tauri:window.set_fullscreen" |
+   "tauri:window.set_url";
 
 export class Window {
     private readonly config: WindowConfig;
     private readonly api: API;
     private readonly label: string;
+    private cleanup: (() => void)[] = [];
     private closed: boolean = false;
 
     /**@internal */
@@ -276,22 +282,38 @@ export class Window {
         this.label = config.label;
     }
 
-    public async maximize(): Promise<this> {
-        return await this.chainRequests("tauri:window.maximize", {});
-    }
-
-    public async minimize(): Promise<this> {
-        return await this.chainRequests("tauri:window.minimize", {});
-    }
+    public maximize(): Promise<this> { return this.chainRequests("tauri:window.maximize", {}); }
+    public minimize(): Promise<this> { return this.chainRequests("tauri:window.minimize", {}); }
+    public show(): Promise<this> { return this.chainRequests("tauri:window.show", {}); }
+    public hide(): Promise<this> { return this.chainRequests("tauri:window.hide", {}); }
+    public setFocus(): Promise<this> { return this.chainRequests("tauri:window.set_focus", {}); }
+    public setPosition(x: number, y: number): Promise<this> { return this.chainRequests("tauri:window.set_position", { x, y }); }
+    public setSize(width: number, height: number): Promise<this> { return this.chainRequests("tauri:window.set_size", { width, height }); }
+    public setTitle(title: string): Promise<this> { return this.chainRequests("tauri:window.set_title", { title }); }
+    public center(): Promise<this> { return this.chainRequests("tauri:window.center", {}); }
+    public setDecorations(decorations: boolean): Promise<this> { return this.chainRequests("tauri:window.set_decorations", { decorations }); }
+    public setResizable(resizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_resizable", { resizable }); }
+    public setClosable(closable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_closable", { closable }); }
+    public setMinimizable(minimizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_minimizable", { minimizable }); }
+    public setMaximizable(maximizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_maximizable", { maximizable }); }
+    public setTransparent(transparent: boolean): Promise<this> { return this.chainRequests("tauri:window.set_transparent", { transparent }); }
+    public setFullscreen(fullscreen: boolean): Promise<this> { return this.chainRequests("tauri:window.set_fullscreen", { fullscreen }); }
+    public setUrl(url: string): Promise<this> { return this.chainRequests("tauri:window.set_url", { url }); }
 
     public async close(): Promise<void> {
+        if (this.closed) {
+            return;
+        }
+
         await this.chainRequests("tauri:window.close", {});
-        this.closed = true;
+
+        this.dispose();
     }
 
     public isClosed(): boolean {
         return this.closed;
     }
+
 
     private async initialize(): Promise<this> {
         return await this.chainRequests("tauri:window.create", {
@@ -312,10 +334,9 @@ export class Window {
             fullscreen: this.config.fullscreen,
             x: this.config.x,
             y: this.config.y,
+            url: this.config.url,
         });
     }
-
-    private setupListeners(): void {}
 
     private async request<T extends WindowRequestTypes>(
         requestType: T,
@@ -346,5 +367,12 @@ export class Window {
     ): Promise<this> {
         await this.request(requestType, payload);
         return this;
+    }
+
+    /**@internal */
+    public dispose(): void {
+        this.closed = true;
+        this.cleanup.forEach(cleanup => cleanup());
+        this.cleanup = [];
     }
 }

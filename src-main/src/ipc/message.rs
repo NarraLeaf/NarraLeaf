@@ -17,7 +17,7 @@ pub async fn process_message(
     server_state: &Arc<ServerState>,
 ) {
     match message {
-        SidecarMessage::Request { id, request_type, payload } => {
+        SidecarMessage::ServiceRequest { id, request_type, payload } => {
             // Handle request using OperationExecutor
             let result = OperationExecutor::execute_from_ipc(
                 &request_type,
@@ -26,7 +26,7 @@ pub async fn process_message(
             ).await;
 
             // Create response based on operation result
-            let response = SidecarMessage::Response {
+            let response = SidecarMessage::ServiceResponse {
                 id: id.clone(),
                 success: result.success,
                 data: result.data,
@@ -41,26 +41,26 @@ pub async fn process_message(
             }
         }
 
-        SidecarMessage::Response { id, success, data: _, error: _ } => {
+        SidecarMessage::ServiceResponse { id, success, data: _, error: _ } => {
             // Handle response from sidecar - route to waiting request
-            println!("Received response for request {}: success={}", id, success);
+            println!("Received service response for request {}: success={}", id, success);
 
             let mut pending_requests = server_state.pending_requests.write().await;
             if let Some(sender) = pending_requests.remove(id) {
                 // Send response back to waiting request
                 if let Err(_) = sender.send(message.clone()) {
-                    println!("Failed to send response to waiting request {}", id);
+                    println!("Failed to send service response to waiting request {}", id);
                 }
             } else {
-                println!("No pending request found for response {}", id);
+                println!("No pending request found for service response {}", id);
             }
         }
 
-        SidecarMessage::SidecarRequest { id, request_type, payload, response_channel: _ } => {
+        SidecarMessage::RuntimeRequest { id, request_type, payload, response_channel: _ } => {
             // Handle request from sidecar (e.g., tauri: operations)
-            println!("Received sidecar request: {} -> {}", request_type, id);
+            println!("Received runtime request: {} -> {}", request_type, id);
 
-            // Process the sidecar request using the operations framework
+            // Process the runtime request using the operations framework
             let result = OperationExecutor::execute_from_ipc(
                 &request_type,
                 payload.clone(),
@@ -68,7 +68,7 @@ pub async fn process_message(
             ).await;
 
             // Create response based on operation result
-            let response = SidecarMessage::SidecarResponse {
+            let response = SidecarMessage::RuntimeResponse {
                 id: id.clone(),
                 success: result.success,
                 data: result.data,
@@ -78,7 +78,7 @@ pub async fn process_message(
             if let Err(e) = send_message_to_client_by_id(
                 client_id, server_state, &response
             ).await {
-                println!("Failed to send sidecar request response: {}", e);
+                println!("Failed to send runtime request response: {}", e);
             }
         }
 

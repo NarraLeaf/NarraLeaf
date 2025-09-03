@@ -4,7 +4,7 @@
  * TypeScript definitions matching the Rust communication.rs protocol
  */
 
-import { RuntimeRequestPayload, RuntimeRequestTypes } from "./protocol";
+import { RuntimeRequestPayload, RuntimeRequestTypes, ServiceRequestPayload, ServiceRequestResult, ServiceRequestTypes } from "./protocol";
 
 /**
  * Communication Protocol Version
@@ -16,33 +16,63 @@ export const MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB
  * Message types for communication - matching Rust SidecarMessage enum
  */
 export type SidecarMessage =
-  | RequestMessage
-  | ResponseMessage
+  | ServiceRequestMessage
+  | ServiceResponseMessage
+  | RuntimeRequestMessage
+  | RuntimeResponseMessage
   | VersionCheckMessage
   | VersionResponseMessage;
 
 /**
- * Request from TypeScript to Rust
+ * Service Request: Rust → Sidecar (narraleaf: and sidecar: operations)
  */
-export interface RequestMessage<T extends RuntimeRequestTypes = any> {
-  type: 'Request';
+export interface ServiceRequestMessage<T extends ServiceRequestTypes = any> {
+  type: 'ServiceRequest';
   id: string;
   request_type: T;
-  payload: RuntimeRequestPayload[T];
+  payload: ServiceRequestPayload[T];
 }
 
 /**
- * Response from Rust to TypeScript
+ * Service Response: Sidecar → Rust (response to narraleaf: and sidecar: operations)
  */
-export type ResponseMessage<T = any> =
+export type ServiceResponseMessage<T = any> =
   | {
-    type: 'Response';
+    type: 'ServiceResponse';
     id: string;
     success: true;
     data: T;
   }
   | {
-    type: 'Response';
+    type: 'ServiceResponse';
+    id: string;
+    success: false;
+    error: string;
+  };
+
+/**
+ * Runtime Request: Sidecar → Rust (tauri: operations)
+ */
+export interface RuntimeRequestMessage<T extends RuntimeRequestTypes = any> {
+  type: 'RuntimeRequest';
+  id: string;
+  request_type: T;
+  payload: RuntimeRequestPayload[T];
+  response_channel: string;
+}
+
+/**
+ * Runtime Response: Rust → Sidecar (response to tauri: operations)
+ */
+export type RuntimeResponseMessage<T = any> =
+  | {
+    type: 'RuntimeResponse';
+    id: string;
+    success: true;
+    data: T;
+  }
+  | {
+    type: 'RuntimeResponse';
     id: string;
     success: false;
     error: string;
@@ -78,8 +108,8 @@ export enum ConnectionStatus {
 /**
  * Message handler interface
  */
-export interface MessageHandler {
-  handleMessage(message: SidecarMessage): Promise<SidecarMessage | null>;
+export interface MessageHandler<T extends ServiceRequestTypes = any> {
+  handleMessage(message: ServiceRequestMessage<T>): Promise<ServiceResponseMessage<ServiceRequestResult[T]> | null>;
 }
 
 /**
@@ -250,6 +280,14 @@ export interface WindowTransparentPayload {
 export interface WindowFullscreenPayload {
   label?: string;
   fullscreen: boolean;
+}
+
+/**
+ * Window URL configuration
+ */
+export interface WindowUrlPayload {
+  label?: string;
+  url: string;
 }
 
 // ============================================================================
@@ -438,32 +476,32 @@ export interface AppQuitPayload {
 /**
  * App get version payload
  */
-export interface AppGetVersionPayload {}
+export interface AppGetVersionPayload { }
 
 /**
  * App get name payload
  */
-export interface AppGetNamePayload {}
+export interface AppGetNamePayload { }
 
 /**
  * App get tauri version payload
  */
-export interface AppGetTauriVersionPayload {}
+export interface AppGetTauriVersionPayload { }
 
 /**
  * App show payload
  */
-export interface AppShowPayload {}
+export interface AppShowPayload { }
 
 /**
  * App hide payload
  */
-export interface AppHidePayload {}
+export interface AppHidePayload { }
 
 /**
  * App get metadata payload
  */
-export interface AppGetMetadataPayload {}
+export interface AppGetMetadataPayload { }
 
 // ============================================================================
 // Clipboard Types
