@@ -18,14 +18,14 @@
  * Add this to your `Cargo.toml`:
  * ```toml
  * [dependencies]
- * narraleaf-host = { version = "0.1.0", features = ["tauri-plugin"] }
+ * narraleaf-runtime = { version = "0.1.0", features = ["tauri-plugin"] }
  * ```
  *
  * Then in your `main.rs`:
  * ```rust
  * fn main() {
  *     tauri::Builder::default()
- *         .plugin(narraleaf_host::init())
+ *         .plugin(narraleaf_runtime::init())
  *         .run(tauri::generate_context!())
  *         .expect("error while running tauri application");
  * }

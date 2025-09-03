@@ -1,4 +1,4 @@
-import { SidecarInternalError } from "@/service/utils/error";
+import { ServiceInternalError } from "@/service/utils/error";
 
 export abstract class Manager<Dependencies extends Manager<any>[] | null = null> {
     private _initialized = false;
@@ -19,7 +19,7 @@ export abstract class Manager<Dependencies extends Manager<any>[] | null = null>
         if (dependencies) {
             for (const dependency of dependencies) {
                 if (!dependency._initialized) {
-                    throw new SidecarInternalError("Dependency not initialized");
+                    throw new ServiceInternalError("Dependency not initialized");
                 }
             }
         }
@@ -31,6 +31,9 @@ export abstract class Manager<Dependencies extends Manager<any>[] | null = null>
     }
 
     protected getDependencies(): Dependencies extends null ? [] : Dependencies {
+        if (!this._initialized) {
+            throw new ServiceInternalError("Manager not initialized");
+        }
         return (this._dependencies || []) as Dependencies extends null ? [] : Dependencies;
     }
 }

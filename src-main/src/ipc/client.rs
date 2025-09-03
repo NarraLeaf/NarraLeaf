@@ -61,15 +61,22 @@ pub async fn handle_client(
 
             // Extract and parse message
             let message_data = &buffer[8..total_length];
+            println!("[CLIENT] Received message data ({} bytes): {}", message_data.len(), String::from_utf8_lossy(message_data));
+            
             let message = match serde_json::from_slice::<crate::communication::SidecarMessage>(message_data) {
-                Ok(msg) => msg,
-                Err(_) => {
+                Ok(msg) => {
+                    println!("[CLIENT] Successfully parsed message: {:?}", msg);
+                    msg
+                },
+                Err(e) => {
+                    println!("[CLIENT] Failed to parse message: {}", e);
                     buffer.drain(..total_length);
                     continue;
                 }
             };
 
             // Handle message
+            println!("[CLIENT] Processing message for client: {}", client_id);
             process_message(&message, &client_id, &server_state).await;
 
             // Remove processed message

@@ -1,5 +1,5 @@
 [package]
-name = "narraleaf-runtime"
+name = "narraleaf_runtime"
 version = "0.1.0"
 authors = ["Nomen (helloyork) helloyork@icloud.com"]
 edition = "2024"
@@ -24,7 +24,7 @@ os_info = "3.12"
 sys-locale = "0.3"
 
 [lib]
-name = "narraleaf_host"
+name = "narraleaf_runtime"
 path = "src/lib.rs"
 crate-type = ["lib"]
 

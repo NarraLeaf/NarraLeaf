@@ -32,11 +32,20 @@ pub fn get_global_plugin_state() -> Option<Arc<PluginState>> {
 }
 
 /**
+ * Check if debug mode is enabled via command line arguments
+ */
+fn is_debug_mode_enabled() -> bool {
+    let args: Vec<String> = std::env::args().collect();
+    args.iter().any(|arg| arg == "--debug" || arg == "-d")
+}
+
+/**
  * Plugin state shared across the Tauri app
  */
 pub struct PluginState {
     pub sidecar_manager: Arc<Mutex<SidecarManager>>,
     pub app_handle: AppHandle,
+    pub debug_mode: bool,
 }
 
 /**
@@ -80,14 +89,21 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             println!("Initializing NarraLeaf Tauri Runtime plugin...");
             println!("Protocol version: {}", PROTOCOL_VERSION);
 
+            // Check if debug mode is enabled
+            let debug_mode = is_debug_mode_enabled();
+            if debug_mode {
+                println!("DEBUG MODE ENABLED: Sidecar output will be redirected to main console");
+            }
+
             // Generate random socket connection string and start IPC server
             let connection_string = format!("narraleaf-ipc-{}", Uuid::new_v4().simple());
 
             // Create plugin state
-            let sidecar_manager = Arc::new(Mutex::new(SidecarManager::new(connection_string.clone(), app.app_handle().clone())));
+            let sidecar_manager = Arc::new(Mutex::new(SidecarManager::new(connection_string.clone(), app.app_handle().clone(), debug_mode)));
             let plugin_state = PluginState {
                 sidecar_manager: Arc::clone(&sidecar_manager),
                 app_handle: app.app_handle().clone(),
+                debug_mode,
             };
 
             // Start sidecar process with socket connection string as parameter
@@ -102,7 +118,12 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                 let mut manager = sidecar_manager_clone.lock().await;
 
                 // Start the sidecar process
-                if let Err(e) = manager.start_sidecar_and_ipc("node", &connection_string_clone).await {
+                let sidecar_path = if cfg!(target_os = "windows") {
+                    "resources/service/sidecar.exe"
+                } else {
+                    "resources/service/sidecar"
+                };
+                if let Err(e) = manager.start_sidecar_and_ipc(sidecar_path, &connection_string_clone).await {
                     eprintln!("Failed to start sidecar: {}", e);
                     manager.state = crate::sidecar::SidecarState::Failed;
                 } else {

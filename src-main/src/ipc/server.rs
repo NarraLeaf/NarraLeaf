@@ -138,6 +138,43 @@ impl IPCServer {
     }
 
     /**
+     * Wait for server to be ready to accept connections
+     * 
+     * @param timeout_ms - Maximum time to wait in milliseconds
+     * @returns Result indicating if server is ready
+     */
+    pub async fn wait_for_ready(&self, timeout_ms: u64) -> Result<(), String> {
+        let start_time = std::time::Instant::now();
+        let timeout = std::time::Duration::from_millis(timeout_ms);
+        let mut last_status_log = std::time::Instant::now();
+        
+        println!("Waiting for IPC server to become ready (timeout: {}ms)...", timeout_ms);
+        
+        while start_time.elapsed() < timeout {
+            if self.is_running().await {
+                println!("IPC server is running, verifying listener readiness...");
+                // Give a small additional delay for the listener to be fully established
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                println!("IPC server is fully ready to accept connections");
+                return Ok(());
+            }
+            
+            // Log status every second
+            if last_status_log.elapsed() >= std::time::Duration::from_millis(1000) {
+                let elapsed = start_time.elapsed().as_millis();
+                println!("Still waiting for IPC server... ({}ms elapsed)", elapsed);
+                last_status_log = std::time::Instant::now();
+            }
+            
+            // Poll every 50ms
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+        }
+        
+        let elapsed = start_time.elapsed().as_millis();
+        Err(format!("IPC server failed to become ready within {}ms (actual wait: {}ms)", timeout_ms, elapsed))
+    }
+
+    /**
      * Get server state (for internal use)
      *
      * @returns Reference to server state
@@ -154,20 +191,31 @@ impl IPCServer {
         server_state: Arc<ServerState>,
         mut shutdown_rx: oneshot::Receiver<()>,
     ) {
-        // Update running status
+        println!("[SERVER] Starting server loop for: {}", connection_string);
+
+        // Start listening for connections
+        let listener = match create_listener(&connection_string).await {
+            Ok(listener) => {
+                println!("[SERVER] Listener created successfully");
+                listener
+            },
+            Err(e) => {
+                println!("[SERVER] Failed to create listener: {}", e);
+                // Make sure to set running status to false on failure
+                {
+                    let mut running = server_state.is_running.write().await;
+                    *running = false;
+                }
+                return;
+            }
+        };
+
+        // Update running status only after successful listener creation
         {
             let mut running = server_state.is_running.write().await;
             *running = true;
         }
-
-        // Start listening for connections
-        let listener = match create_listener(&connection_string).await {
-            Ok(listener) => listener,
-            Err(e) => {
-                println!("Failed to create listener: {}", e);
-                return;
-            }
-        };
+        println!("[SERVER] Server state set to running");
 
         println!("IPC Server started on: {}", connection_string);
 

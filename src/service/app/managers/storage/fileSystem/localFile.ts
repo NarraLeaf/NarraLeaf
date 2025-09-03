@@ -2,9 +2,8 @@ import path from "path";
 import { Fs } from "@/utils/nodejs/fs";
 import { Metadata } from "@/service/app/managers/storage/fileSystem/localFileMetadata";
 import { StoreProvider } from "@/service/app/managers/storage/storeProvider";
-import { SavedGameResult } from "@core/game/SavedGameResult";
-import { SavedGameMeta, SaveType } from "@core/game/save";
 import { SavedGame } from "narraleaf-react";
+import { SavedGameMeta, SavedGameResult, SaveType } from "../../storageManager";
 
 export type StorageConfig = {
     dir: string;

@@ -10,7 +10,7 @@ import { MainServiceIPCClient } from "../ipc/socket";
 
 // Utils
 import { Logger } from "@/service/utils/logger";
-import { SidecarRuntimeError, SidecarServiceError } from "@/service/utils/error";
+import { ServiceRuntimeError, ServiceError } from "@/service/utils/error";
 
 // Config
 import { ENV_IPC_CONNECTION_STRING } from "../constants";
@@ -80,7 +80,7 @@ export class App extends API {
     
     protected assertReady(): asserts this is { isReady: true } {
         if (!this.isReady) {
-            throw new SidecarServiceError("Trying to access App before it is ready");
+            throw new ServiceError("Trying to access App before it is ready");
         }
     }
 }
@@ -88,7 +88,7 @@ export class App extends API {
 function getConnectionString(): string {
     const connectionString = process.env[ENV_IPC_CONNECTION_STRING];
     if (!connectionString) {
-        throw new SidecarRuntimeError(`Environment variable ${ENV_IPC_CONNECTION_STRING} is not set`);
+        throw new ServiceRuntimeError(`Environment variable ${ENV_IPC_CONNECTION_STRING} is not set`);
     }
 
     return connectionString;

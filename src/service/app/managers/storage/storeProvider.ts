@@ -1,6 +1,5 @@
-import { SavedGameMeta, SaveType } from "@core/game/save";
-import { SavedGameResult } from "@core/game/SavedGameResult";
 import { SavedGame } from "narraleaf-react";
+import type { SavedGameMeta, SavedGameResult, SaveType } from "../storageManager";
 
 export abstract class StoreProvider {
     abstract get(name: string): Promise<SavedGameResult | null>;

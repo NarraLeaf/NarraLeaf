@@ -1,18 +1,18 @@
-export class SidecarRuntimeError extends Error {
+export class ServiceRuntimeError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "SidecarRuntimeError";
     }
 }
 
-export class SidecarServiceError extends Error {
+export class ServiceError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "SidecarServiceError";
     }
 }
 
-export class SidecarInternalError extends Error {
+export class ServiceInternalError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "SidecarInternalError";

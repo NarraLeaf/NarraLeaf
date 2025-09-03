@@ -15,7 +15,6 @@ const external = [
   "electron",
   "electron-builder",
   "webpack",
-  "chalk",
   "html-webpack-plugin",
   "narraleaf-react",
   "react/jsx-runtime",

@@ -1,5 +1,5 @@
 import { mergeConfig } from "@/service/utils/data";
-import { SidecarServiceError } from "@/service/utils/error";
+import { ServiceError } from "@/service/utils/error";
 import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
 import { API } from "../API";
 
@@ -430,7 +430,7 @@ export class Window {
         payload: Omit<RuntimeRequestPayload[T], "label">
     ): Promise<RuntimeRequestResult[T]> {
         if (this.closed) {
-            throw new SidecarServiceError(`Trying to execute requests on a closed window (label: ${this.label})`);
+            throw new ServiceError(`Trying to execute requests on a closed window (label: ${this.label})`);
         }
 
         const result = await this.api.sendRequest(...[requestType, ...[{
@@ -442,7 +442,7 @@ export class Window {
         ]);
 
         if (!result.success) {
-            throw new SidecarServiceError(`Failed to execute request ${requestType}: ${result.error}`);
+            throw new ServiceError(`Failed to execute request ${requestType}: ${result.error}`);
         }
 
         return result.data;

@@ -1,4 +1,4 @@
-import { SidecarRuntimeError } from "@/service/utils/error";
+import { ServiceRuntimeError } from "@/service/utils/error";
 import { RuntimeAppMetadata } from "../ipc/protocol";
 import { MainServiceIPCClient } from "../ipc/socket";
 import { Manager } from "./manager";
@@ -64,7 +64,7 @@ export class RuntimeManager extends Manager<null> {
 
     private assertAppMetadata(): asserts this is { _appMetadata: RuntimeAppMetadata } {
         if (!this._appMetadata) {
-            throw new SidecarRuntimeError("App metadata not initialized");
+            throw new ServiceRuntimeError("App metadata not initialized");
         }
     }
 }
