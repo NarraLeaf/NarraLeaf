@@ -13,6 +13,12 @@ import {
   WindowTitlePayload,
   WindowCenterPayload,
   WindowDecorationsPayload,
+  WindowResizablePayload,
+  WindowClosablePayload,
+  WindowMinimizablePayload,
+  WindowMaximizablePayload,
+  WindowTransparentPayload,
+  WindowFullscreenPayload,
   OpenDialogOptions,
   SaveDialogOptions,
   MessageDialogOptions,
@@ -22,7 +28,7 @@ import {
 } from "./types";
 
 /**
- * "narraleaf:" namespace
+ * "narraleaf:"/"sidecar:" namespace
  */
 
 export type ServiceRequestResult = {
@@ -74,6 +80,12 @@ export type RuntimeRequestResult = {
     "tauri:window.set_title": void;
     "tauri:window.center": void;
     "tauri:window.set_decorations": void;
+    "tauri:window.set_resizable": void;
+    "tauri:window.set_closable": void;
+    "tauri:window.set_minimizable": void;
+    "tauri:window.set_maximizable": void;
+    "tauri:window.set_transparent": void;
+    "tauri:window.set_fullscreen": void;
     "tauri:dialog.open": string | null;
     "tauri:dialog.save": string | null;
     "tauri:dialog.message": void;
@@ -106,6 +118,12 @@ export type RuntimeRequestPayload = {
     "tauri:window.set_title": WindowTitlePayload;
     "tauri:window.center": WindowCenterPayload;
     "tauri:window.set_decorations": WindowDecorationsPayload;
+    "tauri:window.set_resizable": WindowResizablePayload;
+    "tauri:window.set_closable": WindowClosablePayload;
+    "tauri:window.set_minimizable": WindowMinimizablePayload;
+    "tauri:window.set_maximizable": WindowMaximizablePayload;
+    "tauri:window.set_transparent": WindowTransparentPayload;
+    "tauri:window.set_fullscreen": WindowFullscreenPayload;
     "tauri:dialog.open": OpenDialogOptions | undefined;
     "tauri:dialog.save": SaveDialogOptions | undefined;
     "tauri:dialog.message": { message: string; options?: MessageDialogOptions };

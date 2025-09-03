@@ -1,5 +1,5 @@
 import path from "path";
-import { App } from "@/service/app/app";
+import type { Service } from "@/service/app/service";
 import { StoreProvider } from "./storage/storeProvider";
 import { LocalFile } from "./storage/fileSystem/localFile";
 import { SavedGameMeta, SaveType } from "@core/game/save";
@@ -13,7 +13,7 @@ import type { RuntimeManager } from "./runtimeManager";
 export class StorageManager extends Manager<[RuntimeManager]> {
     private saveStorage: StoreProvider;
 
-    constructor(private app: App) {
+    constructor(private app: Service) {
         super();
 
         this.saveStorage = this.initializeStorage();

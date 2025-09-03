@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 /**
  * Window creation payload
@@ -10,12 +9,21 @@ pub struct WindowCreatePayload {
     pub title: String,
     pub width: f64,
     pub height: f64,
+    pub url: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub center: Option<bool>,
     pub decorations: Option<bool>,
     pub always_on_top: Option<bool>,
     pub skip_taskbar: Option<bool>,
+    pub show: Option<bool>,
+    pub resizable: Option<bool>,
+    pub closable: Option<bool>,
+    pub minimizable: Option<bool>,
+    pub maximizable: Option<bool>,
+    pub focus: Option<bool>,
+    pub transparent: Option<bool>,
+    pub fullscreen: Option<bool>,
 }
 
 /**
@@ -202,6 +210,114 @@ impl Default for WindowDecorationsPayload {
         Self {
             label: None,
             decorations: true,
+        }
+    }
+}
+
+/**
+ * Window resizable payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowResizablePayload {
+    pub label: Option<String>,
+    pub resizable: bool,
+}
+
+impl Default for WindowResizablePayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            resizable: true,
+        }
+    }
+}
+
+/**
+ * Window closable payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowClosablePayload {
+    pub label: Option<String>,
+    pub closable: bool,
+}
+
+impl Default for WindowClosablePayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            closable: true,
+        }
+    }
+}
+
+/**
+ * Window minimizable payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowMinimizablePayload {
+    pub label: Option<String>,
+    pub minimizable: bool,
+}
+
+impl Default for WindowMinimizablePayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            minimizable: true,
+        }
+    }
+}
+
+/**
+ * Window maximizable payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowMaximizablePayload {
+    pub label: Option<String>,
+    pub maximizable: bool,
+}
+
+impl Default for WindowMaximizablePayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            maximizable: true,
+        }
+    }
+}
+
+/**
+ * Window transparent payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowTransparentPayload {
+    pub label: Option<String>,
+    pub transparent: bool,
+}
+
+impl Default for WindowTransparentPayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            transparent: false,
+        }
+    }
+}
+
+/**
+ * Window fullscreen payload
+ */
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowFullscreenPayload {
+    pub label: Option<String>,
+    pub fullscreen: bool,
+}
+
+impl Default for WindowFullscreenPayload {
+    fn default() -> Self {
+        Self {
+            label: None,
+            fullscreen: false,
         }
     }
 }

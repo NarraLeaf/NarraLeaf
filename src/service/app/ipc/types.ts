@@ -104,12 +104,21 @@ export interface WindowCreatePayload {
   title: string;
   width: number;
   height: number;
+  url?: string;
   x?: number;
   y?: number;
   center?: boolean;
   decorations?: boolean;
   always_on_top?: boolean;
   skip_taskbar?: boolean;
+  show?: boolean;
+  resizable?: boolean;
+  closable?: boolean;
+  minimizable?: boolean;
+  maximizable?: boolean;
+  focus?: boolean;
+  transparent?: boolean;
+  fullscreen?: boolean;
 }
 
 /**
@@ -193,6 +202,54 @@ export interface WindowCenterPayload {
 export interface WindowDecorationsPayload {
   label?: string;
   decorations: boolean;
+}
+
+/**
+ * Window resizable configuration
+ */
+export interface WindowResizablePayload {
+  label?: string;
+  resizable: boolean;
+}
+
+/**
+ * Window closable configuration
+ */
+export interface WindowClosablePayload {
+  label?: string;
+  closable: boolean;
+}
+
+/**
+ * Window minimizable configuration
+ */
+export interface WindowMinimizablePayload {
+  label?: string;
+  minimizable: boolean;
+}
+
+/**
+ * Window maximizable configuration
+ */
+export interface WindowMaximizablePayload {
+  label?: string;
+  maximizable: boolean;
+}
+
+/**
+ * Window transparent configuration
+ */
+export interface WindowTransparentPayload {
+  label?: string;
+  transparent: boolean;
+}
+
+/**
+ * Window fullscreen configuration
+ */
+export interface WindowFullscreenPayload {
+  label?: string;
+  fullscreen: boolean;
 }
 
 // ============================================================================

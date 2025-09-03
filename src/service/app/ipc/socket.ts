@@ -182,8 +182,6 @@ export class MainServiceIPCClient extends EventEmitter {
      * Send a request message and wait for response
      */
     public async sendRequest<T extends RuntimeRequestTypes = any>(
-        // requestType: T,
-        // payload: RuntimeRequestPayload[T]
         ...args: [
             T,
             ...RuntimeRequestPayload[T] extends null ? [] : [RuntimeRequestPayload[T]]

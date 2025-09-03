@@ -1,0 +1,1 @@
+export type { WindowConfig } from "./window/Window";

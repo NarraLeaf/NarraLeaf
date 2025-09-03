@@ -67,6 +67,11 @@ pub struct IPCResponse {
  *
  * This function creates and returns a Tauri plugin that provides
  * NarraLeaf functionality to your Tauri application.
+ * 
+ * Key behavior:
+ * - Registers protocol handlers and global operations on startup
+ * - Starts sidecar process but does NOT create any windows
+ * - Windows are only created when explicitly requested by sidecar
  */
 pub fn init() -> TauriPlugin<tauri::Wry> {
     Builder::new("narraleaf")
@@ -103,6 +108,7 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                 } else {
                     println!("Sidecar started successfully with connection: {}", connection_string_clone);
                     println!("Plugin initialization completed");
+                    println!("Note: Windows will only be created when requested by sidecar");
 
                     // Monitor sidecar health and handle termination
                     manager.listen_sidecar_status().await;
@@ -116,7 +122,13 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             // Store global reference for IPC protocol handler
             let _ = GLOBAL_PLUGIN_STATE.set(plugin_state_arc);
 
+            // Add window close event listeners to existing windows (if any)
+            // Note: This will only affect windows that already exist
+            setup_window_event_listeners(&app.app_handle());
+
             println!("NarraLeaf plugin initialized successfully");
+            println!("Global operations completed");
+            println!("Waiting for sidecar to request window creation...");
             Ok(())
         })
         .on_event(move |app, event| {
@@ -147,4 +159,54 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             PrivilegeProtocolHandler::handle_uri_scheme_request(&request)
         })
         .build()
+}
+
+/**
+ * Setup window close event listeners for all existing windows
+ */
+fn setup_window_event_listeners(app: &tauri::AppHandle) {
+    // Get all existing windows
+    let windows = app.webview_windows();
+    
+    if windows.is_empty() {
+        println!("No existing windows found at startup - this is expected");
+        return;
+    }
+    
+    for (label, window) in windows {
+        println!("Setting up window close listener for existing window: {}", label);
+        
+        let window_label = label.clone();
+        let _app_handle = app.app_handle().clone();
+        
+        // Listen for window close event
+        window.on_window_event(move |event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                println!("Window close requested for: {}", window_label);
+                
+                // Send sidecar notification asynchronously
+                let window_label_clone = window_label.clone();
+                
+                tokio::spawn(async move {
+                    if let Some(plugin_state) = get_global_plugin_state() {
+                        let sidecar_manager = plugin_state.sidecar_manager.lock().await;
+                        
+                        // Send sidecar:window.on_close notification
+                        let payload = serde_json::json!({
+                            "label": window_label_clone,
+                            "timestamp": std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_millis()
+                        });
+                        
+                        match sidecar_manager.send_sidecar_request("sidecar:window.on_close", payload).await {
+                            Ok(_) => println!("Sidecar notification sent for window close: {}", window_label_clone),
+                            Err(e) => println!("Failed to send sidecar notification: {}", e),
+                        }
+                    }
+                });
+            }
+        });
+    }
 }
