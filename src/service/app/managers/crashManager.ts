@@ -14,7 +14,6 @@ export type CrashReport = {
 export class CrashManager extends Manager<[RuntimeManager]> {
     public crashFlag: FsFlag<CrashReport> | null = null;
     private crashReport: CrashReport | null = null;
-    private initialized: boolean = false;
 
     constructor(
         private app: App,
@@ -25,20 +24,9 @@ export class CrashManager extends Manager<[RuntimeManager]> {
     protected async init() {
         const [runtimeManager] = this.getDependencies();
         this.crashFlag = new FsFlag(path.join(runtimeManager.getUserDir(), AppDataNamespace.flags, "crash"));
-    }
-
-    public async initialize(): Promise<void> {
-        if (this.initialized) {
-            return;
-        }
-        this.initialized = true;
 
         this.setupErrorHandlers();
         await this.consumeCrashReport();
-    }
-
-    public isInitialized(): boolean {
-        return this.initialized;
     }
 
     private async consumeCrashReport(): Promise<void> {
