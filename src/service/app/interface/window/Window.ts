@@ -1,3 +1,10 @@
+import { mergeConfig } from "@/service/utils/data";
+import { App } from "../App";
+import { API } from "../API";
+import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
+import { ResponseMessage } from "../../ipc/types";
+import { SidecarServiceError } from "@/service/utils/error";
+
 export interface WindowConfig {
     /**
      * Unique identifier for the window.
@@ -212,8 +219,33 @@ export interface WindowConfig {
     fullscreen?: boolean;
 };
 
+export type WindowRequestTypes = 
+   "tauri:window.create" |
+   "tauri:window.maximize" |
+   "tauri:window.minimize" |
+   "tauri:window.close" |
+   "tauri:window.show" |
+   "tauri:window.hide" |
+   "tauri:window.set_focus" |
+   "tauri:window.set_position" |
+   "tauri:window.set_size" |
+   "tauri:window.set_title" |
+   "tauri:window.center" |
+   "tauri:window.set_decorations" |
+   "tauri:window.set_resizable" |
+   "tauri:window.set_closable" |
+   "tauri:window.set_minimizable" |
+   "tauri:window.set_maximizable" |
+   "tauri:window.set_transparent" |
+   "tauri:window.set_fullscreen";
+
 export class Window {
-    private config: WindowConfig;
+    private readonly config: WindowConfig;
+    private readonly api: API;
+    private readonly label: string;
+    private closed: boolean = false;
+
+    /**@internal */
     private static readonly DefaultConfig: WindowConfig = {
         label: "",
         title: "",
@@ -233,7 +265,86 @@ export class Window {
         fullscreen: false,
     };
 
-    constructor(config: WindowConfig) {
-        this.config = config;
+    /**@internal */
+    public static create(config: WindowConfig, api: API): Promise<Window> {
+        return new Window(config, api).initialize();
+    }
+
+    private constructor(config: WindowConfig, api: API) {
+        this.config = mergeConfig(config, Window.DefaultConfig);
+        this.api = api;
+        this.label = config.label;
+    }
+
+    public async maximize(): Promise<this> {
+        return await this.chainRequests("tauri:window.maximize", {});
+    }
+
+    public async minimize(): Promise<this> {
+        return await this.chainRequests("tauri:window.minimize", {});
+    }
+
+    public async close(): Promise<void> {
+        await this.chainRequests("tauri:window.close", {});
+        this.closed = true;
+    }
+
+    public isClosed(): boolean {
+        return this.closed;
+    }
+
+    private async initialize(): Promise<this> {
+        return await this.chainRequests("tauri:window.create", {
+            title: this.config.title,
+            width: this.config.width,
+            height: this.config.height,
+            center: this.config.center,
+            decorations: this.config.decorations,
+            always_on_top: this.config.alwaysOnTop,
+            skip_taskbar: this.config.taskbar,
+            show: this.config.show,
+            resizable: this.config.resizable,
+            closable: this.config.closable,
+            minimizable: this.config.minimizable,
+            maximizable: this.config.maximizable,
+            focus: this.config.focus,
+            transparent: this.config.transparent,
+            fullscreen: this.config.fullscreen,
+            x: this.config.x,
+            y: this.config.y,
+        });
+    }
+
+    private setupListeners(): void {}
+
+    private async request<T extends WindowRequestTypes>(
+        requestType: T,
+        payload: Omit<RuntimeRequestPayload[T], "label">
+    ): Promise<RuntimeRequestResult[T]> {
+        if (this.closed) {
+            throw new SidecarServiceError(`Trying to execute requests on a closed window (label: ${this.label})`);
+        }
+
+        const result = await this.api.sendRequest(...[requestType, ...[{
+            ...payload,
+            label: this.config.label,
+        }]] as [
+            T,
+            ...(RuntimeRequestPayload[T] extends null ? [] : [RuntimeRequestPayload[T]])
+        ]);
+
+        if (!result.success) {
+            throw new SidecarServiceError(`Failed to execute request ${requestType}: ${result.error}`);
+        }
+
+        return result.data;
+    }
+
+    private async chainRequests<T extends WindowRequestTypes>(
+        requestType: T,
+        payload: Omit<RuntimeRequestPayload[T], "label">
+    ): Promise<this> {
+        await this.request(requestType, payload);
+        return this;
     }
 }

@@ -28,7 +28,7 @@ import {
 } from "./types";
 
 /**
- * "narraleaf:" namespace
+ * "narraleaf:"/"sidecar:" namespace
  */
 
 export type ServiceRequestResult = {

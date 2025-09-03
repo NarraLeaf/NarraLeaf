@@ -202,3 +202,7 @@ export class Tasks {
         return this.tasks.length;
     }
 }
+
+export function mergeConfig<T, U>(config: T, defaultConfig: U): T & U {
+    return { ...defaultConfig, ...config };
+}

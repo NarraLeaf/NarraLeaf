@@ -9,6 +9,7 @@ pub struct WindowCreatePayload {
     pub title: String,
     pub width: f64,
     pub height: f64,
+    pub url: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub center: Option<bool>,

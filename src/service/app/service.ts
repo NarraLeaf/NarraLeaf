@@ -1,10 +1,9 @@
+// Utils
 import { EventEmitter } from "events";
 import { Hooks } from "../utils/data";
 import { Logger } from "../utils/logger";
 
-import { ENV_IPC_CONNECTION_STRING } from "./constants";
-import { SidecarRuntimeError } from "../utils/error";
-
+// Services
 import { MainServiceIPCClient } from "./ipc/socket";
 import { RuntimeManager, StorageManager } from "./managers";
 import { StoreProvider } from "./managers/storage/storeProvider";
@@ -28,7 +27,7 @@ export class Service {
 
     private config: ServiceConfig;
 
-    public readonly logger: Logger;
+    
     public readonly hooks: Hooks;
     public readonly events: EventEmitter<ServiceEvents>;
 
@@ -37,17 +36,16 @@ export class Service {
     public readonly runtimeManager: RuntimeManager;
     public readonly storageManager: StorageManager;
 
-    constructor(config: Partial<ServiceConfig> = {}) {
+    constructor(ipcClient: MainServiceIPCClient, config: Partial<ServiceConfig> = {}) {
         this.config = {
             ...Service.DefaultConfig,
             ...config,
         };
 
-        this.logger = new Logger("App");
         this.hooks = new Hooks();
         this.events = new EventEmitter();
 
-        this.ipcClient = new MainServiceIPCClient(getConnectionString(), this.logger);
+        this.ipcClient = ipcClient;
 
         this.runtimeManager = new RuntimeManager(this.ipcClient);
         this.storageManager = new StorageManager(this);
@@ -69,14 +67,5 @@ export class Service {
     public quit() {
         this.runtimeManager.quit();
     }
-}
-
-function getConnectionString(): string {
-    const connectionString = process.env[ENV_IPC_CONNECTION_STRING];
-    if (!connectionString) {
-        throw new SidecarRuntimeError(`Environment variable ${ENV_IPC_CONNECTION_STRING} is not set`);
-    }
-
-    return connectionString;
 }
 

@@ -8,7 +8,7 @@
 
 use clipboard::{ClipboardProvider, windows_clipboard::WindowsClipboardContext};
 use serde_json::Value;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
 use serde_json::json;
 use os_info;
 use sys_locale;
@@ -266,125 +266,191 @@ impl TauriOperationExecutor {
     /**
      * Execute a window creation operation
      */
-    pub async fn create_window(
-        payload: WindowCreatePayload,
-        app_handle: Option<&AppHandle>,
-    ) -> OperationResult {
-        use tauri::WindowBuilder;
+pub async fn create_window(
+    payload: WindowCreatePayload,
+    app_handle: Option<&AppHandle>,
+) -> OperationResult {
+    if let Some(app) = app_handle {
+        let label_clone = payload.label.clone();
 
-        if let Some(app) = app_handle {
-            let label_clone = payload.label.clone();
-            let mut builder = WindowBuilder::new(app, payload.label)
-                .title(payload.title)
-                .inner_size(payload.width, payload.height)
-                .visible(false); // Default to hidden
+        // Create a new WebviewWindow builder
+        let mut builder = WebviewWindowBuilder::new(
+            app,
+            payload.label.clone(),
+            // Default URL (can be overridden by navigate later)
+            WebviewUrl::App("index.html".into()),
+        )
+        .title(payload.title)
+        .inner_size(payload.width, payload.height)
+        .visible(false); // Start hidden by default
 
-            if let Some(x) = payload.x {
-                if let Some(y) = payload.y {
-                    builder = builder.position(x, y);
-                }
-            }
+        // Set window position if provided
+        if let (Some(x), Some(y)) = (payload.x, payload.y) {
+            builder = builder.position(x, y);
+        }
 
-            if let Some(center) = payload.center {
-                if center {
-                    builder = builder.center();
-                }
-            }
+        // Center window if requested
+        if payload.center.unwrap_or(false) {
+            builder = builder.center();
+        }
 
-            if let Some(decorations) = payload.decorations {
-                builder = builder.decorations(decorations);
-            }
+        // Apply decorations (window frame, title bar, etc.)
+        if let Some(decorations) = payload.decorations {
+            builder = builder.decorations(decorations);
+        }
 
-            if let Some(always_on_top) = payload.always_on_top {
-                builder = builder.always_on_top(always_on_top);
-            }
+        // Always-on-top behavior
+        if let Some(always_on_top) = payload.always_on_top {
+            builder = builder.always_on_top(always_on_top);
+        }
 
-            if let Some(skip_taskbar) = payload.skip_taskbar {
-                builder = builder.skip_taskbar(skip_taskbar);
-            }
+        // Skip showing in the taskbar
+        if let Some(skip_taskbar) = payload.skip_taskbar {
+            builder = builder.skip_taskbar(skip_taskbar);
+        }
 
-            // Set resizable property
-            if let Some(resizable) = payload.resizable {
-                builder = builder.resizable(resizable);
-            }
+        // Window resizable
+        if let Some(resizable) = payload.resizable {
+            builder = builder.resizable(resizable);
+        }
 
-            // Set closable property (affects window controls)
-            if let Some(closable) = payload.closable {
-                if !closable {
-                    builder = builder.closable(false);
-                }
-            }
+        // Window closable
+        if let Some(closable) = payload.closable {
+            builder = builder.closable(closable);
+        }
 
-            // Set minimizable property
-            if let Some(minimizable) = payload.minimizable {
-                if !minimizable {
-                    builder = builder.minimizable(false);
-                }
-            }
+        // Window minimizable
+        if let Some(minimizable) = payload.minimizable {
+            builder = builder.minimizable(minimizable);
+        }
 
-            // Set maximizable property
-            if let Some(maximizable) = payload.maximizable {
-                if !maximizable {
-                    builder = builder.maximizable(false);
-                }
-            }
+        // Window maximizable
+        if let Some(maximizable) = payload.maximizable {
+            builder = builder.maximizable(maximizable);
+        }
 
-            // Set focus property
-            if let Some(focus) = payload.focus {
-                if focus {
-                    builder = builder.focused(true);
-                }
-            }
+        // Window focus
+        if payload.focus.unwrap_or(false) {
+            builder = builder.focused(true);
+        }
 
-            // Set transparent property
-            if let Some(transparent) = payload.transparent {
-                if transparent {
-                    builder = builder.transparent(true);
-                }
-            }
+        // Transparent background
+        if payload.transparent.unwrap_or(false) {
+            builder = builder.transparent(true);
+        }
 
-            // Set fullscreen property
-            if let Some(fullscreen) = payload.fullscreen {
-                if fullscreen {
-                    builder = builder.fullscreen(true);
-                }
-            }
+        // Fullscreen mode
+        if payload.fullscreen.unwrap_or(false) {
+            builder = builder.fullscreen(true);
+        }
 
-            match builder.build() {
-                Ok(window) => {
-                    // Show window if show field is true
-                    if let Some(show) = payload.show {
-                        if show {
-                            if let Err(e) = window.show() {
+        // Try to build the window
+        match builder.build() {
+            Ok(window) => {
+                let window_label = label_clone.clone();
+
+                // Attach close event listener
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { .. } = event {
+                        println!("Window close requested for: {}", window_label);
+
+                        let window_label_clone = window_label.clone();
+
+                        // Fire sidecar notification asynchronously
+                        tauri::async_runtime::spawn(async move {
+                            if let Some(plugin_state) = crate::tauri::get_global_plugin_state() {
+                                let sidecar_manager =
+                                    plugin_state.sidecar_manager.lock().await;
+
+                                let payload = serde_json::json!({
+                                    "label": window_label_clone,
+                                    "timestamp": std::time::SystemTime::now()
+                                        .duration_since(std::time::UNIX_EPOCH)
+                                        .unwrap_or_default()
+                                        .as_millis()
+                                });
+
+                                if let Err(e) = sidecar_manager
+                                    .send_sidecar_request("sidecar:window.on_close", payload)
+                                    .await
+                                {
+                                    println!(
+                                        "Failed to send sidecar notification: {}",
+                                        e
+                                    );
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // Navigate to custom URL if provided
+                if let Some(url_str) = &payload.url {
+                    match Url::parse(url_str) {
+                        Ok(url) => {
+                            if let Err(e) = window.navigate(url) {
                                 return OperationResult {
                                     success: false,
-                                    message: Some(format!("Failed to show window '{}': {}", label_clone, e)),
+                                    message: Some(format!(
+                                        "Failed to navigate window '{}' to '{}': {}",
+                                        label_clone, url_str, e
+                                    )),
                                     data: None,
                                 };
                             }
                         }
+                        Err(e) => {
+                            return OperationResult {
+                                success: false,
+                                message: Some(format!(
+                                    "Invalid URL '{}' for window '{}': {}",
+                                    url_str, label_clone, e
+                                )),
+                                data: None,
+                            };
+                        }
                     }
+                }
 
-                    OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' created successfully", label_clone)),
-                        data: None,
+                // Show window if requested
+                if payload.show.unwrap_or(false) {
+                    if let Err(e) = window.show() {
+                        return OperationResult {
+                            success: false,
+                            message: Some(format!(
+                                "Failed to show window '{}': {}",
+                                label_clone, e
+                            )),
+                            data: None,
+                        };
                     }
-                },
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!("Failed to create window '{}': {}", label_clone, e)),
+                }
+
+                // Success result
+                OperationResult {
+                    success: true,
+                    message: Some(format!("Window '{}' created successfully", label_clone)),
                     data: None,
-                },
+                }
             }
-        } else {
-            OperationResult {
+            Err(e) => OperationResult {
                 success: false,
-                message: Some("App handle not available".to_string()),
+                message: Some(format!(
+                    "Failed to create window '{}': {}",
+                    label_clone, e
+                )),
                 data: None,
-            }
+            },
+        }
+    } else {
+        OperationResult {
+            success: false,
+            message: Some("App handle not available".to_string()),
+            data: None,
         }
     }
+}
+
 
     /**
      * Execute a window maximization operation

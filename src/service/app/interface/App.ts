@@ -1,8 +1,20 @@
-import { Tasks } from "@/service/utils/data";
-import type { StoreProvider } from "../managers/storage/storeProvider";
+// Interface
+import { API } from "./API";
+
+// Services
 import { Service } from "../service";
 import { ServiceEventCallback, ServiceEvents, ServiceEventToken } from "../types";
-import { API } from "./API";
+
+// IPC
+import { MainServiceIPCClient } from "../ipc/socket";
+
+// Utils
+import { Logger } from "@/service/utils/logger";
+import { SidecarRuntimeError, SidecarServiceError } from "@/service/utils/error";
+
+// Config
+import { ENV_IPC_CONNECTION_STRING } from "../constants";
+import type { StoreProvider } from "../managers/storage/storeProvider";
 
 export interface AppConfig {
     store: StoreProvider | undefined;
@@ -12,18 +24,24 @@ export interface AppConfig {
 
 export class App extends API {
     private service: Service;
-    private tasks: Tasks;
+    private isReady: boolean = false;
+    
+    public readonly ipcClient: MainServiceIPCClient;
+    public readonly logger: Logger;
 
     constructor(config: AppConfig) {
-        super(config);
+        const logger = new Logger("App");
+        const ipcClient = new MainServiceIPCClient(getConnectionString(), logger);
+        super(ipcClient, config);
+
+        this.logger = logger;
+        this.ipcClient = ipcClient;
 
         const serviceConfig = {
             store: config.store,
             deleteCorruptedSaves: config.deleteCorruptedSaves,
         };
-        this.service = new Service(serviceConfig);
-        this.tasks = new Tasks();
-
+        this.service = new Service(this.ipcClient, serviceConfig);
         this.init();
     }
 
@@ -31,8 +49,20 @@ export class App extends API {
         return this.registerEvent("ready", callback);
     }
 
+    public onceAppReady(): Promise<this> {
+        return new Promise((resolve) => {
+            if (this.isReady) {
+                resolve(this);
+            } else {
+                this.onReady(() => resolve(this));
+            }
+        });
+    }
+
     private async init() {
-        await this.tasks.push(this.service.prepare());
+        await this.service.prepare();
+
+        this.isReady = true;
     }
 
     private registerEvent<T extends keyof ServiceEvents>(
@@ -47,5 +77,20 @@ export class App extends API {
             },
         };
     }
+    
+    protected assertReady(): asserts this is { isReady: true } {
+        if (!this.isReady) {
+            throw new SidecarServiceError("Trying to access App before it is ready");
+        }
+    }
+}
+
+function getConnectionString(): string {
+    const connectionString = process.env[ENV_IPC_CONNECTION_STRING];
+    if (!connectionString) {
+        throw new SidecarRuntimeError(`Environment variable ${ENV_IPC_CONNECTION_STRING} is not set`);
+    }
+
+    return connectionString;
 }
 

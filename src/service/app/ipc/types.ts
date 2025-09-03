@@ -104,6 +104,7 @@ export interface WindowCreatePayload {
   title: string;
   width: number;
   height: number;
+  url?: string;
   x?: number;
   y?: number;
   center?: boolean;
