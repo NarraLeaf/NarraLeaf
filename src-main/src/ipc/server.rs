@@ -148,21 +148,23 @@ impl IPCServer {
         let timeout = std::time::Duration::from_millis(timeout_ms);
         let mut last_status_log = std::time::Instant::now();
         
-        println!("Waiting for IPC server to become ready (timeout: {}ms)...", timeout_ms);
+        // Only log in debug mode to reduce noise
+        // println!("Waiting for IPC server to become ready (timeout: {}ms)...", timeout_ms);
         
         while start_time.elapsed() < timeout {
             if self.is_running().await {
-                println!("IPC server is running, verifying listener readiness...");
                 // Give a small additional delay for the listener to be fully established
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                println!("IPC server is fully ready to accept connections");
+                // Only log in debug mode to reduce noise
+                // println!("IPC server is fully ready to accept connections");
                 return Ok(());
             }
             
-            // Log status every second
-            if last_status_log.elapsed() >= std::time::Duration::from_millis(1000) {
-                let elapsed = start_time.elapsed().as_millis();
-                println!("Still waiting for IPC server... ({}ms elapsed)", elapsed);
+            // Log status every second (reduced frequency to reduce noise)
+            if last_status_log.elapsed() >= std::time::Duration::from_millis(2000) {
+                let _elapsed = start_time.elapsed().as_millis();
+                // Only log in debug mode to reduce noise
+                // println!("Still waiting for IPC server... ({}ms elapsed)", elapsed);
                 last_status_log = std::time::Instant::now();
             }
             
@@ -191,12 +193,14 @@ impl IPCServer {
         server_state: Arc<ServerState>,
         mut shutdown_rx: oneshot::Receiver<()>,
     ) {
-        println!("[SERVER] Starting server loop for: {}", connection_string);
+        // Only log in debug mode to reduce noise
+        // println!("[SERVER] Starting server loop for: {}", connection_string);
 
         // Start listening for connections
         let listener = match create_listener(&connection_string).await {
             Ok(listener) => {
-                println!("[SERVER] Listener created successfully");
+                // Only log in debug mode to reduce noise
+                // println!("[SERVER] Listener created successfully");
                 listener
             },
             Err(e) => {
@@ -215,9 +219,9 @@ impl IPCServer {
             let mut running = server_state.is_running.write().await;
             *running = true;
         }
-        println!("[SERVER] Server state set to running");
-
-        println!("IPC Server started on: {}", connection_string);
+        // Only log in debug mode to reduce noise
+        // println!("[SERVER] Server state set to running");
+        // println!("IPC Server started on: {}", connection_string);
 
         // Track last client activity for auto-shutdown
         let mut last_client_activity = std::time::Instant::now();
@@ -237,7 +241,8 @@ impl IPCServer {
             ).await {
                 Ok(Ok(stream)) => {
                     let client_id = Uuid::new_v4().to_string();
-                    println!("New client connected: {}", client_id);
+                    // Only log client connections to reduce noise
+                    println!("[SERVER] New client connected: {}", client_id);
 
                     // Update last activity time
                     last_client_activity = std::time::Instant::now();
@@ -250,7 +255,7 @@ impl IPCServer {
                             ClientConnection {
                                 id: client_id.clone(),
                                 last_seen: std::time::Instant::now(),
-                                platform_stream: stream,
+                                platform_stream: Arc::new(tokio::sync::Mutex::new(stream)),
                             },
                         );
                     }
@@ -261,6 +266,28 @@ impl IPCServer {
 
                     tokio::spawn(async move {
                         handle_client(client_id_clone, server_state_clone).await;
+                    });
+
+                    // Proactively send a VersionCheck to validate write path and provoke a response
+                    let server_state_clone2 = Arc::clone(&server_state);
+                    let client_id_for_check = client_id.clone();
+                    tokio::spawn(async move {
+                        let version_check = crate::communication::SidecarMessage::VersionCheck {
+                            version: crate::communication::PROTOCOL_VERSION,
+                        };
+                        // VersionCheck is internal, no need to log to reduce noise
+                        match crate::ipc::client::send_message_to_client_by_id(
+                            &client_id_for_check,
+                            &server_state_clone2,
+                            &version_check,
+                        )
+                        .await
+                        {
+                            Ok(()) => {
+                                // VersionCheck success is internal, no logging needed
+                            },
+                            Err(e) => println!("[SERVER] Failed to send VersionCheck to client {}: {}", client_id_for_check, e),
+                        }
                     });
                 }
                 Ok(Err(e)) => {

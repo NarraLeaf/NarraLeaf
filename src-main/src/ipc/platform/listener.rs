@@ -30,7 +30,8 @@ pub async fn create_listener(connection_string: &str) -> Result<PlatformListener
         // Create the full pipe path
         let full_pipe_name = format!(r"\\.\pipe\{}", pipe_name);
 
-        println!("Creating Windows named pipe listener: {}", full_pipe_name);
+        // Only log in debug mode to reduce noise
+        // println!("Creating Windows named pipe listener: {}", full_pipe_name);
         Ok(PlatformListener::NamedPipe(full_pipe_name))
     }
 
@@ -56,12 +57,15 @@ pub async fn accept_connection(listener: &PlatformListener) -> Result<crate::ipc
     match listener {
         #[cfg(target_os = "windows")]
         PlatformListener::NamedPipe(pipe_name) => {
-            use tokio::net::windows::named_pipe::{ServerOptions, NamedPipeServer};
-
-            println!("Accepting connection on pipe: {}", pipe_name);
+            use tokio::net::windows::named_pipe::{ServerOptions, NamedPipeServer, PipeMode};
 
             // Create a named pipe server instance with default options
             let server: NamedPipeServer = ServerOptions::new()
+                // Ensure duplex communication so server can read and write
+                .access_inbound(true)
+                .access_outbound(true)
+                // Use byte mode to match length-prefixed stream protocol
+                .pipe_mode(PipeMode::Byte)
                 .first_pipe_instance(false) // Allow multiple instances
                 .max_instances(100)
                 .in_buffer_size(65536)
@@ -72,15 +76,13 @@ pub async fn accept_connection(listener: &PlatformListener) -> Result<crate::ipc
                     e
                 })?;
 
-            println!("Named pipe server created, waiting for connection...");
-
             // Wait for client connection
             server.connect().await.map_err(|e| {
                 println!("Failed to accept connection on pipe '{}': {}", pipe_name, e);
                 e
             })?;
 
-            println!("Client connected successfully");
+            // Connection successful, no need to log to reduce noise
             Ok(crate::ipc::types::PlatformStream::NamedPipe(server))
         }
 

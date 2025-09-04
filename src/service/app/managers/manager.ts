@@ -14,7 +14,7 @@ export abstract class Manager<Dependencies extends Manager<any>[] | null = null>
         if (this._initialized) {
             return this;
         }
-        this._dependencies = dependencies as Dependencies;
+        this._dependencies = (dependencies || []) as Dependencies;
 
         if (dependencies) {
             for (const dependency of dependencies) {
@@ -31,7 +31,7 @@ export abstract class Manager<Dependencies extends Manager<any>[] | null = null>
     }
 
     protected getDependencies(): Dependencies extends null ? [] : Dependencies {
-        if (!this._initialized) {
+        if (!this._dependencies || !this._dependencies.every(dependency => dependency._initialized)) {
             throw new ServiceInternalError("Manager not initialized");
         }
         return (this._dependencies || []) as Dependencies extends null ? [] : Dependencies;

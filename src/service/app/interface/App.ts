@@ -31,7 +31,9 @@ export class App extends API {
 
     constructor(config: AppConfig) {
         const logger = new Logger("App");
-        const ipcClient = new MainServiceIPCClient(getConnectionString(), logger);
+        const connectionString = getConnectionString();
+        logger.info(`[App] Initializing with IPC connection: ${connectionString}`);
+        const ipcClient = new MainServiceIPCClient(connectionString, logger);
         super(ipcClient, config);
 
         this.logger = logger;
@@ -59,9 +61,14 @@ export class App extends API {
         });
     }
 
-    private async init() {
-        await this.service.prepare();
+    public quit(): Promise<void> {
+        return this.service.runtimeManager.quit();
+    }
 
+    private async init() {
+        this.logger.info('[App] Starting app initialization...');
+        await this.service.prepare();
+        this.logger.info('[App] App initialization completed');
         this.isReady = true;
     }
 

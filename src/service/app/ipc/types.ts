@@ -57,7 +57,7 @@ export interface RuntimeRequestMessage<T extends RuntimeRequestTypes = any> {
   type: 'RuntimeRequest';
   id: string;
   request_type: T;
-  payload: RuntimeRequestPayload[T];
+  payload: RuntimeRequestPayload[T] | null;
   response_channel: string;
 }
 

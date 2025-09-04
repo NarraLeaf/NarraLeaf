@@ -2,6 +2,7 @@ import { mergeConfig } from "@/service/utils/data";
 import { ServiceError } from "@/service/utils/error";
 import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
 import { API } from "../API";
+import EventEmitter from "node:events";
 
 export interface WindowConfig {
     /**
@@ -244,12 +245,17 @@ export type WindowRequestTypes =
    "tauri:window.set_fullscreen" |
    "tauri:window.set_url";
 
+export interface WindowEvents {
+    "closed": [];
+}
+
 export class Window {
     private readonly config: WindowConfig;
     private readonly api: API;
     private readonly label: string;
     private cleanup: (() => void)[] = [];
     private closed: boolean = false;
+    private events: EventEmitter<WindowEvents> = new EventEmitter();
 
     /**@internal */
     private static readonly DefaultConfig: WindowConfig = {
@@ -401,6 +407,13 @@ export class Window {
         return this.closed;
     }
 
+    public onClose(callback: () => void): void {
+        this.events.on("closed", callback);
+    }
+
+    public offClose(callback: () => void): void {
+        this.events.off("closed", callback);
+    }
 
     private async initialize(): Promise<this> {
         return await this.chainRequests("tauri:window.create", {
@@ -461,5 +474,6 @@ export class Window {
         this.closed = true;
         this.cleanup.forEach(cleanup => cleanup());
         this.cleanup = [];
+        this.events.emit("closed");
     }
 }

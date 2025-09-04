@@ -27,13 +27,15 @@ pub async fn handle_client(
 
         // Read data from client
         let data = {
-            let mut clients_guard = server_state.clients.write().await;
-            let client = match clients_guard.get_mut(&client_id) {
-                Some(client) => client,
+            let clients_guard_read = server_state.clients.read().await;
+            let platform_stream_arc = match clients_guard_read.get(&client_id) {
+                Some(client) => client.platform_stream.clone(),
                 None => break, // Client disconnected
             };
+            drop(clients_guard_read);
 
-            match read_from_stream(&mut client.platform_stream).await {
+            let mut locked_stream = platform_stream_arc.lock().await;
+            match read_from_stream(&mut *locked_stream).await {
                 Ok(data) => data,
                 Err(_) => break, // Client disconnected or error
             }
@@ -61,11 +63,17 @@ pub async fn handle_client(
 
             // Extract and parse message
             let message_data = &buffer[8..total_length];
-            println!("[CLIENT] Received message data ({} bytes): {}", message_data.len(), String::from_utf8_lossy(message_data));
+            // Only log significant messages to reduce noise
+            if message_data.len() > 200 {
+                println!("[CLIENT] Received message data ({} bytes): {}", message_data.len(), String::from_utf8_lossy(message_data));
+            }
             
             let message = match serde_json::from_slice::<crate::communication::SidecarMessage>(message_data) {
                 Ok(msg) => {
-                    println!("[CLIENT] Successfully parsed message: {:?}", msg);
+                    // Only log significant messages to reduce noise
+                    if message_data.len() > 200 {
+                        println!("[CLIENT] Successfully parsed message: {:?}", msg);
+                    }
                     msg
                 },
                 Err(e) => {
@@ -76,7 +84,10 @@ pub async fn handle_client(
             };
 
             // Handle message
-            println!("[CLIENT] Processing message for client: {}", client_id);
+            // Only log significant messages to reduce noise
+            if message_data.len() > 200 {
+                println!("[CLIENT] Processing message for client: {}", client_id);
+            }
             process_message(&message, &client_id, &server_state).await;
 
             // Remove processed message
@@ -118,7 +129,9 @@ pub async fn send_message_to_client(
     client: &mut ClientConnection,
     message: &crate::communication::SidecarMessage,
 ) -> Result<(), String> {
-    crate::ipc::platform::stream::send_message_to_stream(&mut client.platform_stream, message).await
+    let stream_arc = client.platform_stream.clone();
+    let mut locked_stream = stream_arc.lock().await;
+    crate::ipc::platform::stream::send_message_to_stream(&mut *locked_stream, message).await
 }
 
 /// Send message to client by ID
@@ -127,11 +140,55 @@ pub async fn send_message_to_client_by_id(
     server_state: &Arc<ServerState>,
     message: &crate::communication::SidecarMessage,
 ) -> Result<(), String> {
-    let mut clients_guard = server_state.clients.write().await;
+    // Only log significant messages to reduce noise
+    if let crate::communication::SidecarMessage::ServiceRequest { request_type, .. } = message {
+        if request_type.contains("game") || request_type.contains("save") || request_type.contains("load") {
+            println!("[CLIENT] Attempting to send message to client: {}", client_id);
+            println!("[CLIENT] Message type: {:?}", message);
+        }
+    }
+    
+    // Use a read lock to fetch the stream, then drop the lock before awaiting I/O
+    let (_client_count, stream_arc_opt) = {
+        let clients_guard_read = server_state.clients.read().await;
+        let count = clients_guard_read.len();
+        let opt = clients_guard_read.get(client_id).map(|c| c.platform_stream.clone());
+        (count, opt)
+    };
 
-    if let Some(client) = clients_guard.get_mut(client_id) {
-        send_message_to_client(client, message).await
+    // Only log client count changes to reduce noise
+
+    if let Some(stream_arc) = stream_arc_opt {
+        // Only log significant messages to reduce noise
+        if let crate::communication::SidecarMessage::ServiceRequest { request_type, .. } = message {
+            if request_type.contains("game") || request_type.contains("save") || request_type.contains("load") {
+                println!("[CLIENT] Client found, sending message...");
+            }
+        }
+        let mut locked_stream = stream_arc.lock().await;
+        match crate::ipc::platform::stream::send_message_to_stream(&mut *locked_stream, message).await {
+            Ok(()) => {
+                // Only log significant messages to reduce noise
+                if let crate::communication::SidecarMessage::ServiceRequest { request_type, .. } = message {
+                    if request_type.contains("game") || request_type.contains("save") || request_type.contains("load") {
+                        println!("[CLIENT] Message sent successfully to client: {}", client_id);
+                    }
+                }
+                Ok(())
+            }
+            Err(e) => {
+                println!("[CLIENT] ERROR: Failed to send message to client {}: {}", client_id, e);
+                Err(e)
+            }
+        }
     } else {
+        // Reacquire a read lock just to log available clients
+        let available_clients: Vec<String> = {
+            let clients_guard_read = server_state.clients.read().await;
+            clients_guard_read.keys().cloned().collect()
+        };
+        println!("[CLIENT] ERROR: Client {} not found", client_id);
+        println!("[CLIENT] Available clients: {:?}", available_clients);
         Err(format!("Client {} not found", client_id))
     }
 }

@@ -50,13 +50,13 @@ export class RuntimeManager extends Manager<null> {
         return Translation.translate(k, this.appMetadata.preferredSystemLanguage);
     }
 
-    public quit(ok: boolean = true) {
+    public async quit(ok: boolean = true) {
         const code = ok ? 0 : 1;
 
         if (this.ipcClient.getStats().connected) {
-            this.ipcClient.sendRuntimeRequest<"tauri:app.quit">("tauri:app.quit")
-                .then(() => this.ipcClient.close())
-                .then(() => process.exit(code));
+            await this.ipcClient.sendRuntimeRequest<"tauri:app.quit">("tauri:app.quit");
+            await this.ipcClient.close();
+            process.exit(code);
         } else {
             process.exit(code);
         }

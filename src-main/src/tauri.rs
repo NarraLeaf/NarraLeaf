@@ -86,12 +86,11 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
     Builder::new("narraleaf")
         .invoke_handler(tauri::generate_handler![])
         .setup(move |app, _api| {
-            println!("Initializing NarraLeaf Tauri Runtime plugin...");
-            println!("Protocol version: {}", PROTOCOL_VERSION);
-
             // Check if debug mode is enabled
             let debug_mode = is_debug_mode_enabled();
             if debug_mode {
+                println!("Initializing NarraLeaf Tauri Runtime plugin...");
+                println!("Protocol version: {}", PROTOCOL_VERSION);
                 println!("DEBUG MODE ENABLED: Sidecar output will be redirected to main console");
             }
 
@@ -127,9 +126,11 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                     eprintln!("Failed to start sidecar: {}", e);
                     manager.state = crate::sidecar::SidecarState::Failed;
                 } else {
-                    println!("Sidecar started successfully with connection: {}", connection_string_clone);
-                    println!("Plugin initialization completed");
-                    println!("Note: Windows will only be created when requested by sidecar");
+                    if debug_mode {
+                        println!("Sidecar started successfully with connection: {}", connection_string_clone);
+                        println!("Plugin initialization completed");
+                        println!("Note: Windows will only be created when requested by sidecar");
+                    }
 
                     // Monitor sidecar health and handle termination
                     manager.listen_sidecar_status().await;
@@ -147,9 +148,11 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             // Note: This will only affect windows that already exist
             setup_window_event_listeners(&app.app_handle());
 
-            println!("NarraLeaf plugin initialized successfully");
-            println!("Global operations completed");
-            println!("Waiting for sidecar to request window creation...");
+            if debug_mode {
+                println!("NarraLeaf plugin initialized successfully");
+                println!("Global operations completed");
+                println!("Waiting for sidecar to request window creation...");
+            }
             Ok(())
         })
         .on_event(move |app, event| {

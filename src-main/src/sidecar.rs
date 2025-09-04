@@ -71,10 +71,12 @@ impl SidecarManager {
         sidecar_path: &str,
         connection_string: &str,
     ) -> Result<(), String> {
-        println!("[SIDECAR] Starting sidecar and IPC server...");
-        println!("[SIDECAR] Sidecar path: {}", sidecar_path);
-        println!("[SIDECAR] Connection string: {}", connection_string);
-        println!("[SIDECAR] Current state: {:?}", self.state);
+        if self.debug_mode {
+            println!("[SIDECAR] Starting sidecar and IPC server...");
+            println!("[SIDECAR] Sidecar path: {}", sidecar_path);
+            println!("[SIDECAR] Connection string: {}", connection_string);
+            println!("[SIDECAR] Current state: {:?}", self.state);
+        }
 
         if self.state != SidecarState::Stopped {
             println!("[SIDECAR] ERROR: Cannot start sidecar: current state is {:?}", self.state);
@@ -82,12 +84,18 @@ impl SidecarManager {
         }
 
         self.state = SidecarState::Starting;
-        println!("[SIDECAR] State changed to: {:?}", self.state);
+        if self.debug_mode {
+            println!("[SIDECAR] State changed to: {:?}", self.state);
+        }
 
         // Start IPC server with app handle for tauri operations
-        println!("[SIDECAR] Starting IPC server...");
+        if self.debug_mode {
+            println!("[SIDECAR] Starting IPC server...");
+        }
         let mut ipc_server = if let Some(app_handle) = &self.app_handle {
-            println!("[SIDECAR] Using app handle for IPC server");
+            if self.debug_mode {
+                println!("[SIDECAR] Using app handle for IPC server");
+            }
             IPCServer::with_app_handle(connection_string.to_string(), app_handle.clone())
         } else {
             println!("[SIDECAR] WARNING: No app handle available, using basic IPC server");
@@ -95,31 +103,42 @@ impl SidecarManager {
         };
         
         // Actually start the IPC server before starting sidecar
-        println!("[SIDECAR] Starting IPC server...");
         if let Err(e) = ipc_server.start().await {
             return Err(format!("Failed to start IPC server: {}", e));
         }
-        println!("[SIDECAR] IPC server started successfully");
+        if self.debug_mode {
+            println!("[SIDECAR] IPC server started successfully");
+        }
         
         // Wait for IPC server to be fully ready with timeout
-        println!("[SIDECAR] Waiting for IPC server to be fully ready...");
+        if self.debug_mode {
+            println!("[SIDECAR] Waiting for IPC server to be fully ready...");
+        }
         if let Err(e) = ipc_server.wait_for_ready(5000).await {
             return Err(format!("IPC server failed to become ready: {}", e));
         }
-        println!("[SIDECAR] IPC server is ready and accepting connections");
+        if self.debug_mode {
+            println!("[SIDECAR] IPC server is ready and accepting connections");
+        }
         
         // Store the server before starting sidecar process
         self.ipc_server = Some(ipc_server);
-        println!("[SIDECAR] IPC server stored and initialized");
+        if self.debug_mode {
+            println!("[SIDECAR] IPC server stored and initialized");
+        }
 
         // Start sidecar process
-        println!("[SIDECAR] Starting sidecar process...");
+        if self.debug_mode {
+            println!("[SIDECAR] Starting sidecar process...");
+        }
         self.start_sidecar_process(sidecar_path, connection_string).await?;
 
         self.state = SidecarState::Running;
         self.last_health_check = std::time::Instant::now();
-        println!("[SIDECAR] Sidecar and IPC server started successfully");
-        println!("[SIDECAR] Final state: {:?}", self.state);
+        if self.debug_mode {
+            println!("[SIDECAR] Sidecar and IPC server started successfully");
+            println!("[SIDECAR] Final state: {:?}", self.state);
+        }
 
         Ok(())
     }
@@ -132,14 +151,18 @@ impl SidecarManager {
         use std::process::Stdio;
         use tokio::process::Command;
 
-        println!("[SIDECAR] Starting sidecar process...");
-        println!("[SIDECAR] Original sidecar path: {}", sidecar_path);
-        println!("[SIDECAR] Connection string: {}", connection_string);
+        if self.debug_mode {
+            println!("[SIDECAR] Starting sidecar process...");
+            println!("[SIDECAR] Original sidecar path: {}", sidecar_path);
+            println!("[SIDECAR] Connection string: {}", connection_string);
+        }
 
         // Set environment variables
         let mut env_vars = std::env::vars().collect::<std::collections::HashMap<_, _>>();
         env_vars.insert("NARRALEAF_IPC_CONNECTION".to_string(), connection_string.to_string());
-        println!("[SIDECAR] Environment variables set: NARRALEAF_IPC_CONNECTION={}", connection_string);
+        if self.debug_mode {
+            println!("[SIDECAR] Environment variables set: NARRALEAF_IPC_CONNECTION={}", connection_string);
+        }
 
         // Get the full path to the sidecar executable
         let full_sidecar_path = if sidecar_path.contains('/') || sidecar_path.contains('\\') {
@@ -148,8 +171,10 @@ impl SidecarManager {
                 let resource_dir = app_handle.path().resource_dir()
                     .map_err(|e| format!("Failed to get resource directory: {}", e))?;
                 let resolved_path = resource_dir.join(sidecar_path);
-                println!("[SIDECAR] Resource directory: {:?}", resource_dir);
-                println!("[SIDECAR] Resolved sidecar path: {:?}", resolved_path);
+                if self.debug_mode {
+                    println!("[SIDECAR] Resource directory: {:?}", resource_dir);
+                    println!("[SIDECAR] Resolved sidecar path: {:?}", resolved_path);
+                }
                 resolved_path
             } else {
                 return Err("Cannot resolve sidecar path without app handle".to_string());
@@ -157,28 +182,34 @@ impl SidecarManager {
         } else {
             // If it's just a filename, assume it's in PATH
             let path_buf = std::path::PathBuf::from(sidecar_path);
-            println!("[SIDECAR] Using PATH-based sidecar path: {:?}", path_buf);
+            if self.debug_mode {
+                println!("[SIDECAR] Using PATH-based sidecar path: {:?}", path_buf);
+            }
             path_buf
         };
 
         // Determine command
         let (program, args) = if sidecar_path.ends_with(".js") || sidecar_path.ends_with(".mjs") {
             let cmd = ("node".to_string(), vec![sidecar_path.to_string()]);
-            println!("[SIDECAR] Detected JavaScript file, using Node.js");
-            println!("[SIDECAR] Command: node {}", sidecar_path);
+            if self.debug_mode {
+                println!("[SIDECAR] Detected JavaScript file, using Node.js");
+                println!("[SIDECAR] Command: node {}", sidecar_path);
+            }
             cmd
         } else {
             let program_str = full_sidecar_path.to_string_lossy().to_string();
             let cmd = (program_str.clone(), vec![]);
-            println!("[SIDECAR] Command: {}", program_str);
+            if self.debug_mode {
+                println!("[SIDECAR] Command: {}", program_str);
+            }
             cmd
         };
 
-        println!("[SIDECAR] Final program: {}", program);
-        println!("[SIDECAR] Arguments: {:?}", args);
-
-        // Start process
-        println!("[SIDECAR] Spawning sidecar process...");
+        if self.debug_mode {
+            println!("[SIDECAR] Final program: {}", program);
+            println!("[SIDECAR] Arguments: {:?}", args);
+            println!("[SIDECAR] Spawning sidecar process...");
+        }
         
         // In debug mode, show the full command line being executed
         if self.debug_mode {
@@ -278,18 +309,17 @@ impl SidecarManager {
     }
 
     pub async fn listen_sidecar_status(&mut self) {
-        println!("[SIDECAR] Starting sidecar status monitoring...");
         if self.debug_mode {
+            println!("[SIDECAR] Starting sidecar status monitoring...");
             println!("[DEBUG] Debug mode enabled - enhanced monitoring active");
         }
         let mut health_check_count = 0;
         
         while self.state == SidecarState::Running {
             health_check_count += 1;
+            // Only log health checks in debug mode to reduce noise
             if self.debug_mode {
                 println!("[DEBUG] Health check #{} - Checking sidecar process status...", health_check_count);
-            } else {
-                println!("[SIDECAR] Health check #{} - Checking sidecar process status...", health_check_count);
             }
             
             // Check if child process is still running
@@ -309,10 +339,9 @@ impl SidecarManager {
                     Ok(None) => {
                         // Process is still running
                         self.last_health_check = std::time::Instant::now();
+                        // Only log in debug mode to reduce noise
                         if self.debug_mode {
                             println!("[DEBUG] Sidecar process is still running (PID: {:?})", child.id());
-                        } else {
-                            println!("[SIDECAR] Sidecar process is still running (PID: {:?})", child.id());
                         }
                     }
                     Err(e) => {
@@ -334,7 +363,9 @@ impl SidecarManager {
             }
 
             // Sleep for a shorter interval
-            println!("[SIDECAR] Waiting 5 seconds before next health check...");
+            if self.debug_mode {
+                println!("[SIDECAR] Waiting 5 seconds before next health check...");
+            }
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
         
@@ -367,10 +398,12 @@ impl SidecarManager {
         request_type: &str,
         payload: serde_json::Value,
     ) -> Result<serde_json::Value, String> {
-        println!("[SIDECAR] Sending sidecar request...");
-        println!("[SIDECAR] Request type: {}", request_type);
-        println!("[SIDECAR] Payload: {:?}", payload);
-        println!("[SIDECAR] Current state: {:?}", self.state);
+        if self.debug_mode {
+            println!("[SIDECAR] Sending sidecar request...");
+            println!("[SIDECAR] Request type: {}", request_type);
+            println!("[SIDECAR] Payload: {:?}", payload);
+            println!("[SIDECAR] Current state: {:?}", self.state);
+        }
 
         if let Some(ipc_server) = &self.ipc_server {
             let message_id = uuid::Uuid::new_v4().to_string();
@@ -383,14 +416,17 @@ impl SidecarManager {
                 response_channel: response_channel.clone(),
             };
 
-            println!("[SIDECAR] Message ID: {}", message_id);
-            println!("[SIDECAR] Response channel: {}", response_channel);
-            println!("[SIDECAR] Sending sidecar request: {} -> {:?}", request_type, message);
+            if self.debug_mode {
+                println!("[SIDECAR] Message ID: {}", message_id);
+                println!("[SIDECAR] Response channel: {}", response_channel);
+                println!("[SIDECAR] Sending sidecar request: {} -> {:?}", request_type, message);
+            }
 
             // Get connected clients
-            println!("[SIDECAR] Getting connected clients...");
             let connected_clients = ipc_server.get_connected_clients().await;
-            println!("[SIDECAR] Connected clients: {:?}", connected_clients);
+            if self.debug_mode {
+                println!("[SIDECAR] Connected clients: {:?}", connected_clients);
+            }
             
             if connected_clients.is_empty() {
                 println!("[SIDECAR] ERROR: No Rust clients connected");
@@ -399,11 +435,15 @@ impl SidecarManager {
 
             // Send to the first connected client (typically the main Rust process)
             let client_id = &connected_clients[0];
-            println!("[SIDECAR] Target client ID: {}", client_id);
+            if self.debug_mode {
+                println!("[SIDECAR] Target client ID: {}", client_id);
+            }
 
             match ipc_server.send_to_client(client_id, &message).await {
                 Ok(_) => {
-                    println!("[SIDECAR] Sidecar request sent successfully to client: {}", client_id);
+                    if self.debug_mode {
+                        println!("[SIDECAR] Sidecar request sent successfully to client: {}", client_id);
+                    }
 
                     // Return a pending response - actual response will come asynchronously
                     let response = serde_json::json!({
@@ -412,7 +452,9 @@ impl SidecarManager {
                         "status": "request_sent",
                         "note": "Response will be delivered asynchronously"
                     });
-                    println!("[SIDECAR] Returning response: {:?}", response);
+                    if self.debug_mode {
+                        println!("[SIDECAR] Returning response: {:?}", response);
+                    }
                     Ok(response)
                 },
                 Err(e) => {

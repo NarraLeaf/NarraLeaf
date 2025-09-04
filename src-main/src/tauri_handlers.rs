@@ -358,7 +358,8 @@ pub async fn create_window(
                 // Attach close event listener
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { .. } = event {
-                        println!("Window close requested for: {}", window_label);
+                        // Only log in debug mode to reduce noise
+                        // println!("Window close requested for: {}", window_label);
 
                         let window_label_clone = window_label.clone();
 

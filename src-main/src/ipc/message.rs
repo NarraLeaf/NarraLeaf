@@ -58,9 +58,10 @@ pub async fn process_message(
 
         SidecarMessage::RuntimeRequest { id, request_type, payload, response_channel: _ } => {
             // Handle request from sidecar (e.g., tauri: operations)
-            println!("Received runtime request: {} -> {}", request_type, id);
-            println!("Request payload: {:?}", payload);
-            println!("App handle available: {}", server_state.app_handle.is_some());
+            println!("[SERVER] Received runtime request: {} -> {}", request_type, id);
+            println!("[SERVER] Request payload: {:?}", payload);
+            println!("[SERVER] App handle available: {}", server_state.app_handle.is_some());
+            println!("[SERVER] Processing runtime request...");
 
             // Process the runtime request using the operations framework
             let result = OperationExecutor::execute_from_ipc(
@@ -69,7 +70,8 @@ pub async fn process_message(
                 server_state.app_handle.as_ref(), // Pass the app handle from server state
             ).await;
 
-            println!("Operation result: success={}, message={:?}", result.success, result.message);
+            println!("[SERVER] Operation result: success={}, message={:?}", result.success, result.message);
+            println!("[SERVER] Operation data: {:?}", result.data);
 
             // Create response based on operation result
             let response = SidecarMessage::RuntimeResponse {
@@ -79,13 +81,14 @@ pub async fn process_message(
                 error: result.message,
             };
 
-            println!("Sending runtime response: {} -> success={}", id, result.success);
+            println!("[SERVER] Sending runtime response: {} -> success={}", id, result.success);
+            println!("[SERVER] Response to client: {}", client_id);
             if let Err(e) = send_message_to_client_by_id(
                 client_id, server_state, &response
             ).await {
-                println!("Failed to send runtime request response: {}", e);
+                println!("[SERVER] ERROR: Failed to send runtime request response: {}", e);
             } else {
-                println!("Runtime response sent successfully: {}", id);
+                println!("[SERVER] Runtime response sent successfully: {}", id);
             }
         }
 

@@ -55,6 +55,7 @@ export class MainServiceIPCClient extends EventEmitter {
     private client: net.Socket | null = null;
     private socketPath: string;
     private connected: boolean = false;
+    private isConnecting: boolean = false;
     private reconnectInterval: NodeJS.Timeout | null = null;
     private reconnectAttempts: number = 0;
     private maxReconnectAttempts: number = 5;
@@ -147,10 +148,27 @@ export class MainServiceIPCClient extends EventEmitter {
      * Connect to the IPC server
      */
     public async connect(): Promise<void> {
-        if (this.client) {
-            throw new Error('Already connected');
+        // If already connected, simply return
+        if (this.connected) {
+            this.logger.warn('Already connected, skip connect');
+            return;
         }
 
+        // If a connection attempt is in progress, avoid re-entrant connects
+        if (this.isConnecting) {
+            this.logger.info('Connection attempt already in progress, skip duplicate connect');
+            return;
+        }
+
+        // If there is a stale client socket, clean it before reconnecting
+        if (this.client) {
+            this.logger.warn('Stale client socket found, cleaning up before connect');
+            try { this.client.removeAllListeners(); } catch {}
+            try { this.client.destroy(); } catch {}
+            this.client = null;
+        }
+
+        this.isConnecting = true;
         this.emit('connecting');
         this.emit('stateChanged', ConnectionStatus.Connecting);
 
@@ -158,13 +176,26 @@ export class MainServiceIPCClient extends EventEmitter {
             try {
                 if (os.platform() === 'win32') {
                     // Windows: Connect to named pipe
-                    this.connectToNamedPipe(resolve, reject);
+                    this.connectToNamedPipe(() => {
+                        this.isConnecting = false;
+                        resolve();
+                    }, (error) => {
+                        this.isConnecting = false;
+                        reject(error);
+                    });
                 } else {
                     // Unix-like: Connect to Unix domain socket
-                    this.connectToUnixSocket(resolve, reject);
+                    this.connectToUnixSocket(() => {
+                        this.isConnecting = false;
+                        resolve();
+                    }, (error) => {
+                        this.isConnecting = false;
+                        reject(error);
+                    });
                 }
             } catch (error) {
-                reject(error);
+                this.isConnecting = false;
+                reject(error as Error);
             }
         });
     }
@@ -206,7 +237,7 @@ export class MainServiceIPCClient extends EventEmitter {
         ]
     ): Promise<RuntimeResponseMessage<RuntimeRequestResult[T]>> {
         const requestType = args[0];
-        const payload = args[1];
+        const payload = (args.length > 1 ? args[1] : null) as any;
 
         return new Promise((resolve, reject) => {
             const requestId = (++this.messageIdCounter).toString();
@@ -215,7 +246,7 @@ export class MainServiceIPCClient extends EventEmitter {
                 type: 'RuntimeRequest',
                 id: requestId,
                 request_type: requestType,
-                payload,
+                payload: payload ?? null,
                 response_channel: responseChannel
             };
 
@@ -432,7 +463,10 @@ export class MainServiceIPCClient extends EventEmitter {
         });
 
         this.client.on('close', () => {
+            // Ensure state reset on close
             this.connected = false;
+            this.isConnecting = false;
+            this.client = null;
             this.emit('disconnected');
             this.emit('stateChanged', ConnectionStatus.Disconnected);
             if (this.autoReconnect) {
@@ -441,7 +475,13 @@ export class MainServiceIPCClient extends EventEmitter {
         });
 
         this.client.on('error', (error: Error) => {
+            // Reset state on error so subsequent connect attempts are allowed
             this.logger.error('Client error:' + (error as Error).message);
+            this.connected = false;
+            this.isConnecting = false;
+            try { this.client?.removeAllListeners(); } catch {}
+            try { this.client?.destroy(); } catch {}
+            this.client = null;
             this.emit('clientError', error);
             reject(error);
         });

@@ -59,7 +59,10 @@ impl IPCProtocolHandler {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        println!("IPC Protocol Request: {} (id: {}) at {}", request.request_type, request_id, current_time);
+        // Only log significant requests to reduce noise
+        if request.request_type.contains("game") || request.request_type.contains("save") || request.request_type.contains("load") {
+            println!("IPC Protocol Request: {} (id: {}) at {}", request.request_type, request_id, current_time);
+        }
 
         // Security check: Only allow narraleaf: namespace requests from renderer
         if !request.request_type.starts_with("narraleaf:") {
@@ -83,7 +86,10 @@ impl IPCProtocolHandler {
         }
 
         // Forward all narraleaf: operations to NodeJS sidecar
-        println!("Forwarding narraleaf operation to sidecar: {} (id: {})", request.request_type, request_id);
+        // Only log significant operations to reduce noise
+        if request.request_type.contains("game") || request.request_type.contains("save") || request.request_type.contains("load") {
+            println!("Forwarding narraleaf operation to sidecar: {} (id: {})", request.request_type, request_id);
+        }
         Self::forward_to_sidecar(request, state).await
     }
 
@@ -159,14 +165,20 @@ impl IPCProtocolHandler {
             payload: request.payload.clone(),
         };
 
-        println!("Forwarding to sidecar: {} -> {:?}", request.request_type, sidecar_message);
+        // Only log significant messages to reduce noise
+        if request.request_type.contains("game") || request.request_type.contains("save") || request.request_type.contains("load") {
+            println!("Forwarding to sidecar: {} -> {:?}", request.request_type, sidecar_message);
+        }
 
         // Send the message to the first connected client
         let client_id = &connected_clients[0];
 
         match ipc_server.send_to_client(client_id, &sidecar_message).await {
             Ok(_) => {
-                println!("Message sent to sidecar client: {}", client_id);
+                // Only log significant messages to reduce noise
+                if request.request_type.contains("game") || request.request_type.contains("save") || request.request_type.contains("load") {
+                    println!("Message sent to sidecar client: {}", client_id);
+                }
 
                 // Wait for response with timeout
                 match tokio::time::timeout(Duration::from_secs(30), response_rx).await {
@@ -174,7 +186,10 @@ impl IPCProtocolHandler {
                         // Process the response
                         match response_message {
                             crate::communication::SidecarMessage::ServiceResponse { id, success, data, error } => {
-                                println!("Received response for {}: success={}", id, success);
+                                // Only log significant responses to reduce noise
+                                if request.request_type.contains("game") || request.request_type.contains("save") || request.request_type.contains("load") {
+                                    println!("Received response for {}: success={}", id, success);
+                                }
                                 Ok(IPCResponse {
                                     id,
                                     success,

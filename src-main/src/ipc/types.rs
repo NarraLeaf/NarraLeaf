@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::sync::oneshot;
+use tokio::sync::Mutex;
 
 
 
@@ -17,7 +18,7 @@ use tokio::sync::oneshot;
 pub struct ClientConnection {
     pub id: String,
     pub last_seen: std::time::Instant,
-    pub platform_stream: PlatformStream,
+    pub platform_stream: Arc<Mutex<PlatformStream>>,
 }
 
 /// Platform-specific stream wrapper
