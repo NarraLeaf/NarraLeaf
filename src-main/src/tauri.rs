@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 use std::time::Duration;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 
 use crate::sidecar::SidecarManager;
 use crate::communication::PROTOCOL_VERSION;
@@ -111,7 +111,7 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
 
             // Start sidecar process with socket connection string as parameter
             let connection_string_clone = connection_string.clone();
-            let sidecar_manager_clone = Arc::clone(&plugin_state.sidecar_manager);
+            let sidecar_manager_clone: Arc<tokio::sync::Mutex<SidecarManager>> = Arc::clone(&plugin_state.sidecar_manager);
 
             // Start sidecar in a separate task
             tokio::spawn(async move {
@@ -163,17 +163,8 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
         .on_event(move |app, event| {
             match event {
                 tauri::RunEvent::ExitRequested { api, .. } => {
-                    if let Some(state_arc) = app.try_state::<Arc<PluginState>>() {
-                        if !state_arc.allow_exit.load(Ordering::SeqCst) {
-                            println!("Exit requested – preventing shutdown;");
-                            api.prevent_exit();
-                        } else {
-                            println!("Exit allowed – proceeding to shutdown");
-                        }
-                    } else {
-                        // Fallback: prevent by default if state missing
-                        api.prevent_exit();
-                    }
+                    println!("[LIFECYCLE] Tauri ExitRequested intercepted – preventing exit");
+                    api.prevent_exit();
                 }
                 tauri::RunEvent::Exit => {
                     println!("Tauri app is exiting, stopping sidecar...");
@@ -207,9 +198,13 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                     });
                     
                     // Wait for sidecar to stop (with timeout)
-                    match rx.recv_timeout(std::time::Duration::from_secs(10)) {
+                    match rx.recv_timeout(std::time::Duration::from_secs(2)) {
                         Ok(_) => println!("[EXIT] Sidecar cleanup completed successfully"),
-                        Err(_) => eprintln!("[EXIT] Sidecar cleanup timeout, proceeding with exit"),
+                        Err(_) => {
+                            eprintln!("[EXIT] Sidecar cleanup timeout (2s), forcing exit now");
+                            // Force terminate the entire process to avoid hanging
+                            std::process::exit(0);
+                        },
                     }
                 }
                 _ => {}
@@ -244,15 +239,10 @@ fn setup_window_event_listeners(app: &tauri::AppHandle) {
         window.on_window_event(move |event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 println!("Window close requested for: {}", window_label);
-                
-                // Send sidecar notification asynchronously
                 let window_label_clone = window_label.clone();
-                
                 tokio::spawn(async move {
                     if let Some(plugin_state) = get_global_plugin_state() {
                         let sidecar_manager = plugin_state.sidecar_manager.lock().await;
-                        
-                        // Send sidecar:window.on_close notification
                         let payload = serde_json::json!({
                             "label": window_label_clone,
                             "timestamp": std::time::SystemTime::now()
@@ -260,11 +250,9 @@ fn setup_window_event_listeners(app: &tauri::AppHandle) {
                                 .unwrap_or_default()
                                 .as_millis()
                         });
-                        
-                        match sidecar_manager.send_sidecar_request("sidecar:window.on_close", payload).await {
-                            Ok(_) => println!("Sidecar notification sent for window close: {}", window_label_clone),
-                            Err(e) => println!("Failed to send sidecar notification: {}", e),
-                        }
+                        let _ = sidecar_manager
+                            .send_sidecar_request("sidecar:window.on_close", payload)
+                            .await;
                     }
                 });
             }

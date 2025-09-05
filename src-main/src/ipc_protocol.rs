@@ -122,7 +122,7 @@ impl IPCProtocolHandler {
         let manager = state.sidecar_manager.lock().await;
 
         // Check if IPC server is available
-        let ipc_server = match &manager.ipc_server {
+        let ipc_server = match manager.get_ipc_server() {
             Some(server) => server,
             None => {
                 return Ok(IPCResponse {

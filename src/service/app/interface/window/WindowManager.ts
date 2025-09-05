@@ -1,8 +1,15 @@
+/*!
+ * Window Manager
+ *
+ * Manages multiple window instances and provides centralized
+ * window lifecycle management and event handling.
+ */
+
 import { ServiceRequestResult } from "../../ipc/protocol";
 import { MessageHandler, ServiceRequestMessage, ServiceResponseMessage } from "../../ipc/types";
 import { API } from "../API";
-import { WindowCloseEventHandler } from "./handlers/window";
 import { Window, WindowConfig } from "./Window";
+import { WindowCloseEventHandler } from "./handlers/window";
 
 export class WindowManager {
     private readonly api: API;
@@ -75,6 +82,20 @@ export class WindowManager {
     }
 
     /**
+     * Get window labels
+     */
+    public getWindowLabels(): string[] {
+        return Array.from(this.windows.keys());
+    }
+
+    /**
+     * Check if any windows are open
+     */
+    public hasOpenWindows(): boolean {
+        return this.windows.size > 0;
+    }
+
+    /**
      * Setup service handler to prevent event listeners from being lost
      */
     private setupServiceHandler(): void {
@@ -96,19 +117,5 @@ export class WindowManager {
         this.windows.clear();
 
         this.closeAllWindows();
-    }
-
-    /**
-     * Get window labels
-     */
-    public getWindowLabels(): string[] {
-        return Array.from(this.windows.keys());
-    }
-
-    /**
-     * Check if any windows are open
-     */
-    public hasOpenWindows(): boolean {
-        return this.windows.size > 0;
     }
 }

@@ -39,6 +39,8 @@ pub mod ipc_protocol;
 pub mod privilege_protocol;
 pub mod tauri;
 pub mod tauri_handlers;
+pub mod handlers;
+pub mod lifecycle;
 mod operations;
 mod handler_types;
 

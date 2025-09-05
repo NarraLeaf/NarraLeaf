@@ -1,253 +1,19 @@
+/*!
+ * Window Class
+ *
+ * Represents a single window instance with its configuration,
+ * lifecycle management, and operation methods.
+ */
+
 import { mergeConfig } from "@/service/utils/data";
 import { ServiceError } from "@/service/utils/error";
 import { RuntimeRequestPayload, RuntimeRequestResult } from "../../ipc/protocol";
 import { API } from "../API";
 import EventEmitter from "node:events";
+import { WindowConfig, WindowRequestTypes, WindowEvents } from "./types";
 
-export interface WindowConfig {
-    /**
-     * Unique identifier for the window.
-     * 
-     * This label is used internally by Tauri to track and manage the window.
-     * It must be unique across all windows in the application and should be
-     * a valid string identifier. This label is used for window operations
-     * like showing, hiding, focusing, and closing specific windows.
-     * 
-     * @example "main-window", "settings-dialog", "game-screen"
-     */
-    label: string;
-
-    /**
-     * Window title displayed in the title bar and taskbar.
-     * 
-     * This is the human-readable title that appears in the window's title bar,
-     * taskbar entry, and window switcher. It's separate from the document title
-     * that might be set in the web content.
-     */
-    title: string;
-
-    /**
-     * Initial width of the window in pixels.
-     * 
-     * Sets the horizontal size of the window when it's first created.
-     * The window can be resized by the user unless resizing is disabled.
-     * 
-     * @minimum 1
-     */
-    width: number;
-
-    /**
-     * Initial height of the window in pixels.
-     * 
-     * Sets the vertical size of the window when it's first created.
-     * The window can be resized by the user unless resizing is disabled.
-     * 
-     * @minimum 1
-     */
-    height: number;
-
-    /**
-     * Initial horizontal position of the window on screen.
-     * 
-     * Sets the X coordinate (distance from left edge of screen) where
-     * the window will be positioned when created. If not specified,
-     * the window will use the system's default positioning logic.
-     * 
-     * @optional
-     */
-    x?: number;
-
-    /**
-     * Initial vertical position of the window on screen.
-     * 
-     * Sets the Y coordinate (distance from top edge of screen) where
-     * the window will be positioned when created. If not specified,
-     * the window will use the system's default positioning logic.
-     * 
-     * @optional
-     */
-    y?: number;
-
-    /**
-     * Whether to center the window on screen when created.
-     * 
-     * When set to true, the window will be automatically positioned
-     * at the center of the primary display, ignoring any x/y coordinates
-     * that might be set. This is useful for creating dialogs or
-     * modal windows that should appear centered.
-     * 
-     * @optional
-     * @default false
-     */
-    center?: boolean;
-
-    /**
-     * Whether to show window decorations (title bar, borders, etc.).
-     * 
-     * Window decorations include the title bar, minimize/maximize/close buttons,
-     * and window borders. When set to false, the window becomes borderless
-     * and the application must provide its own window controls.
-     * 
-     * @optional
-     * @default true
-     */
-    decorations?: boolean;
-
-    /**
-     * Whether the window should always stay on top of other windows.
-     * 
-     * When enabled, the window will remain visible above other applications
-     * even when they are focused. Useful for tool windows, notifications,
-     * or other UI elements that need to remain visible.
-     * 
-     * @optional
-     * @default false
-     */
-    alwaysOnTop?: boolean;
-
-    /**
-     * Whether the window should appear in the taskbar.
-     * 
-     * When set to false, the window will not show up in the system taskbar
-     * or dock. This is useful for background windows, tool windows,
-     * or windows that should be hidden from the user's task switching.
-     * 
-     * @optional
-     * @default true
-     */
-    taskbar?: boolean;
-
-    /**
-     * Whether the window should be visible immediately after creation.
-     * 
-     * When set to false (default), the window is created but remains hidden.
-     * You can show it later using window.show(). When set to true,
-     * the window becomes visible immediately after creation.
-     * 
-     * @optional
-     * @default false
-     */
-    show?: boolean;
-
-    /**
-     * Whether the window can be resized by the user.
-     * 
-     * When set to false, the window size is fixed and cannot be changed
-     * by dragging the window borders or using the maximize button.
-     * This is useful for dialogs, tool windows, or other UI elements
-     * that should maintain a specific size.
-     * 
-     * @optional
-     * @default true
-     */
-    resizable?: boolean;
-
-    /**
-     * Whether the window can be closed by the user.
-     * 
-     * When set to false, the close button in the title bar is disabled
-     * and the window cannot be closed through normal user interaction.
-     * The window can still be closed programmatically. This is useful
-     * for critical windows that should not be accidentally closed.
-     * 
-     * @optional
-     * @default true
-     */
-    closable?: boolean;
-
-    /**
-     * Whether the window can be minimized by the user.
-     * 
-     * When set to false, the minimize button in the title bar is disabled
-     * and the window cannot be minimized through normal user interaction.
-     * The window can still be minimized programmatically. This is useful
-     * for windows that should always remain visible.
-     * 
-     * @optional
-     * @default true
-     */
-    minimizable?: boolean;
-
-    /**
-     * Whether the window can be maximized by the user.
-     * 
-     * When set to false, the maximize button in the title bar is disabled
-     * and the window cannot be maximized through normal user interaction.
-     * The window can still be maximized programmatically. This is useful
-     * for windows that should maintain their specific size.
-     * 
-     * @optional
-     * @default true
-     */
-    maximizable?: boolean;
-
-    /**
-     * Whether the window should be focused when created.
-     * 
-     * When set to true, the window will receive keyboard focus immediately
-     * after creation. This is useful for main application windows or
-     * dialogs that should be ready for user input.
-     * 
-     * @optional
-     * @default false
-     */
-    focus?: boolean;
-
-    /**
-     * Whether the window should be transparent.
-     * 
-     * When set to true, the window background becomes transparent,
-     * allowing content behind the window to show through. This is useful
-     * for creating overlay effects or custom window shapes.
-     * 
-     * @optional
-     * @default false
-     */
-    transparent?: boolean;
-
-    /**
-     * Whether the window should be fullscreen when created.
-     * 
-     * When set to true, the window will be created in fullscreen mode,
-     * taking up the entire screen and hiding the taskbar/dock.
-     * This is useful for games, presentations, or immersive applications.
-     * 
-     * @optional
-     * @default false
-     */
-    fullscreen?: boolean;
-
-    /**
-     * The URL to load into the window. 
-     * @optional
-     */
-    url?: string;
-};
-
-export type WindowRequestTypes = 
-   "tauri:window.create" |
-   "tauri:window.maximize" |
-   "tauri:window.minimize" |
-   "tauri:window.close" |
-   "tauri:window.show" |
-   "tauri:window.hide" |
-   "tauri:window.set_focus" |
-   "tauri:window.set_position" |
-   "tauri:window.set_size" |
-   "tauri:window.set_title" |
-   "tauri:window.center" |
-   "tauri:window.set_decorations" |
-   "tauri:window.set_resizable" |
-   "tauri:window.set_closable" |
-   "tauri:window.set_minimizable" |
-   "tauri:window.set_maximizable" |
-   "tauri:window.set_transparent" |
-   "tauri:window.set_fullscreen" |
-   "tauri:window.set_url";
-
-export interface WindowEvents {
-    "closed": [];
-}
+// Re-export types for external use
+export type { WindowConfig, WindowRequestTypes, WindowEvents } from "./types";
 
 export class Window {
     private readonly config: WindowConfig;
@@ -291,100 +57,134 @@ export class Window {
     /**
      * Maximizes the window to fill the entire screen
      */
-    public maximize(): Promise<this> { return this.chainRequests("tauri:window.maximize", {}); }
+    public maximize(): Promise<this> { 
+        return this.chainRequests("tauri:window.maximize", {}); 
+    }
     
     /**
      * Minimizes the window to the taskbar
      */
-    public minimize(): Promise<this> { return this.chainRequests("tauri:window.minimize", {}); }
+    public minimize(): Promise<this> { 
+        return this.chainRequests("tauri:window.minimize", {}); 
+    }
     
     /**
      * Makes the window visible to the user
      */
-    public show(): Promise<this> { return this.chainRequests("tauri:window.show", {}); }
+    public show(): Promise<this> { 
+        return this.chainRequests("tauri:window.show", {}); 
+    }
     
     /**
      * Hides the window from view
      */
-    public hide(): Promise<this> { return this.chainRequests("tauri:window.hide", {}); }
+    public hide(): Promise<this> { 
+        return this.chainRequests("tauri:window.hide", {}); 
+    }
     
     /**
      * Brings the window to front and gives it keyboard focus
      */
-    public setFocus(): Promise<this> { return this.chainRequests("tauri:window.set_focus", {}); }
+    public setFocus(): Promise<this> { 
+        return this.chainRequests("tauri:window.set_focus", {}); 
+    }
     
     /**
      * Moves the window to the specified screen coordinates
      * @param x Horizontal position in pixels from left edge
      * @param y Vertical position in pixels from top edge
      */
-    public setPosition(x: number, y: number): Promise<this> { return this.chainRequests("tauri:window.set_position", { x, y }); }
+    public setPosition(x: number, y: number): Promise<this> { 
+        return this.chainRequests("tauri:window.set_position", { x, y }); 
+    }
     
     /**
      * Resizes the window to the specified dimensions
      * @param width New width in pixels
      * @param height New height in pixels
      */
-    public setSize(width: number, height: number): Promise<this> { return this.chainRequests("tauri:window.set_size", { width, height }); }
+    public setSize(width: number, height: number): Promise<this> { 
+        return this.chainRequests("tauri:window.set_size", { width, height }); 
+    }
     
     /**
      * Changes the window title displayed in title bar and taskbar
      * @param title New window title text
      */
-    public setTitle(title: string): Promise<this> { return this.chainRequests("tauri:window.set_title", { title }); }
+    public setTitle(title: string): Promise<this> { 
+        return this.chainRequests("tauri:window.set_title", { title }); 
+    }
     
     /**
      * Centers the window on the primary display
      */
-    public center(): Promise<this> { return this.chainRequests("tauri:window.center", {}); }
+    public center(): Promise<this> { 
+        return this.chainRequests("tauri:window.center", {}); 
+    }
     
     /**
      * Shows or hides window decorations (title bar, borders, controls)
      * @param decorations Whether to show window decorations
      */
-    public setDecorations(decorations: boolean): Promise<this> { return this.chainRequests("tauri:window.set_decorations", { decorations }); }
+    public setDecorations(decorations: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_decorations", { decorations }); 
+    }
     
     /**
      * Enables or disables window resizing by user
      * @param resizable Whether the window can be resized
      */
-    public setResizable(resizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_resizable", { resizable }); }
+    public setResizable(resizable: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_resizable", { resizable }); 
+    }
     
     /**
      * Enables or disables the close button
      * @param closable Whether the window can be closed by user
      */
-    public setClosable(closable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_closable", { closable }); }
+    public setClosable(closable: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_closable", { closable }); 
+    }
     
     /**
      * Enables or disables the minimize button
      * @param minimizable Whether the window can be minimized
      */
-    public setMinimizable(minimizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_minimizable", { minimizable }); }
+    public setMinimizable(minimizable: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_minimizable", { minimizable }); 
+    }
     
     /**
      * Enables or disables the maximize button
      * @param maximizable Whether the window can be maximized
      */
-    public setMaximizable(maximizable: boolean): Promise<this> { return this.chainRequests("tauri:window.set_maximizable", { maximizable }); }
+    public setMaximizable(maximizable: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_maximizable", { maximizable }); 
+    }
     
     /**
      * Makes the window background transparent (only works during creation)
      * @param transparent Whether the window should be transparent
      */
-    public setTransparent(transparent: boolean): Promise<this> { return this.chainRequests("tauri:window.set_transparent", { transparent }); }
+    public setTransparent(transparent: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_transparent", { transparent }); 
+    }
     
     /**
      * Switches the window to or from fullscreen mode
      * @param fullscreen Whether the window should be fullscreen
      */
-    public setFullscreen(fullscreen: boolean): Promise<this> { return this.chainRequests("tauri:window.set_fullscreen", { fullscreen }); }
+    public setFullscreen(fullscreen: boolean): Promise<this> { 
+        return this.chainRequests("tauri:window.set_fullscreen", { fullscreen }); 
+    }
     
     /**
      * Navigates the window to a new URL
      * @param url The URL to navigate to
      */
-    public setUrl(url: string): Promise<this> { return this.chainRequests("tauri:window.set_url", { url }); }
+    public setUrl(url: string): Promise<this> { 
+        return this.chainRequests("tauri:window.set_url", { url }); 
+    }
 
     /**
      * Closes the window and cleans up resources
@@ -395,7 +195,6 @@ export class Window {
         }
 
         await this.chainRequests("tauri:window.close", {});
-
         this.dispose();
     }
 
@@ -407,14 +206,23 @@ export class Window {
         return this.closed;
     }
 
+    /**
+     * Register a close event listener
+     */
     public onClose(callback: () => void): void {
         this.events.on("closed", callback);
     }
 
+    /**
+     * Unregister a close event listener
+     */
     public offClose(callback: () => void): void {
         this.events.off("closed", callback);
     }
 
+    /**
+     * Initialize the window
+     */
     private async initialize(): Promise<this> {
         return await this.chainRequests("tauri:window.create", {
             title: this.config.title,
@@ -423,7 +231,7 @@ export class Window {
             center: this.config.center,
             decorations: this.config.decorations,
             always_on_top: this.config.alwaysOnTop,
-            skip_taskbar: !this.config.taskbar, // Fix: invert the logic - taskbar: true should set skip_taskbar: false
+            skip_taskbar: !this.config.taskbar,
             show: this.config.show,
             resizable: this.config.resizable,
             closable: this.config.closable,
@@ -438,6 +246,9 @@ export class Window {
         });
     }
 
+    /**
+     * Execute a window request
+     */
     private async request<T extends WindowRequestTypes>(
         requestType: T,
         payload: Omit<RuntimeRequestPayload[T], "label">
@@ -461,6 +272,9 @@ export class Window {
         return result.data;
     }
 
+    /**
+     * Chain window requests for fluent API
+     */
     private async chainRequests<T extends WindowRequestTypes>(
         requestType: T,
         payload: Omit<RuntimeRequestPayload[T], "label">
