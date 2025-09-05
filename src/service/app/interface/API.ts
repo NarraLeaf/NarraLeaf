@@ -4,6 +4,7 @@ import { Window } from "./window/Window";
 import { MainServiceIPCClient } from "../ipc/socket";
 import { RuntimeRequestTypes, RuntimeRequestPayload, RuntimeRequestResult, ServiceRequestTypes, ServiceRequestPayload, RuntimeResponseMessage } from "../ipc/protocol";
 import { WindowManager } from "./window/WindowManager";
+import { MessageHandler } from "../ipc/types";
 
 export class API {
     protected readonly windowManager: WindowManager;
@@ -34,5 +35,15 @@ export class API {
         callback: (payload: ServiceRequestPayload[T]) => void
     ): VoidFunction {
         return this.ipcClient.onMessage(requestType, callback);
+    }
+
+    /**@internal */
+    public registerHandler<T extends ServiceRequestTypes>(requestType: T, handler: MessageHandler<T>): void {
+        this.ipcClient.registerHandler(requestType, handler);
+    }
+
+    /**@internal */
+    public unregisterHandler<T extends ServiceRequestTypes>(requestType: T): void {
+        this.ipcClient.unregisterHandler(requestType);
     }
 }

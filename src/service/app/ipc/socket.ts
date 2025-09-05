@@ -58,8 +58,8 @@ export class MainServiceIPCClient extends EventEmitter {
     private isConnecting: boolean = false;
     private reconnectInterval: NodeJS.Timeout | null = null;
     private reconnectAttempts: number = 0;
-    private maxReconnectAttempts: number = 5;
-    private reconnectDelay: number = 1000;
+    private maxReconnectAttempts: number = 3;
+    private reconnectDelay: number = 500;
     private messageHandlers: Map<string, MessageHandler> = new Map();
     private messageBuffer: Buffer = Buffer.alloc(0);
     private messageIdCounter: number = 0;
@@ -72,6 +72,7 @@ export class MainServiceIPCClient extends EventEmitter {
         this.socketPath = this.getSocketPath(socketName);
         this.setupEventHandlers();
         this.setupDefaultHandlers();
+        this.setupProcessExitHandlers();
     }
 
     /**
@@ -420,6 +421,46 @@ export class MainServiceIPCClient extends EventEmitter {
                     data: Date.now()
                 } as ServiceResponseMessage;
             }
+        });
+    }
+
+    /**
+     * Setup process exit handlers to ensure clean shutdown
+     */
+    private setupProcessExitHandlers(): void {
+        // Handle process exit signals
+        const cleanup = () => {
+            this.logger.info('[App] Process exit signal received, cleaning up IPC connection...');
+            this.setAutoReconnect(false);
+            
+            // Force immediate cleanup
+            this.close().catch(err => {
+                this.logger.error('[App] Error during cleanup: ' + (err as Error).message);
+            }).finally(() => {
+                // Ensure process exits after cleanup
+                setTimeout(() => {
+                    this.logger.info('[App] Forcing process exit after cleanup');
+                    process.exit(0);
+                }, 100);
+            });
+        };
+
+        // Handle SIGTERM, SIGINT (Ctrl+C), and other exit signals
+        process.on('SIGTERM', cleanup);
+        process.on('SIGINT', cleanup);
+        process.on('exit', () => cleanup());
+        
+        // Handle uncaught exceptions
+        process.on('uncaughtException', (err: Error) => {
+            this.logger.error('[App] Uncaught exception: ' + err.message);
+            cleanup();
+            process.exit(1);
+        });
+        
+        process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+            this.logger.error('[App] Unhandled rejection at: ' + promise + ' reason: ' + reason);
+            cleanup();
+            process.exit(1);
         });
     }
 

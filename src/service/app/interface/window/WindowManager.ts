@@ -1,4 +1,7 @@
+import { ServiceRequestResult } from "../../ipc/protocol";
+import { MessageHandler, ServiceRequestMessage, ServiceResponseMessage } from "../../ipc/types";
 import { API } from "../API";
+import { WindowCloseEventHandler } from "./handlers/window";
 import { Window, WindowConfig } from "./Window";
 
 export class WindowManager {
@@ -67,6 +70,8 @@ export class WindowManager {
         if (window && !window.isClosed()) {
             await window.close();
         }
+
+        this.windows.delete(label);
     }
 
     /**
@@ -74,22 +79,12 @@ export class WindowManager {
      */
     private setupServiceHandler(): void {
         // Register handler for window close events
-        const unregister = this.api.onMessage("sidecar:window.on_close", (payload: { label: string; timestamp: number }) => {
-            // Extract window label from payload
-            const windowLabel = payload.label;
-            if (windowLabel && this.windows.has(windowLabel)) {
-                // Get the window instance and mark it as closed
-                const window = this.windows.get(windowLabel);
-                if (window) {
-                    window.dispose();
-                }
-                
-                // Remove the closed window from our map
-                this.windows.delete(windowLabel);
-            }
+        this.api.registerHandler("sidecar:window.on_close", new WindowCloseEventHandler(this));
+        
+        // Add cleanup function to unregister the handler
+        this.cleanup.push(() => {
+            this.api.unregisterHandler("sidecar:window.on_close");
         });
-
-        this.cleanup.push(unregister);
     }
 
     /**

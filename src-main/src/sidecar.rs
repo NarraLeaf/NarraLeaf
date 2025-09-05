@@ -279,12 +279,28 @@ impl SidecarManager {
             println!("[SIDECAR] INFO: No IPC server to stop");
         }
 
-        // Kill child process
+        // Kill child process with timeout
         println!("[SIDECAR] Terminating sidecar process...");
         if let Some(mut child) = self.child_process.take() {
             println!("[SIDECAR] Child process found, killing...");
+            
+            // First try graceful termination
             let _ = child.kill().await;
-            println!("[SIDECAR] Child process terminated");
+            
+            // Wait for process to exit with timeout
+            let timeout = tokio::time::Duration::from_secs(3);
+            match tokio::time::timeout(timeout, child.wait()).await {
+                Ok(exit_status) => {
+                    println!("[SIDECAR] Child process terminated gracefully: {:?}", exit_status);
+                }
+                Err(_) => {
+                    println!("[SIDECAR] Child process did not exit within timeout, force killing...");
+                    // Force kill if timeout
+                    let _ = child.kill().await;
+                    // Give it a moment to actually die
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                }
+            }
         } else {
             println!("[SIDECAR] INFO: No child process to terminate");
         }
@@ -369,7 +385,49 @@ impl SidecarManager {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
         
-        println!("[SIDECAR] Sidecar status monitoring stopped");
+        println!("[SIDECAR] Sidecar status monitoring stopped (final state: {:?})", self.state);
+    }
+
+    pub async fn check_health(&mut self, iteration: usize) -> bool {
+        if self.debug_mode {
+            println!("[DEBUG] Health check #{} - Checking sidecar process status...", iteration);
+        }
+
+        // 仅在 Running 状态下执行检查
+        if self.state != SidecarState::Running {
+            return false;
+        }
+
+        if let Some(ref mut child) = self.child_process {
+            match child.try_wait() {
+                Ok(Some(exit_status)) => {
+                    println!("[SIDECAR] ERROR: Sidecar process exited with status: {}", exit_status);
+                    self.state = SidecarState::Failed;
+
+                    self.trigger_main_process_shutdown().await;
+                    return false;
+                }
+                Ok(None) => {
+                    self.last_health_check = std::time::Instant::now();
+                    if self.debug_mode {
+                        println!("[DEBUG] Sidecar process is still running (PID: {:?})", child.id());
+                    }
+                }
+                Err(e) => {
+                    println!("[SIDECAR] ERROR: Error checking sidecar process status: {}", e);
+                    self.state = SidecarState::Failed;
+                    self.trigger_main_process_shutdown().await;
+                    return false;
+                }
+            }
+        } else {
+            println!("[SIDECAR] ERROR: No child process found during health check");
+            self.state = SidecarState::Failed;
+            self.trigger_main_process_shutdown().await;
+            return false;
+        }
+
+        true
     }
 
     /**

@@ -423,7 +423,7 @@ export class Window {
             center: this.config.center,
             decorations: this.config.decorations,
             always_on_top: this.config.alwaysOnTop,
-            skip_taskbar: this.config.taskbar,
+            skip_taskbar: !this.config.taskbar, // Fix: invert the logic - taskbar: true should set skip_taskbar: false
             show: this.config.show,
             resizable: this.config.resizable,
             closable: this.config.closable,

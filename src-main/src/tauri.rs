@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
+use std::time::Duration;
 
 use crate::sidecar::SidecarManager;
 use crate::communication::PROTOCOL_VERSION;
@@ -114,27 +115,28 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                 println!("Starting sidecar lifecycle management...");
 
                 // Get mutable access to the sidecar manager
-                let mut manager = sidecar_manager_clone.lock().await;
+                {
+                    let mut manager = sidecar_manager_clone.lock().await;
 
-                // Start the sidecar process
-                let sidecar_path = if cfg!(target_os = "windows") {
-                    "resources/service/sidecar.exe"
-                } else {
-                    "resources/service/sidecar"
-                };
-                if let Err(e) = manager.start_sidecar_and_ipc(sidecar_path, &connection_string_clone).await {
-                    eprintln!("Failed to start sidecar: {}", e);
-                    manager.state = crate::sidecar::SidecarState::Failed;
-                } else {
-                    if debug_mode {
+                    // Start the sidecar process
+                    let sidecar_path = if cfg!(target_os = "windows") {
+                        "resources/service/sidecar.exe"
+                    } else {
+                        "resources/service/sidecar"
+                    };
+                    if let Err(e) = manager.start_sidecar_and_ipc(sidecar_path, &connection_string_clone).await {
+                        eprintln!("Failed to start sidecar: {}", e);
+                        manager.state = crate::sidecar::SidecarState::Failed;
+                        return;
+                    } else if debug_mode {
                         println!("Sidecar started successfully with connection: {}", connection_string_clone);
                         println!("Plugin initialization completed");
                         println!("Note: Windows will only be created when requested by sidecar");
                     }
+                } // manager lock dropped here
 
-                    // Monitor sidecar health and handle termination
-                    manager.listen_sidecar_status().await;
-                }
+                // Spawn separate task for health monitoring so that the lock isn't held across sleeps
+                tokio::spawn(monitor_sidecar(sidecar_manager_clone.clone(), debug_mode));
             });
 
             // Store the plugin state
@@ -157,23 +159,47 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
         })
         .on_event(move |app, event| {
             match event {
+                tauri::RunEvent::ExitRequested { api, .. } => {
+                    println!("Exit requested – preventing shutdown;");
+                    // Prevent Tauri from exiting automatically when the last window closes.
+                    api.prevent_exit();
+                }
                 tauri::RunEvent::Exit => {
                     println!("Tauri app is exiting, stopping sidecar...");
 
-                    // Get the sidecar manager and stop it
+                    // Get the sidecar manager and stop it synchronously
                     let app_handle = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        if let Some(state) = app_handle.try_state::<PluginState>() {
-                            let mut manager = state.sidecar_manager.lock().await;
-                            if let Err(e) = manager.stop().await {
-                                eprintln!("Error stopping sidecar during app exit: {}", e);
+                    
+                    // Use blocking spawn and wait for completion to ensure sidecar is fully stopped
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    std::thread::spawn(move || {
+                        // Create a new runtime for this thread to handle async operations
+                        let rt = tokio::runtime::Runtime::new().unwrap();
+                        rt.block_on(async {
+                            // Retrieve the managed state as `Arc<PluginState>` instead of `PluginState`
+                            if let Some(state_arc) = app_handle.try_state::<Arc<PluginState>>() {
+                                // Clone to extend lifetime outside of the if block if needed
+                                let state = state_arc.as_ref();
+                                let mut manager = state.sidecar_manager.lock().await;
+                                println!("[EXIT] Stopping sidecar manager synchronously...");
+                                if let Err(e) = manager.stop().await {
+                                    eprintln!("[EXIT] Error stopping sidecar during app exit: {}", e);
+                                } else {
+                                    println!("[EXIT] Sidecar stopped successfully during app exit");
+                                }
                             } else {
-                                println!("Sidecar stopped successfully during app exit");
+                                eprintln!("[EXIT] Could not access plugin state during app exit");
                             }
-                        } else {
-                            eprintln!("Could not access plugin state during app exit");
-                        }
+                        });
+                        // Signal completion
+                        let _ = tx.send(());
                     });
+                    
+                    // Wait for sidecar to stop (with timeout)
+                    match rx.recv_timeout(std::time::Duration::from_secs(10)) {
+                        Ok(_) => println!("[EXIT] Sidecar cleanup completed successfully"),
+                        Err(_) => eprintln!("[EXIT] Sidecar cleanup timeout, proceeding with exit"),
+                    }
                 }
                 _ => {}
             }
@@ -233,4 +259,30 @@ fn setup_window_event_listeners(app: &tauri::AppHandle) {
             }
         });
     }
+}
+
+// =====================
+// Sidecar monitoring
+// =====================
+async fn monitor_sidecar(sidecar_manager: Arc<Mutex<SidecarManager>>, debug_mode: bool) {
+    let mut iteration: usize = 0;
+    loop {
+        iteration += 1;
+        let should_continue = {
+            let mut manager = sidecar_manager.lock().await;
+            manager.check_health(iteration).await
+        };
+
+        if !should_continue {
+            break;
+        }
+
+        // Sleep 5s between checks (same interval as之前)
+        if debug_mode {
+            println!("[SIDECAR] Waiting 5 seconds before next health check (monitor task)...");
+        }
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+
+    println!("[SIDECAR] Sidecar monitoring task stopped");
 }
