@@ -522,6 +522,9 @@ pub async fn create_window(
                 }
             }
 
+            if let Some(state_arc) = crate::tauri::get_global_plugin_state() {
+                state_arc.allow_exit.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
             app.exit(0);
             OperationResult {
                 success: true,

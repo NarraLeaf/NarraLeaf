@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 use std::time::Duration;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::sidecar::SidecarManager;
 use crate::communication::PROTOCOL_VERSION;
@@ -47,6 +48,7 @@ pub struct PluginState {
     pub sidecar_manager: Arc<Mutex<SidecarManager>>,
     pub app_handle: AppHandle,
     pub debug_mode: bool,
+    pub allow_exit: AtomicBool,
 }
 
 /**
@@ -104,6 +106,7 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
                 sidecar_manager: Arc::clone(&sidecar_manager),
                 app_handle: app.app_handle().clone(),
                 debug_mode,
+                allow_exit: AtomicBool::new(false),
             };
 
             // Start sidecar process with socket connection string as parameter
@@ -160,9 +163,17 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
         .on_event(move |app, event| {
             match event {
                 tauri::RunEvent::ExitRequested { api, .. } => {
-                    println!("Exit requested – preventing shutdown;");
-                    // Prevent Tauri from exiting automatically when the last window closes.
-                    api.prevent_exit();
+                    if let Some(state_arc) = app.try_state::<Arc<PluginState>>() {
+                        if !state_arc.allow_exit.load(Ordering::SeqCst) {
+                            println!("Exit requested – preventing shutdown;");
+                            api.prevent_exit();
+                        } else {
+                            println!("Exit allowed – proceeding to shutdown");
+                        }
+                    } else {
+                        // Fallback: prevent by default if state missing
+                        api.prevent_exit();
+                    }
                 }
                 tauri::RunEvent::Exit => {
                     println!("Tauri app is exiting, stopping sidecar...");

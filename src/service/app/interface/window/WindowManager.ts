@@ -68,7 +68,7 @@ export class WindowManager {
     public async closeWindow(label: string): Promise<void> {
         const window = this.windows.get(label);
         if (window && !window.isClosed()) {
-            await window.close();
+            window.dispose();
         }
 
         this.windows.delete(label);

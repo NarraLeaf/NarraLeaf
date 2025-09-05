@@ -588,7 +588,7 @@ export class MainServiceIPCClient extends EventEmitter {
                 await this.handleVersionCheck(message);
                 break;
             default:
-                this.logger.error('Unhandled message type:' + (message as any).type);
+                this.logger.error('Unhandled message type:' + (message as any).type + ' ' + JSON.stringify(message));
         }
     }
 
