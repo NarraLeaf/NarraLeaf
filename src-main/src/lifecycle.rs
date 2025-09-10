@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::process;
 use crate::tauri::get_global_plugin_state;
 use crate::sidecar::SidecarState;
@@ -35,6 +34,10 @@ impl LifecycleManager {
         }
 
         // Give cleanup at most 2 s then exit.
+        // Allow Tauri RunEvent::ExitRequested to pass
+        if let Some(state_arc) = get_global_plugin_state() {
+            state_arc.allow_exit.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
         tokio::spawn(async {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             println!("[LIFECYCLE] Forcing process exit");

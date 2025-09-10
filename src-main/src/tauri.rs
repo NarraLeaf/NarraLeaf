@@ -18,6 +18,7 @@ use std::sync::atomic::AtomicBool;
 use crate::sidecar::SidecarManager;
 use crate::communication::PROTOCOL_VERSION;
 use crate::privilege_protocol::PrivilegeProtocolHandler;
+use crate::lifecycle::{LifecycleManager, ShutdownReason};
 
 use std::sync::OnceLock;
 
@@ -163,8 +164,26 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
         .on_event(move |app, event| {
             match event {
                 tauri::RunEvent::ExitRequested { api, .. } => {
-                    println!("[LIFECYCLE] Tauri ExitRequested intercepted – preventing exit");
-                    api.prevent_exit();
+                    if let Some(state) = get_global_plugin_state() {
+                        if state.allow_exit.load(std::sync::atomic::Ordering::SeqCst) {
+                            println!("[LIFECYCLE] ExitAllowed – proceeding to exit");
+                            // Do NOT call prevent_exit so Tauri can shut down normally
+                        } else {
+                            println!("[LIFECYCLE] Tauri ExitRequested intercepted – initiating graceful shutdown");
+                            // Prevent immediate exit to allow cleanup
+                            api.prevent_exit();
+                            // Trigger our unified lifecycle shutdown handler
+                            tauri::async_runtime::spawn(async {
+                                LifecycleManager::shutdown(ShutdownReason::Signal("ExitRequested".into())).await;
+                            });
+                        }
+                    } else {
+                        println!("[LIFECYCLE] Plugin state unavailable, initiating forced shutdown");
+                        api.prevent_exit();
+                        tauri::async_runtime::spawn(async {
+                            LifecycleManager::shutdown(ShutdownReason::Signal("ExitRequested (no state)".into())).await;
+                        });
+                    }
                 }
                 tauri::RunEvent::Exit => {
                     println!("Tauri app is exiting, stopping sidecar...");
