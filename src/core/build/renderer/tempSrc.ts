@@ -38,6 +38,7 @@ export const RendererHTMLEntryPoint: Structure = {
                 pathname: RendererOutputFileName,
             }),
             protocol: protocol,
+            rendererHost: AppHost.Renderer,
             allowHTTP: rendererProject.project.config.renderer.allowHTTP,
             devMode
         });

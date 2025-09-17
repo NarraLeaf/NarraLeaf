@@ -16,28 +16,6 @@ pub struct FileSystemOperations;
 
 impl FileSystemOperations {
     /**
-     * Helper function to create success OperationResult
-     */
-    fn create_success_result(message: String, data: Option<Value>) -> OperationResult {
-        OperationResult {
-            success: true,
-            message: Some(message),
-            data,
-        }
-    }
-
-    /**
-     * Helper function to create error OperationResult
-     */
-    fn create_error_result(message: String, data: Option<Value>) -> OperationResult {
-        OperationResult {
-            success: false,
-            message: Some(message),
-            data,
-        }
-    }
-
-    /**
      * Execute a file system read text file operation
      */
     pub async fn read_text_file(

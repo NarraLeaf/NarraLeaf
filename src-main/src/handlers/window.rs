@@ -6,7 +6,7 @@
  */
 
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, Url};
 use crate::handler_types::*;
 use crate::operations::OperationResult;
 
@@ -225,188 +225,20 @@ impl WindowOperations {
 
     /**
      * Execute a window creation operation
+     * 
+     * NEW ARCHITECTURE: Window creation is no longer supported.
+     * Only the main window managed by Tauri is allowed.
      */
     pub async fn create_window(
-        payload: WindowCreatePayload,
-        app_handle: Option<&AppHandle>,
+        _payload: WindowCreatePayload,
+        _app_handle: Option<&AppHandle>,
     ) -> OperationResult {
-        if let Some(app) = app_handle {
-            let label_clone = payload.label.clone();
-
-            // Create a new WebviewWindow builder
-            let mut builder = WebviewWindowBuilder::new(
-                app,
-                payload.label.clone(),
-                // Default URL (can be overridden by navigate later)
-                WebviewUrl::App("index.html".into()),
-            )
-            .title(payload.title)
-            .inner_size(payload.width, payload.height)
-            .visible(false); // Start hidden by default
-
-            // Set window position if provided
-            if let (Some(x), Some(y)) = (payload.x, payload.y) {
-                builder = builder.position(x, y);
-            }
-
-            // Center window if requested
-            if payload.center.unwrap_or(false) {
-                builder = builder.center();
-            }
-
-            // Apply decorations (window frame, title bar, etc.)
-            if let Some(decorations) = payload.decorations {
-                builder = builder.decorations(decorations);
-            }
-
-            // Always-on-top behavior
-            if let Some(always_on_top) = payload.always_on_top {
-                builder = builder.always_on_top(always_on_top);
-            }
-
-            // Skip showing in the taskbar
-            if let Some(skip_taskbar) = payload.skip_taskbar {
-                builder = builder.skip_taskbar(skip_taskbar);
-            }
-
-            // Window resizable
-            if let Some(resizable) = payload.resizable {
-                builder = builder.resizable(resizable);
-            }
-
-            // Window closable
-            if let Some(closable) = payload.closable {
-                builder = builder.closable(closable);
-            }
-
-            // Window minimizable
-            if let Some(minimizable) = payload.minimizable {
-                builder = builder.minimizable(minimizable);
-            }
-
-            // Window maximizable
-            if let Some(maximizable) = payload.maximizable {
-                builder = builder.maximizable(maximizable);
-            }
-
-            // Window focus
-            if payload.focus.unwrap_or(false) {
-                builder = builder.focused(true);
-            }
-
-            // Transparent background
-            if payload.transparent.unwrap_or(false) {
-                builder = builder.transparent(true);
-            }
-
-            // Fullscreen mode
-            if payload.fullscreen.unwrap_or(false) {
-                builder = builder.fullscreen(true);
-            }
-
-            // Try to build the window
-            match builder.build() {
-                Ok(window) => {
-                    let window_label = label_clone.clone();
-
-                    // Attach close event listener
-                    window.on_window_event(move |event| {
-                        if let tauri::WindowEvent::CloseRequested { .. } = event {
-                            let window_label_clone = window_label.clone();
-
-                            // Fire sidecar notification asynchronously
-                            tauri::async_runtime::spawn(async move {
-                                if let Some(plugin_state) = crate::tauri::get_global_plugin_state() {
-                                    let sidecar_manager =
-                                        plugin_state.sidecar_manager.lock().await;
-
-                                    let payload = serde_json::json!({
-                                        "label": window_label_clone,
-                                        "timestamp": std::time::SystemTime::now()
-                                            .duration_since(std::time::UNIX_EPOCH)
-                                            .unwrap_or_default()
-                                            .as_millis()
-                                    });
-
-                                    if let Err(e) = sidecar_manager
-                                        .send_sidecar_request("sidecar:window.on_close", payload)
-                                        .await
-                                    {
-                                        println!(
-                                            "Failed to send sidecar notification: {}",
-                                            e
-                                        );
-                                    }
-                                }
-                            });
-                        }
-                    });
-
-                    // Navigate to custom URL if provided
-                    if let Some(url_str) = &payload.url {
-                        match Url::parse(url_str) {
-                            Ok(url) => {
-                                if let Err(e) = window.navigate(url) {
-                                    return OperationResult {
-                                        success: false,
-                                        message: Some(format!(
-                                            "Failed to navigate window '{}' to '{}': {}",
-                                            label_clone, url_str, e
-                                        )),
-                                        data: None,
-                                    };
-                                }
-                            }
-                            Err(e) => {
-                                return OperationResult {
-                                    success: false,
-                                    message: Some(format!(
-                                        "Invalid URL '{}' for window '{}': {}",
-                                        url_str, label_clone, e
-                                    )),
-                                    data: None,
-                                };
-                            }
-                        }
-                    }
-
-                    // Show window if requested
-                    if payload.show.unwrap_or(false) {
-                        if let Err(e) = window.show() {
-                            return OperationResult {
-                                success: false,
-                                message: Some(format!(
-                                    "Failed to show window '{}': {}",
-                                    label_clone, e
-                                )),
-                                data: None,
-                            };
-                        }
-                    }
-
-                    // Success result
-                    OperationResult {
-                        success: true,
-                        message: Some(format!("Window '{}' created successfully", label_clone)),
-                        data: None,
-                    }
-                }
-                Err(e) => OperationResult {
-                    success: false,
-                    message: Some(format!(
-                        "Failed to create window '{}': {}",
-                        label_clone, e
-                    )),
-                    data: None,
-                },
-            }
-        } else {
-            OperationResult {
-                success: false,
-                message: Some("App handle not available".to_string()),
-                data: None,
-            }
-        }
+        // NEW ARCHITECTURE: Window creation is not supported
+        // Only the main window managed by Tauri is allowed
+        Self::create_error_result(
+            "Window creation is not supported in the new architecture. Only the main window managed by Tauri is allowed.".to_string(),
+            None,
+        )
     }
 
     /**
@@ -804,8 +636,39 @@ impl WindowOperations {
         if let Some(app) = app_handle {
             let window_label = Self::get_window_label(&payload.label);
             if let Some(window) = Self::get_window(app, &payload.label) {
-                match Url::parse(&payload.url) {
+                // Try to parse as absolute URL first
+                let initial_parse = Url::parse(&payload.url);
+                // If parsing fails due to being relative, try to normalize into app://localhost/<path>
+                let normalized_url = match initial_parse {
+                    Ok(url) => Ok(url),
+                    Err(_) => {
+                        // Build absolute URL using app:// scheme by default
+                        let mut path = payload.url.clone();
+                        if !(path.starts_with("app://") || path.starts_with("tauri://")) {
+                            if !path.starts_with('/') {
+                                path = format!("/{}", path);
+                            }
+                            let candidate = format!("app://localhost{}", path);
+                            match Url::parse(&candidate) {
+                                Ok(url) => Ok(url),
+                                Err(_) => {
+                                    // Fallback to tauri://localhost
+                                    let candidate = format!("tauri://localhost{}", path);
+                                    Url::parse(&candidate)
+                                }
+                            }
+                        } else {
+                            // Already starts with a known scheme but failed to parse; return the error
+                            Url::parse(&payload.url)
+                        }
+                    }
+                };
+
+                match normalized_url {
                     Ok(url) => {
+                        // Print the final URL being navigated to
+                        println!("Final URL being navigated to: {}", url);
+                        
                         match window.navigate(url) {
                             Ok(_) => Self::create_success_result(
                                 format!("Window '{}' URL set successfully to '{}'", window_label, payload.url),
@@ -816,7 +679,7 @@ impl WindowOperations {
                                 None,
                             ),
                         }
-                    }
+                    },
                     Err(e) => Self::create_error_result(
                         format!("Invalid URL '{}' for window '{}': {}", payload.url, window_label, e),
                         None,

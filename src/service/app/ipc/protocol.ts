@@ -40,6 +40,7 @@ export type ServiceRequestResult = {
     "narraleaf:app.quit": void;
     "narraleaf:app.reload": void;
     "narraleaf:app.request": any;
+    "sidecar:window.on_ready": void;
     "sidecar:window.on_close": void;
     "sidecar:ping": void;
 };
@@ -52,6 +53,7 @@ export type ServiceRequestPayload = {
     "narraleaf:app.quit": { reason?: Error | null };
     "narraleaf:app.reload": null;
     "narraleaf:app.request": { payload: any };
+    "sidecar:window.on_ready": { window_label: string; timestamp: number };
     "sidecar:window.on_close": { label: string; timestamp: number };
     "sidecar:ping": null;
 };

@@ -19,6 +19,21 @@ export class API {
         return this.windowManager.createWindow(config);
     }
 
+    /**
+     * Get the main window proxy
+     * Returns null if the main window is not ready yet
+     */
+    public getMainWindow(): Window | null {
+        return this.windowManager.getMainWindow();
+    }
+
+    /**
+     * Check if the main window is ready
+     */
+    public isMainWindowReady(): boolean {
+        return this.windowManager.isMainWindowReady();
+    }
+
     /**@internal */
     public sendRequest<T extends RuntimeRequestTypes = any>(
         ...args: [

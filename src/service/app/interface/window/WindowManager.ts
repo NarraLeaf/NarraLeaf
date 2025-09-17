@@ -1,20 +1,27 @@
 /*!
  * Window Manager
  *
- * Manages multiple window instances and provides centralized
+ * NEW ARCHITECTURE: Manages the main window proxy and provides centralized
  * window lifecycle management and event handling.
+ * 
+ * In the new architecture:
+ * - Only manages the main window created by Tauri
+ * - Receives window events from Tauri (onReady, onClose)
+ * - No longer creates windows directly
  */
 
 import { ServiceRequestResult } from "../../ipc/protocol";
 import { MessageHandler, ServiceRequestMessage, ServiceResponseMessage } from "../../ipc/types";
 import { API } from "../API";
 import { Window, WindowConfig } from "./Window";
-import { WindowCloseEventHandler } from "./handlers/window";
+import { WindowCloseEventHandler, WindowReadyEventHandler } from "./handlers/window";
 
 export class WindowManager {
     private readonly api: API;
     private readonly windows: Map<string, Window> = new Map();
     private readonly cleanup: (() => void)[] = [];
+    private mainWindow: Window | null = null;
+    private mainWindowReady: boolean = false;
 
     constructor(api: API) {
         this.api = api;
@@ -25,10 +32,31 @@ export class WindowManager {
      * Create a new window and add it to the manager
      */
     public async createWindow(config: WindowConfig): Promise<Window> {
-        const window = await Window.create(config, this.api);
-        this.windows.set(config.label, window);
-        
-        return window;
+        throw new Error("Window creation is not supported in the new architecture. Only the main window managed by Tauri is allowed.");
+    }
+
+    /**
+     * Get the main window proxy
+     * Returns null if the main window is not ready yet
+     */
+    public getMainWindow(): Window | null {
+        return this.mainWindow;
+    }
+
+    /**
+     * Check if the main window is ready
+     */
+    public isMainWindowReady(): boolean {
+        return this.mainWindowReady;
+    }
+
+    /**
+     * Set the main window proxy (called when window is ready)
+     */
+    public setMainWindow(window: Window): void {
+        this.mainWindow = window;
+        this.mainWindowReady = true;
+        this.windows.set("main", window);
     }
 
     /**
@@ -99,11 +127,15 @@ export class WindowManager {
      * Setup service handler to prevent event listeners from being lost
      */
     private setupServiceHandler(): void {
+        // Register handler for window ready events
+        this.api.registerHandler("sidecar:window.on_ready", new WindowReadyEventHandler(this));
+        
         // Register handler for window close events
         this.api.registerHandler("sidecar:window.on_close", new WindowCloseEventHandler(this));
         
-        // Add cleanup function to unregister the handler
+        // Add cleanup function to unregister the handlers
         this.cleanup.push(() => {
+            this.api.unregisterHandler("sidecar:window.on_ready");
             this.api.unregisterHandler("sidecar:window.on_close");
         });
     }

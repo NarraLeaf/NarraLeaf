@@ -252,3 +252,13 @@ impl IPCProtocolHandler {
         }
     }
 }
+
+/// Tauri command that can be called from renderer via invoke.
+/// This wraps `IPCProtocolHandler::handle_ipc_request` and passes the plugin state.
+#[tauri::command]
+pub async fn ipc_request_command(
+    request: IPCRequest,
+    state: tauri::State<'_, std::sync::Arc<PluginState>>,
+) -> Result<IPCResponse, String> {
+    IPCProtocolHandler::handle_ipc_request(request, state.inner().clone()).await
+}

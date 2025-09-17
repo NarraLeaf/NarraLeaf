@@ -3,6 +3,11 @@
  *
  * Main manager that coordinates the sidecar process, communication,
  * and lifecycle management.
+ * 
+ * NEW ARCHITECTURE:
+ * - No longer manages window creation (handled by Tauri)
+ * - Receives window proxy through onReady events
+ * - Focuses on sidecar process and IPC communication only
  */
 
 use tauri::AppHandle;
@@ -14,6 +19,12 @@ use super::communication::SidecarCommunication;
  * Sidecar Manager
  *
  * Manages the NodeJS sidecar process and handles communication with it.
+ * 
+ * In the new architecture, this manager:
+ * - Only handles sidecar process lifecycle
+ * - Manages IPC communication with sidecar
+ * - Receives window events from Tauri (onReady, onClose)
+ * - No longer creates or manages windows directly
  */
 pub struct SidecarManager {
     process: SidecarProcess,
@@ -108,17 +119,37 @@ impl SidecarManager {
         self.state = SidecarState::Stopping;
         println!("[SIDECAR] State changed to: {:?}", self.process.get_state());
 
-        // Stop IPC server
-        self.communication.stop_ipc_server().await?;
-
-        // Stop sidecar process
+        // Stop sidecar process FIRST to avoid reconnection attempts
         self.process.stop_sidecar_process().await?;
+
+        // Then stop IPC server
+        self.communication.stop_ipc_server().await?;
 
         self.process.set_state(SidecarState::Stopped);
         self.state = SidecarState::Stopped;
         println!("[SIDECAR] Sidecar manager stopped successfully");
         println!("[SIDECAR] Final state: {:?}", self.process.get_state());
 
+        Ok(())
+    }
+
+    /**
+     * Immediately kill only the sidecar process without touching IPC server.
+     * Used for fast shutdown when the sidecar requested app quit.
+     */
+    pub async fn kill_sidecar_only(&mut self) -> Result<(), String> {
+        println!("[SIDECAR] kill_sidecar_only: terminating sidecar process immediately...");
+        if *self.process.get_state() == SidecarState::Stopped {
+            println!("[SIDECAR] INFO: Sidecar already stopped");
+            return Ok(());
+        }
+
+        self.process.set_state(SidecarState::Stopping);
+        self.state = SidecarState::Stopping;
+        self.process.stop_sidecar_process().await?;
+        self.process.set_state(SidecarState::Stopped);
+        self.state = SidecarState::Stopped;
+        println!("[SIDECAR] kill_sidecar_only completed");
         Ok(())
     }
 

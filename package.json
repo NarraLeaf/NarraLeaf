@@ -30,11 +30,14 @@
   },
   "keywords": [
     "react",
-    "electron",
+    "rust",
     "visual-novel",
     "typescript",
     "narraleaf",
-    "nvl"
+    "nvl",
+    "tauri",
+    "desktop",
+    "cross-platform"
   ],
   "dependencies": {
     "@babel/core": "^7.26.9",

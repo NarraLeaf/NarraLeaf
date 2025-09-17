@@ -48,6 +48,11 @@ export class Window {
         return new Window(config, api).initialize();
     }
 
+    /**@internal */
+    public static createProxy(config: WindowConfig, api: API): Promise<Window> {
+        return new Window(config, api).initializeProxy();
+    }
+
     private constructor(config: WindowConfig, api: API) {
         this.config = mergeConfig(config, Window.DefaultConfig);
         this.api = api;
@@ -244,6 +249,16 @@ export class Window {
             y: this.config.y,
             url: this.config.url,
         });
+    }
+
+    /**
+     * Initialize the window proxy (for main window managed by Tauri)
+     */
+    private async initializeProxy(): Promise<this> {
+        // For proxy windows, we don't actually create a window
+        // The window is already created by Tauri
+        // We just return the proxy instance
+        return this;
     }
 
     /**
