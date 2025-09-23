@@ -10,7 +10,7 @@ A new definition of Visual Novel Engine.
 
 > [!WARNING]
 >
-> The project is in the early stages of development. For the Legacy Electron main process, check [NarraLeaf-Electron](https://github.com/NarraLeaf/NarraLeaf-Electron)
+> The project is in the early stages of development. 
 
 ## About
 
