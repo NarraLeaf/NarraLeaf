@@ -19,7 +19,7 @@
  * - css-loader
  */
 import {Configuration, RuleSetUse} from "webpack";
-import _ from "lodash";
+import { merge } from "lodash";
 import { App } from "@/cli/app";
 
 export enum WebpackMode {
@@ -51,7 +51,7 @@ export class WebpackConfig {
     }
 
     public getConfiguration(app: App): Configuration {
-        return _.merge({
+        return merge({
             mode: this.config.mode,
             entry: this.config.entry,
             output: {

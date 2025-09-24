@@ -136,6 +136,10 @@ export async function watchRenderer(
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
 
+    if (!compiler) {
+        throw new Error("CompilerNotFound: Cannot initialize webpack compiler when watching renderer process");
+    }
+
     compiler.watch({}, async (err, stats) => {
         if (err) {
             logr

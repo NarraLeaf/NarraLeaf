@@ -72,9 +72,18 @@ export class App {
     public static Constants = {
         AppLifeCycleViolationTimeout: 5000 as const,
     } as const;
+
     public static Events = {
         Ready: "ready"
     } as const;
+
+    /**
+     * This method is used to create a new instance of the App class.
+     * @internal
+     */
+    public static create(config: AppConfig): App {
+        return new App(config);
+    }
     
     public readonly electronApp: Electron.App;
     public readonly platform: PlatformInfo;
@@ -93,13 +102,16 @@ export class App {
 
     private initialized: boolean = false;
 
-    constructor(config: AppConfig) {
+    private constructor(config: AppConfig) {
         this.config = config;
         this.electronApp = app;
         this.platform = Platform.getInfo(process);
         this.logger = new Logger("MainProcess");
         this.hooks = new Hooks();
         this.events = new EventEmitter();
+
+        // Setup development userData path before creating managers that depend on it
+        this.setupUserDataDir();
 
         // Create managers after basic initialization
         this.translationManager = new TranslationManager(this);
@@ -175,7 +187,7 @@ export class App {
      * Returns the build directory of the app
      * 
      * For example, under development mode, it returns the directory of the `.narraleaf` folder which contains `app-dev`  
-     * Under production mode, it returns the directory of the app.asar file which contains `app-build` and `package.json`
+     * Under production mode, it returns the virtual directory of the app.asar file which contains `app-build` and `package.json`
      * 
      * The structure of the build directory
      */
@@ -316,5 +328,18 @@ export class App {
 
     private emit<K extends StringKeyOf<AppEvents>>(event: K, ...args: AppEvents[K]): void {
         this.events.emit(event, ...args as any);
+    }
+
+    /**
+     * Setup development userData path if running in development mode
+     * This must be called before creating managers that depend on userData path
+     */
+    private setupUserDataDir(): void {
+        if (!this.electronApp.isPackaged) {
+            const userDataPath = path.join(this.getAppPath(), "userData-dev");
+            this.logger.info(`[App] Setting up dev userData path: ${userDataPath}`);
+            this.electronApp.setPath("userData", userDataPath);
+            this.logger.info(`[App] Dev userData path set successfully`);
+        }
     }
 }

@@ -1,8 +1,7 @@
-import _ from "lodash";
+import { defaultsDeep } from "lodash";
 import {App} from "@/main/app/app";
 import {PlatformInfo, PlatformSystem} from "@/utils/pure/os";
 import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
-import { CrashManager, DevToolManager, MenuManager, ProtocolManager, StorageManager, WindowManager } from "./mgr/managers";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;
@@ -67,7 +66,7 @@ export class AppConfig {
     public platformConfigs: PlatformConfigMap;
 
     constructor(baseConfig: Partial<BaseAppConfig> = {}) {
-        this.baseConfig = _.defaultsDeep(baseConfig, AppConfig.DefaultBaseConfig);
+        this.baseConfig = defaultsDeep(baseConfig, AppConfig.DefaultBaseConfig);
         this.platformConfigs = {
             [MainPlatform.Windows]: AppConfig.DefaultWindowsConfig,
             [MainPlatform.Linux]: AppConfig.DefaultLinuxConfig,
@@ -75,27 +74,70 @@ export class AppConfig {
         };
     }
 
-    configure(platform: MainPlatform, config: Partial<PlatformConfigMap[MainPlatform]>): this {
-        this.platformConfigs[platform] = _.defaultsDeep(config, this.platformConfigs[platform]);
+    /**
+     * Configures platform-specific settings for the application.
+     * Merges the provided configuration with existing platform settings using deep merge.
+     * 
+     * @param platform - The target platform to configure
+     * @param config - Partial configuration object to merge with existing settings
+     * @returns This instance for method chaining
+     */
+    public configure(platform: MainPlatform, config: Partial<PlatformConfigMap[MainPlatform]>): this {
+        this.platformConfigs[platform] = defaultsDeep(config, this.platformConfigs[platform]);
         return this;
     }
 
-    configWindows(config: Partial<IWindowsConfig>): this {
+    /**
+     * Configures Windows-specific application settings.
+     * Convenience method for configuring Windows platform settings.
+     * 
+     * @param config - Partial Windows configuration object
+     * @returns This instance for method chaining
+     */
+    public configWindows(config: Partial<IWindowsConfig>): this {
         return this.configure(MainPlatform.Windows, config);
     }
 
-    configLinux(config: Partial<ILinuxConfig>): this {
+    /**
+     * Configures Linux-specific application settings.
+     * Convenience method for configuring Linux platform settings.
+     * 
+     * @param config - Partial Linux configuration object
+     * @returns This instance for method chaining
+     */
+    public configLinux(config: Partial<ILinuxConfig>): this {
         return this.configure(MainPlatform.Linux, config);
     }
 
-    configMac(config: Partial<IMacConfig>): this {
+    /**
+     * Configures macOS-specific application settings.
+     * Convenience method for configuring macOS platform settings.
+     * 
+     * @param config - Partial macOS configuration object
+     * @returns This instance for method chaining
+     */
+    public configMac(config: Partial<IMacConfig>): this {
         return this.configure(MainPlatform.Mac, config);
     }
 
-    create(): App {
-        return new App(this);
+    /**
+     * Creates and returns a new App instance using this configuration.
+     * Initializes the application with the configured settings.
+     * 
+     * @returns A new App instance configured with this AppConfig
+     */
+    public create(): App {
+        return App.create(this);
     }
 
+    /**
+     * Maps platform information to the corresponding MainPlatform enum value.
+     * Converts detailed platform info to simplified platform categories.
+     * 
+     * @param platform - Platform information object containing system details
+     * @returns The corresponding MainPlatform enum value
+     * @throws Error if the platform system is not supported
+     */
     getMainPlatform(platform: PlatformInfo): MainPlatform {
         switch (platform.system) {
             case PlatformSystem.win32:
@@ -109,9 +151,16 @@ export class AppConfig {
         }
     }
 
+    /**
+     * Retrieves the complete configuration for a specific platform.
+     * Merges base configuration with platform-specific settings.
+     * 
+     * @param platform - Platform information to get configuration for
+     * @returns Merged configuration object containing both base and platform-specific settings
+     */
     getConfig(platform: PlatformInfo): BaseAppConfig & PlatformConfigMap[MainPlatform] {
         const mainPlatform = this.getMainPlatform(platform);
-        return _.defaultsDeep(this.baseConfig, this.platformConfigs[mainPlatform]);
+        return defaultsDeep(this.baseConfig, this.platformConfigs[mainPlatform]);
     }
 }
 

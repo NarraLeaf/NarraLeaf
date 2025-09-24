@@ -31,6 +31,7 @@ export class StorageManager {
         });
     }
 
+    /**@deprecated */
     public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
         const store = this.createJsonStore<T>(name);
         this.exposeJsonStore(store);
@@ -38,6 +39,7 @@ export class StorageManager {
         return store;
     }
 
+    /**@deprecated */
     public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
         const name = store.config.name;
         if (this.exposedJsonStores[name]) {
@@ -47,6 +49,7 @@ export class StorageManager {
         this.exposedJsonStores[name] = store;
     }
 
+    /**@deprecated */
     public getExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> | null {
         return this.exposedJsonStores[name] || null;
     }

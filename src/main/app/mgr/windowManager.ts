@@ -7,13 +7,23 @@ import { GameSaveGameHandler, GameReadGameHandler, GameListGameHandler, GameDele
 import { AppInfoHandler } from "./window/handler/appInfo";
 import { AppGetJsonStoreHandler, AppSaveJsonStoreHandler } from "./window/handler/appStore";
 import { AppReloadHandler } from "./window/handler/appAction";
+import { EventEmitter } from "events";
+
+type WindowManagerEvents = {
+    "window-created": [window: AppWindow];
+    "window-ready": [window: AppWindow];
+}
 
 export class WindowManager {
     private mainWindow: AppWindow | null = null;
 
+    public events: EventEmitter<WindowManagerEvents>;
+
     constructor(
         private app: App,
-    ) {}
+    ) {
+        this.events = new EventEmitter();
+    }
 
     public initialize(): void {
     }
@@ -43,8 +53,13 @@ export class WindowManager {
                 throw error;
             }
         }
+
+        this.events.emit("window-created", win);
         
         await win.show();
+
+        this.events.emit("window-ready", win);
+
         return win;
     }
 

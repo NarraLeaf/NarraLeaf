@@ -6,7 +6,6 @@ import { AsyncTaskQueue } from "@/utils/pure/array";
 import { NarraLeaf, RendererHomePage } from "@core/build/constants";
 import { PageConfig, Pages } from "@/client/_app/app";
 import { Page, SavedGame, Stage, useGame, useRouter } from "narraleaf-react";
-import merge from "lodash/merge";
 import { useSplashScreen } from "@/client/_app/providers/splash-screen-provider";
 import { useGamePlayback } from "@/client/_app/providers/game-state-provider";
 import { isValidImageUrl, throttle } from "./utils/data";

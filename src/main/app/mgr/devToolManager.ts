@@ -17,17 +17,22 @@ export class DevToolManager {
 
     public initialize(): void {
         if (this.app.isPackaged()) {
+            this.app.logger.info("[DevToolManager] Skipping initialization - app is packaged");
             return;
         }
 
         if (this.initialized) {
+            this.app.logger.info("[DevToolManager] Already initialized, skipping");
             return;
         }
+        
+        this.app.logger.info("[DevToolManager] Initializing DevToolManager for development mode");
         this.initialized = true;
 
         this.setupDevServer();
         this.setupDevServerHandlers();
-        this.setupDevUserData();
+        
+        this.app.logger.info("[DevToolManager] DevToolManager initialization completed");
     }
 
     private setupDevServer(): void {
@@ -50,14 +55,11 @@ export class DevToolManager {
             if (mainWindow) {
                 mainWindow.reload();
             } else {
-                console.log("Warning: Main window is not available when trying to refresh");
+                this.app.logger.info("Warning: Main window is not available when trying to refresh");
             }
         });
     }
 
-    private setupDevUserData(): void {
-        app.setPath("userData", path.join(this.app.getAppPath(), "userData-dev"));
-    }
 
     public async fetchMetadata(): Promise<void> {
         if (!this.wsClient) {
@@ -66,7 +68,7 @@ export class DevToolManager {
 
         await this.wsClient.forSocketToOpen();
         const data = await this.wsClient.fetch(DevServerEvent.FetchMetadata, {});
-        console.log("[Main] Fetching metadata");
+        this.app.logger.info("[Main] Fetching metadata");
         this.metadata = data;
     }
 

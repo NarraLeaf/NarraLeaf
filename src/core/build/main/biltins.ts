@@ -1,4 +1,4 @@
-export const Builtins = [
+const builtinNames = [
     "assert",
     "assert/strict",
     "async_hooks",
@@ -47,3 +47,5 @@ export const Builtins = [
     "ajv-formats",
     "esbuild",
 ];
+
+export const Builtins = builtinNames.map(name => `commonjs ${name}`);

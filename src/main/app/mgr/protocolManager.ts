@@ -46,7 +46,7 @@ export class ProtocolManager implements IProtocolManager {
 
                 if (response.data) {
                     if (response.data instanceof Buffer) {
-                        body = response.data;
+                        body = new Uint8Array(response.data);
                     } else if (typeof response.data === 'string') {
                         body = response.data;
                     } else if (response.data instanceof ReadableStream) {

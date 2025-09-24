@@ -1,4 +1,4 @@
-import _ from "lodash";
+import { merge } from "lodash";
 import {BaseProjectConfig} from "@core/project/projectConfig/baseProject";
 import {DefaultDevHTTPServerPort, DefaultDevServerPort} from "@core/build/constants";
 
@@ -27,5 +27,5 @@ export const DefaultProjectConfig: BaseProjectConfig = {
 };
 
 export function mergeConfig<T, U>(base: T, user: U): T & U {
-    return _.merge({}, base, user);
+    return merge({}, base, user);
 }

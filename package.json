@@ -51,6 +51,7 @@
     "autoprefixer": "^10.4.17",
     "babel-loader": "^9.2.1",
     "chalk": "^4.1.2",
+    "chokidar": "^3.5.3",
     "commander": "^13.1.0",
     "css-loader": "^7.1.2",
     "ejs": "^3.1.10",
@@ -66,8 +67,7 @@
     "uglify-js": "^3.19.3",
     "webpack": "^5.98.0",
     "ws": "^8.18.1",
-    "zod": "^3.24.2",
-    "chokidar": "^3.5.3"
+    "zod": "^3.24.2"
   },
   "bundledDependencies": [
     "postcss-loader"
@@ -91,7 +91,7 @@
     "esbuild-css-modules-plugin": "^3.1.4",
     "fs-extra": "^11.3.0",
     "motion": "^11.15.10",
-    "narraleaf-react": "^0.6.0",
+    "narraleaf-react": "^0.8.6",
     "tsc-alias": "^1.8.10",
     "webpack-node-externals": "^3.0.0"
   },
@@ -99,5 +99,8 @@
     "dist",
     "node_modules/postcss-loader"
   ],
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "bundleDependencies": [
+    "postcss-loader"
+  ]
 }

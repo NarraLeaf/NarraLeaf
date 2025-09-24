@@ -60,7 +60,6 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
             "package.json",
             "narraleaf.config.js",
             "!**/*.map",
-            rest(normalize(project.config.resources), sep.posix),
         ],
         extraMetadata: {
             main: entryFile,

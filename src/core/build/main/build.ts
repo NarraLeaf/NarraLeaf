@@ -40,9 +40,9 @@ export async function buildMain(
         extensions: [".ts", ".js"],
         extend: {
             resolve: {},
+            externalsType: "commonjs",
             externals: [
-                NodeExternals(),
-                // ...Builtins,
+                ...Builtins,
                 "narraleaf",
             ],
             target: "electron-main",
@@ -101,9 +101,9 @@ export async function watchMain(
         extensions: [".ts", ".js"],
         extend: {
             resolve: {},
+            externalsType: "commonjs",
             externals: [
-                NodeExternals(),
-                // ...Builtins,
+                ...Builtins,
                 "narraleaf",
             ],
             target: "electron-main",
@@ -127,6 +127,10 @@ export async function watchMain(
     const config = webpackConfig.getConfiguration(project.app);
     const compiler = webpack(config);
     let initialBuild = true, initialBuildResolve: () => void;
+
+    if (!compiler) {
+        throw new Error("CompilerNotFound: Cannot initialize webpack compiler when watching main process");
+    }
 
     compiler.watch({}, (err, stats) => {
         if (err) {
