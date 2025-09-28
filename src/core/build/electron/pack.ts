@@ -40,6 +40,7 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
         appId: project.config.build.appId,
         productName: project.config.build.productName,
         directories: {
+            app: "app",
             output: distDir,
         },
         npmRebuild: false,

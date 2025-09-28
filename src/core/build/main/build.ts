@@ -4,7 +4,7 @@ import {MainOutputFileName, PreloadFileName} from "@core/build/constants";
 import {Babel} from "@core/build/renderer/babel";
 import webpack from "webpack";
 import path from "path";
-import {Builtins} from "@core/build/main/biltins";
+import {Builtins} from "@/core/build/main/external";
 import NodeExternals from "webpack-node-externals";
 import {Fs} from "@/utils/nodejs/fs";
 import {App} from "@/cli/app";

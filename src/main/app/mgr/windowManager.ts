@@ -34,22 +34,22 @@ export class WindowManager {
         // Check if HTTP dev server mode is enabled
         if (this.app.isHttpDevServerMode()) {
             const url = this.app.getEntryFile();
-            console.log(`[WindowManager] Loading URL in HTTP mode: ${url}`);
+            this.app.logger.info(`[WindowManager] Loading URL in HTTP mode: ${url}`);
             try {
                 await win.loadURL(url);
-                console.log(`[WindowManager] Successfully loaded URL: ${url}`);
+                this.app.logger.info(`[WindowManager] Successfully loaded URL: ${url}`);
             } catch (error) {
-                console.error(`[WindowManager] Failed to load URL: ${url}`, error);
+                this.app.logger.error(`[WindowManager] Failed to load URL: ${url}`, error);
                 throw error;
             }
         } else {
             const filePath = this.app.getEntryFile();
-            console.log(`[WindowManager] Loading file in file mode: ${filePath}`);
+            this.app.logger.info(`[WindowManager] Loading file in file mode: ${filePath}`);
             try {
                 await win.loadFile(filePath);
-                console.log(`[WindowManager] Successfully loaded file: ${filePath}`);
+                this.app.logger.info(`[WindowManager] Successfully loaded file: ${filePath}`);
             } catch (error) {
-                console.error(`[WindowManager] Failed to load file: ${filePath}`, error);
+                this.app.logger.error(`[WindowManager] Failed to load file: ${filePath}`, error);
                 throw error;
             }
         }
