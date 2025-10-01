@@ -35,3 +35,6 @@ dev.json
 
 # Cargo
 target
+
+# NPM
+.tar
