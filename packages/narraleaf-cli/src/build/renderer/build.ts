@@ -10,7 +10,62 @@ import webpack from "webpack";
 import { RendererOutputFileName, RendererOutputHTMLFileName } from "@narraleaf/shared";
 import { Fs } from "@/utils/fs";
 import { App } from "@/interface/app";
-import chokidar from "chokidar";
+import fs from "fs";
+
+function watchDirectory(
+    dir: string,
+    onChange: () => void,
+): { close: () => void } {
+    const IGNORED_DOTFILES = /(^|[\\/])\../;
+    const watchers: fs.FSWatcher[] = [];
+    const watchedPaths = new Set<string>();
+
+    const addWatcher = (current: string) => {
+        if (watchedPaths.has(current)) return;
+        if (IGNORED_DOTFILES.test(current)) return;
+
+        try {
+            const watcher = fs.watch(current, { persistent: true }, (event, filename) => {
+                if (!filename) return;
+                if (IGNORED_DOTFILES.test(filename)) return;
+
+                // Fire the change callback – debouncing/throttling is left up
+                // to the caller if required (not needed in current usage).
+                onChange();
+
+                // If a new directory was created, ensure we start watching it
+                if (event === "rename") {
+                    const fullPath = path.join(current, filename.toString());
+                    if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+                        addWatcher(fullPath);
+                    }
+                }
+            });
+            watchers.push(watcher);
+            watchedPaths.add(current);
+
+            // Recursively watch existing sub-directories so they are covered.
+            for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+                if (entry.isDirectory()) {
+                    addWatcher(path.join(current, entry.name));
+                }
+            }
+        } catch {
+            // Ignore directories we fail to watch (permissions/eperm etc.).
+        }
+    };
+
+    addWatcher(dir);
+
+    return {
+        close() {
+            for (const watcher of watchers) {
+                watcher.close();
+            }
+            watchedPaths.clear();
+        },
+    };
+}
 
 export type RendererBuildResult = {
     dir: string;
@@ -172,16 +227,6 @@ export async function watchRenderer(
         initialBuildResolve = resolve;
     });
 
-    // ------------------------------------------------------------------
-    // Watch pages directory to regenerate the renderer App entry whenever
-    // a page file (add/remove) changes. This keeps the routing structure
-    // in sync during dev without restarting the dev server.
-    // ------------------------------------------------------------------
-    const pagesWatcher = chokidar.watch(rendererProject.getPagesDir(), {
-        ignored: /(^|[\\/])\../, // ignore dotfiles
-        ignoreInitial: true,
-    });
-
     const regenerateAppEntry = async () => {
         try {
             const newStructure = await createRendererAppStructure(rendererProject);
@@ -194,17 +239,13 @@ export async function watchRenderer(
         }
     };
 
-    pagesWatcher
-        .on("add", regenerateAppEntry)
-        .on("unlink", regenerateAppEntry)
-        .on("addDir", regenerateAppEntry)
-        .on("unlinkDir", regenerateAppEntry);
+    const pagesWatcher = watchDirectory(rendererProject.getPagesDir(), regenerateAppEntry);
 
     return {
         close(): Promise<void> {
             return new Promise<void>(resolve => {
                 const shutdown = async () => {
-                    await pagesWatcher.close();
+                    pagesWatcher.close();
                     compiler.close(() => {
                         logr.info("Renderer build stopped");
                         resolve();

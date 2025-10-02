@@ -1,17 +1,25 @@
 {
-    "name": "@narraleaf/shared",
-    "version": "0.0.0",
-    "main": "dist/index.mjs",
-    "module": "dist/index.mjs",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.cjs"
-        }
-    },
-    "scripts": {
-        "build": "node build.js && tsc --emitDeclarationOnly"
+  "name": "@narraleaf/shared",
+  "version": "0.1.0-alpha.2",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
+  },
+  "scripts": {
+    "build": "rimraf dist && node build.js && tsc --emitDeclarationOnly",
+    "build:dev": "npm run build && node postbuild.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "fs-extra": "^11.3.0"
+  }
 }

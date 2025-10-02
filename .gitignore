@@ -37,4 +37,4 @@ dev.json
 target
 
 # NPM
-.tar
+*.tgz
