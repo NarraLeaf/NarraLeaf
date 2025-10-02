@@ -78,7 +78,10 @@ async function handleFile<T extends ValuesOf<DirStructureDefinition<any>["contai
             Array.isArray(fileDef.path) ? fileDef.path.map(p => projectFs.resolve(p)) : projectFs.resolve(fileDef.path)
         );
         if (!result.ok) {
-            return result;
+            return {
+                ...result,
+                error: `Failed to parse project config from CJS file (path: ${Logger.chalk.blue(fileDef.path)}): ${result.error}`
+            };
         }
         const data = result.data;
         if (typeof data !== "object" || data === null) {

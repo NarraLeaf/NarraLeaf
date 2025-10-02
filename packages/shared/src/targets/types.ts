@@ -1,5 +1,5 @@
 import { Configuration, PlatformSpecificBuildOptions, TargetConfiguration, TargetSpecificOptions } from "electron-builder";
-import { MainPlatform } from "@narraleaf/shared";
+import { MainPlatform } from "../constants";
 
 export enum ArchType {
     x64 = "x64",

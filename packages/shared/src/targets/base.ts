@@ -4,7 +4,7 @@ import {
     TargetConfiguration,
     TargetSpecificOptions,
 } from "electron-builder";
-import { MainPlatform } from "@narraleaf/shared";
+import { MainPlatform } from "../constants";
 import { IBaseTargetConfig, IBuildTarget } from "./types";
 
 export abstract class PlatformBuildTarget implements IBuildTarget {
