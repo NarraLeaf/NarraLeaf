@@ -21,25 +21,25 @@ export class Babel extends WebpackModule {
 
     public getPresets() {
         return [
-            ["@babel/preset-env", {
+            [require.resolve("@babel/preset-env"), {
                 targets: {
-                    node: "current"
-                }
+                    node: "current",
+                },
             }],
-            "@babel/preset-typescript",
-            ...(this.useReact ? [["@babel/preset-react", {
+            require.resolve("@babel/preset-typescript"),
+            ...(this.useReact ? [[require.resolve("@babel/preset-react"), {
                 runtime: "automatic",
-                development: process.env.NODE_ENV === "development"
+                development: process.env.NODE_ENV === "development",
             }]] : []),
         ];
     }
 
     public getPlugins() {
         return this.useReact ? [
-            ["@babel/plugin-transform-react-jsx", {
+            [require.resolve("@babel/plugin-transform-react-jsx"), {
                 runtime: "automatic",
-                importSource: "react"
-            }]
+                importSource: "react",
+            }],
         ] : [];
     }
 }

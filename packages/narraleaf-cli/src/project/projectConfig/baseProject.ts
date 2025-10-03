@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {ProjectFileType, DirStructureDefinition} from "@/project/projectConfig/parser";
-import {PlatformBuildTarget} from "@/build/electron/target";
+import {PlatformBuildTarget} from "@narraleaf/shared";
 
 export type BaseProjectConfigZod = z.ZodObject<{
     build: z.ZodObject<{

@@ -11,6 +11,7 @@ import { RendererOutputFileName, RendererOutputHTMLFileName } from "@narraleaf/s
 import { Fs } from "@/utils/fs";
 import { App } from "@/interface/app";
 import fs from "fs";
+import { createAppRouter } from "./router/scan";
 
 function watchDirectory(
     dir: string,
@@ -89,6 +90,32 @@ export async function buildRenderer(
     const packMode = rendererProject.project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
     const libNodeModules = path.resolve(rendererProject.project.app.config.cliRoot, "node_modules");
 
+    // Create alias map in production to hide real file paths
+    let aliasMap: Record<string, string> = {};
+    if (isProduction) {
+        // Build alias map similar to createRendererAppStructure logic
+        const appRouterData = await createAppRouter(rendererProject);
+        const allPaths: { path: string; id: string }[] = [];
+        let pathCounter = 0;
+        const collect = (item: any, prefix = "") => {
+            if (item && "children" in item) {
+                if (item.layout) allPaths.push({ path: item.layout.path, id: `${prefix}_layout_${pathCounter++}` });
+                if (item.indexHandler) allPaths.push({ path: item.indexHandler.path, id: `${prefix}_index_${pathCounter++}` });
+                item.children.forEach((child: any, idx: number) => collect(child, `${prefix}_child_${idx}`));
+            } else if (item && "path" in item) {
+                allPaths.push({ path: item.path, id: `${prefix}_page_${pathCounter++}` });
+            }
+        };
+        collect(appRouterData.root);
+        if (appRouterData.errorHandler) collect(appRouterData.errorHandler, "_error");
+
+        for (const { path: p, id } of allPaths) {
+            aliasMap[`NL_MODULE_${id}`] = p;
+        }
+        // alias for application root entry file
+        aliasMap["NL_APP_ENTRY"] = rendererProject.getAppEntry();
+    }
+
     await Fs.createDir(buildDir);
     await Fs.createDir(outputDir);
     await createStructure([
@@ -108,7 +135,8 @@ export async function buildRenderer(
                     path.resolve(rendererProject.project.app.config.cliRoot, 'node_modules'),
                     path.resolve(rendererProject.project.fs.resolve('node_modules'))
                 ]
-            }
+            },
+            ...(isProduction ? { resolve: { alias: aliasMap } } : {})
         }
     })
         .useModule(new Babel(true))

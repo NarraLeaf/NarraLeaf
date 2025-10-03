@@ -134,4 +134,22 @@ Promise.all([
     target: 'node16',
     minify: !isDev,
   }),
+  esbuild.build({
+    ...common,
+    entryPoints: ['src/config/index.ts'],
+    external,
+    format: 'cjs',
+    outfile: 'dist/config.cjs',
+    target: 'node16',
+    minify: !isDev,
+  }),
+  esbuild.build({
+    ...common,
+    entryPoints: ['src/config/index.ts'],
+    external,
+    format: 'esm',
+    outfile: 'dist/config.mjs',
+    target: 'node16',
+    minify: !isDev,
+  }),
 ]).catch(() => process.exit(1));

@@ -73,13 +73,13 @@ function generateModuleStructure(item, moduleMap, isRoot = false, isProduction =
 %>
 /* import */ import React from "react";
 /* import */ import { createRoot } from "react-dom/client";
-/* import */ import { render } from "narraleaf/client";
+/* import */ import { render } from "narraleaf/renderer";
 /* import */ import * as AppUserEntry from "<%= appPath %>";
 
-<% allPaths.forEach(function(item) { %>/* import */ import * as __NARRALEAF_IMPORTED_MODULE_<%= item.id %> from "<%= item.path %>";
+<% allPaths.forEach(function(item) { %>/* import */ import * as __NARRALEAF_IMPORTED_MODULE_<%= item.id %> from "<%= isProduction ? `NL_MODULE_${item.id}` : item.path %>";
 <% }); %>
 
-/**@type {import("narraleaf/client").<%= isProduction ? 'ProductionAppRouterModuleData' : 'AppRouterModuleData' %>} */
+/**@type {import("narraleaf/renderer").<%= isProduction ? 'ProductionAppRouterModuleData' : 'AppRouterModuleData' %>} */
 const appRouterData = {
     root: <%- generateModuleStructure(appRouterData.root, moduleMap, true, isProduction) %>,
     errorHandler: <%- generateModuleStructure(appRouterData.errorHandler, moduleMap, false, isProduction) %><% if (!isProduction) { %>,

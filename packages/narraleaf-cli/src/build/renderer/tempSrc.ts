@@ -103,16 +103,14 @@ export async function createRendererAppStructure(
             
             const processedPaths = allPaths.map(({ path: modulePath, id }) => {
                 const finalPath = isProduction 
-                    ? createRelativeImportPath(appTsxPath, modulePath)
+                    ? `NL_MODULE_${id}`
                     : safeImportPath(modulePath);
                 return { path: finalPath, id };
             });
             
             return ejs.render(RendererEntryTemplateApp, {
                 version: project.project.app.config.version,
-                appPath: isProduction 
-                    ? createRelativeImportPath(appTsxPath, rendererProject.getAppEntry())
-                    : safeImportPath(rendererProject.getAppEntry()),
+                appPath: isProduction ? "NL_APP_ENTRY" : safeImportPath(rendererProject.getAppEntry()),
                 allPaths: processedPaths,
                 appRouterData,
                 moduleMap,

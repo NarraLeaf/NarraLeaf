@@ -1,6 +1,6 @@
 {
   "name": "narraleaf",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Create your visual novel with Electron and React",
   "bin": "./dist/cli.cjs",
   "main": "dist/index.mjs",
@@ -9,17 +9,22 @@
   "license": "MPL-2.0",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.cjs",
+      "types": "./dist/main/index.d.ts"
     },
     "./renderer": {
       "import": "./dist/renderer.mjs",
-      "types": "./dist/renderer.d.ts"
+      "types": "./dist/renderer/index.d.ts"
     },
     "./main": {
       "import": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/main/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config.mjs",
+      "require": "./dist/config.cjs",
+      "types": "./dist/config/index.d.ts"
     }
   },
   "scripts": {
@@ -37,7 +42,7 @@
   ],
   "dependencies": {
     "@emotion/is-prop-valid": "^1.3.1",
-    "@narraleaf/shared": "0.1.0-alpha.1",
+    "@narraleaf/shared": "0.1.0-alpha.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "motion": "^11.15.10",

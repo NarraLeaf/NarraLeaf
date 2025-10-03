@@ -1,6 +1,6 @@
 import { Project } from "@/project/project";
 import type { Configuration } from "electron-builder";
-import { PlatformBuildTarget } from "@/build/electron/target";
+import { PlatformBuildTarget } from "@narraleaf/shared";
 import path from "path";
 import { MainOutputFileName } from "@narraleaf/shared";
 import { TempNamespace } from "@narraleaf/shared";
@@ -40,7 +40,6 @@ export async function buildApp(rendererProject: RendererProject): Promise<AppBui
         appId: project.config.build.appId,
         productName: project.config.build.productName,
         directories: {
-            app: "app",
             output: distDir,
         },
         npmRebuild: false,

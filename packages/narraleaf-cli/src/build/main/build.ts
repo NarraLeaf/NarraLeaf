@@ -22,13 +22,17 @@ export async function buildMain(
         project: Project;
     }
 ): Promise<MainBuildResult> {
-    const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
+    const narraleafDist = path.dirname(require.resolve("narraleaf", { paths: [project.app.cwd()] }));
+    const preloadFile = path.join(narraleafDist, PreloadFileName);
     const libNodeModules = path.resolve(project.app.config.cliRoot, "node_modules");
     const distDir = project.getTempDir(Project.TempNamespace.MainBuild);
     const packMode = project.config.build.dev ? WebpackMode.Development : WebpackMode.Production;
+    const logr = App.createLogger(project.app);
 
     await Fs.createDir(distDir);
     await Fs.cpFile(preloadFile, path.resolve(distDir, PreloadFileName));
+
+    logr.debug(`Copied preload file to ${path.resolve(distDir, PreloadFileName)} from ${preloadFile}`);
 
     const webpackConfig = new WebpackConfig({
         mode: packMode,
@@ -83,13 +87,16 @@ export async function watchMain(
         onRebuild?: () => void;
     }
 ): Promise<MainBuildWatchToken> {
-    const preloadFile = path.resolve(project.app.config.cliRoot, "dist", PreloadFileName);
+    const narraleafDist = path.dirname(require.resolve("narraleaf", { paths: [project.app.cwd()] }));
+    const preloadFile = path.join(narraleafDist, PreloadFileName);
     const libNodeModules = path.resolve(project.app.config.cliRoot, "node_modules");
     const distDir = project.getDevTempDir(Project.DevTempNamespace.MainBuild);
     const logr = App.createLogger(project.app);
 
     await Fs.createDir(distDir);
     await Fs.cpFile(preloadFile, path.resolve(distDir, PreloadFileName));
+
+    logr.debug(`Copied preload file to ${path.resolve(distDir, PreloadFileName)} from ${preloadFile}`);
 
     const webpackConfig = new WebpackConfig({
         mode: WebpackMode.Development,
