@@ -1,9 +1,9 @@
 import { merge } from "lodash";
-import {BaseProjectConfig} from "@/project/projectConfig/baseProject";
-import {DefaultDevHTTPServerPort, DefaultDevServerPort} from "@narraleaf/shared";
+import { ProjectConfig } from "@narraleaf/shared";
+import { DefaultDevHTTPServerPort, DefaultDevServerPort } from "@narraleaf/shared";
 
 
-export const DefaultProjectConfig: BaseProjectConfig = {
+export const DefaultProjectConfig: ProjectConfig = {
     build: {
         appId: "com.example.App",
         copyright: "",

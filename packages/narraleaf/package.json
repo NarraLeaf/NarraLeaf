@@ -30,6 +30,7 @@
   "scripts": {
     "build": "rimraf dist && node build.js && tsc --emitDeclarationOnly && tsc-alias",
     "build:dev": "node build.js --dev && tsc --emitDeclarationOnly && tsc-alias",
+    "build:pack": "npm run build:dev && npm pack",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
