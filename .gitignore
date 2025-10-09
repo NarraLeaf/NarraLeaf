@@ -32,3 +32,9 @@ temp
 .narraleaf
 package-lock.json
 dev.json
+
+# Cargo
+target
+
+# NPM
+*.tgz

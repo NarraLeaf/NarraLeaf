@@ -1,0 +1,25 @@
+import {DirStructureDefinition, ProjectFileType} from "@/project/projectConfig/parser";
+
+export const AppProjectRendererStructure: DirStructureDefinition<{
+    "public": string;
+    "pages": string;
+    "app": string;
+}> = {
+    contains: {
+        "public": {
+            path: "public",
+            type: ProjectFileType.DIR,
+            validator: null
+        },
+        "pages": {
+            path: "pages",
+            type: ProjectFileType.DIR,
+            validator: null
+        },
+        "app": {
+            path: ["App.tsx", "App.jsx"],
+            type: ProjectFileType.FILE,
+            validator: null
+        }
+    }
+};

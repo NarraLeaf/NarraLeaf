@@ -1,0 +1,25 @@
+{
+  "name": "@narraleaf/shared",
+  "version": "0.1.1",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "rimraf dist && node build.js && tsc --emitDeclarationOnly",
+    "build:dev": "npm run build && node postbuild.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "fs-extra": "^11.3.0"
+  }
+}
