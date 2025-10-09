@@ -9,7 +9,7 @@ export default async function init(this: Command, app: App, [p]: [string, InitOp
     const logger = App.createLogger(app);
     const projectPath = path.isAbsolute(p) ? p : path.resolve(app.getProcess().cwd(), p);
 
-    await exec(["npx", "narraleaf-skeleton", projectPath], app.getProcess());
+    await exec(["npx", "narraleaf-skeleton@latest", projectPath], app.getProcess());
 
     logger.info("Project initialized at", projectPath);
 }

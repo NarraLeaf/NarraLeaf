@@ -1,6 +1,6 @@
 {
   "name": "narraleaf-project",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.1",
   "private": true,
   "description": "Create your visual novel with NarraLeaf",
   "license": "MPL-2.0",
@@ -10,7 +10,8 @@
   "scripts": {
     "build": "node project/build.js",
     "build:dev": "node project/build.js --dev",
-    "version:all": "node project/update-version.js --version"
+    "version:all": "node project/update-version.js --version",
+    "publish:all": "npm run build && cd packages/shared && npm publish --access public && cd ../narraleaf && npm publish --access public && cd ../narraleaf-cli && npm publish --access public"
   },
   "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f",
   "devDependencies": {
