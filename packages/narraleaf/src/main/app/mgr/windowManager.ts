@@ -1,13 +1,11 @@
-import { AppWindow, WindowConfig } from "./window/appWindow";
-import { App, HookEvents } from "../app";
-import path from "path";
-import { AppTerminateHandler } from "./window/handler/appAction";
-import { AppRequestMainEventHandler } from "./window/handler/appAction";
-import { GameSaveGameHandler, GameReadGameHandler, GameListGameHandler, GameDeleteGameHandler } from "./window/handler/gameSave";
-import { AppInfoHandler } from "./window/handler/appInfo";
-import { AppGetJsonStoreHandler, AppSaveJsonStoreHandler } from "./window/handler/appStore";
-import { AppReloadHandler } from "./window/handler/appAction";
 import { EventEmitter } from "events";
+import path from "path";
+import { App, HookEvents } from "../app";
+import { AppWindow, WindowConfig } from "./window/appWindow";
+import { AppReloadHandler, AppRequestMainEventHandler, AppTerminateHandler } from "./window/handler/appAction";
+import { AppInfoHandler } from "./window/handler/appInfo";
+import { AppGetStateHandler, AppSaveStateHandler } from "./window/handler/appStore";
+import { GameDeleteGameHandler, GameListGameHandler, GameReadGameHandler, GameSaveGameHandler } from "./window/handler/gameSave";
 
 type WindowManagerEvents = {
     "window-created": [window: AppWindow];
@@ -16,6 +14,7 @@ type WindowManagerEvents = {
 
 export class WindowManager {
     private mainWindow: AppWindow | null = null;
+    private windows: AppWindow[] = [];
 
     public events: EventEmitter<WindowManagerEvents>;
 
@@ -84,6 +83,19 @@ export class WindowManager {
         return win;
     }
 
+    public createWindow(config: Partial<WindowConfig>): AppWindow {
+        const win = new AppWindow(this.app, config, {
+            preload: this.app.getPreloadScript(),
+        });
+        this.windows.push(win);
+
+        this.registerIPCHandlers(win);
+
+        this.events.emit("window-created", win);
+        this.events.emit("window-ready", win);
+        return win;
+    }
+
     public getMainWindow(): AppWindow | null {
         return this.mainWindow;
     }
@@ -93,6 +105,10 @@ export class WindowManager {
             this.mainWindow.win.close();
             this.mainWindow = null;
         }
+    }
+
+    public unregisterWindow(win: AppWindow): void {
+        this.windows = this.windows.filter(w => w !== win);
     }
 
     private setAppIcon(win: AppWindow): void {
@@ -116,8 +132,8 @@ export class WindowManager {
         win.registerIPCHandler(new AppTerminateHandler());
         win.registerIPCHandler(new AppRequestMainEventHandler());
         win.registerIPCHandler(new AppReloadHandler());
-        win.registerIPCHandler(new AppGetJsonStoreHandler());
-        win.registerIPCHandler(new AppSaveJsonStoreHandler());
+        win.registerIPCHandler(new AppGetStateHandler());
+        win.registerIPCHandler(new AppSaveStateHandler());
 
         win.registerIPCHandler(new GameSaveGameHandler());
         win.registerIPCHandler(new GameReadGameHandler());

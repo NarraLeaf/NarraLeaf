@@ -1,3 +1,6 @@
+import type { StringKeyof } from "@/shared/utils/types";
+import type { AppEventToken } from "@/main/app/types";
+
 export type HookToken = {
     cancel(): void;
 }
@@ -114,3 +117,99 @@ export class Hooks {
         this.onceHooks.get(name)?.delete(callback);
     }
 }
+
+/**
+ * A flexible hook system that manages multiple named hook chains in a single instance.
+ * Each hook can mutate the flowing data or interrupt execution via ctx.reject.
+ *
+ * Hook function signature:
+ *   (data, ctx) => newData | void | Promise<newData | void>
+ *
+ * - `data`        Current flowing data
+ * - `ctx.reject`  Enter a message string to interrupt the subsequent hook execution and throw it to the caller
+ *
+ * Usage:
+ *   const chain = new HookChain();
+ *   const token = chain.tap("beforeSave", (data, ctx) => {
+ *     if (data.invalid) ctx.reject("invalid");
+ *   });
+ *   const { result, rejected, message } = await chain.run("beforeSave", initial);
+ *   chain.off(token); // remove when needed
+ */
+
+export interface HookContext {
+    /** Interrupt remaining hooks with a message. */
+    reject: (msg: string) => void;
+}
+
+export type HookFn<T = unknown> = (data: T, ctx: HookContext) => T | void | Promise<T | void>;
+
+export class HookChain<T extends Record<string, any>> {
+    private readonly events: Map<string, Set<HookFn<any>>> = new Map();
+
+    /** Add a hook to specific event. Returns AppEventToken for cancellation. */
+    tap<K extends StringKeyof<T>>(event: K, fn: HookFn<T[K]>): AppEventToken {
+        let bucket = this.events.get(event);
+        if (!bucket) {
+            bucket = new Set();
+            this.events.set(event, bucket);
+        }
+        bucket.add(fn as HookFn<any>);
+        return {
+            cancel: () => this.off(event, fn),
+        };
+    }
+
+    /** Remove hook via the original function reference. */
+    off<K extends StringKeyof<T>>(event: K, fn: HookFn<T[K]>): boolean {
+        const bucket = this.events.get(event);
+        if (bucket) {
+            return bucket.delete(fn);
+        }
+        return false;
+    }
+
+    /** Remove all hooks for an event or all events */
+    clear<K extends StringKeyof<T>>(event?: K): void {
+        if (event) {
+            this.events.delete(event);
+        } else {
+            this.events.clear();
+        }
+    }
+
+    /**
+     * Run hooks of an event.
+     * Returns { result, rejected, message }
+     */
+    async run<K extends StringKeyof<T>>(event: K, initialData: T[K]): Promise<{ result?: T[K]; rejected: boolean; message?: string }> {
+        const bucket = this.events.get(event);
+        if (!bucket || bucket.size === 0) {
+            return { result: initialData, rejected: false };
+        }
+
+        let data: T[K] = initialData;
+        let rejected = false;
+        let message: string | undefined;
+
+        const ctx: HookContext = {
+            reject: (msg: string) => {
+                rejected = true;
+                message = msg;
+            },
+        };
+
+        for (const fn of bucket.values()) {
+            if (rejected) break;
+            const ret = await fn(data, ctx);
+            if (rejected) break;
+            if (ret !== undefined) {
+                data = ret as T[K];
+            }
+        }
+
+        return rejected ? { rejected, message } : { result: data, rejected: false };
+    }
+}
+
+

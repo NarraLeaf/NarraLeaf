@@ -6,7 +6,23 @@ export interface WindowInstanceConfig {
     options?: Electron.BrowserWindowConstructorOptions;
 }
 
-export class WindowInstance {
+export interface WindowUserInterface {
+    show(): Promise<void>;
+    loadURL(url: string): Promise<void>;
+    loadFile(file: string): Promise<void>;
+    setTitle(title: string): void;
+    getTitle(): string;
+    setIcon(icon: string): void;
+    isFullScreen(): boolean;
+    enterFullScreen(): void;
+    exitFullScreen(): void;
+    getWebContents(): Electron.WebContents;
+    reload(): void;
+    close(): void;
+    isClosed(): boolean;
+}
+
+export class WindowInstance implements WindowUserInterface {
     private win: BrowserWindow;
 
     constructor(config: WindowInstanceConfig) {
@@ -66,6 +82,10 @@ export class WindowInstance {
 
     public getBrowserWindow(): BrowserWindow {
         return this.win;
+    }
+
+    public isClosed(): boolean {
+        return this.win.isDestroyed();
     }
 
     private getWebPreference(config: WindowInstanceConfig): WebPreferences {

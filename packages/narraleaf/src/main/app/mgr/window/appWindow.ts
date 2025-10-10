@@ -3,7 +3,7 @@ import { ClientAppConfiguration } from "@shared/types/global";
 import { Namespace } from "@shared/types/ipcEvents";
 import { IPCHandler } from "./handler/IPCHandler";
 import { IPCEventType } from "@shared/types/ipcEvents";
-import { WindowInstance, WindowInstanceConfig } from "./windowInstance";
+import { WindowInstance, WindowInstanceConfig, WindowUserInterface } from "./windowInstance";
 import { WindowIPC } from "./windowIPC";
 import { WindowEventManager } from "./windowEvents";
 import { WindowProxy } from "./windowProxy";
@@ -20,7 +20,7 @@ export interface AppWindowConfig {
     preload: string;
 }
 
-export class AppWindow extends WindowProxy {
+export class AppWindow extends WindowProxy implements WindowUserInterface {
     public static readonly DefaultConfig: WindowConfig = {
         isolated: true,
         autoFocus: true,
@@ -136,6 +136,14 @@ export class AppWindow extends WindowProxy {
         return this.getInstance().getTitle();
     }
 
+    public close(): void {
+        this.getInstance().close();
+    }
+
+    public isClosed(): boolean {
+        return this.getInstance().isClosed();
+    }
+
     public getClientAppConfig(): ClientAppConfiguration {
         const config = this.getApp().getConfig();
         return {
@@ -168,6 +176,8 @@ export class AppWindow extends WindowProxy {
         
         win.on("close", () => {
             this.getEvents().emit("close");
+
+            this.getApp().windowManager.unregisterWindow(this);
         });
 
         win.webContents.on("render-process-gone", (_event, details) => {

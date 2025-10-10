@@ -6,10 +6,13 @@ import { SavedGameMeta, SavedGameResult, SaveType } from "@shared/types/save";
 import { AppDataNamespace } from "../app";
 import { JsonStore } from "@main/utils/jsonStore";
 import type { SavedGame } from "narraleaf-react";
+import { State } from "./storage/state";
 
 export class StorageManager {
     private saveStorage: StoreProvider;
+    /**@deprecated */
     private exposedJsonStores: Record<string, JsonStore<any>> = {};
+    private states: Record<string, State<any>> = {};
 
     constructor(private app: App) {
         this.saveStorage = this.initializeStorage();
@@ -23,16 +26,28 @@ export class StorageManager {
         });
     }
 
-    public createJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
+    public createState<T extends Record<string, any>>(name: string, initialData: T, dir?: string): State<T> {
+        const jsonStore = new JsonStore<T>({
+            dir: dir || path.join(this.app.getUserDataDir(), AppDataNamespace.state),
+            name,
+            initialData,
+        });
+        return new State<T>({
+            jsonStore,
+        });
+    }
+
+    public createJsonStore<T extends Record<string, any>>(name: string, initialData: T): JsonStore<T> {
         return new JsonStore<T>({
             dir: path.join(this.app.getUserDataDir(), AppDataNamespace.json),
             name,
+            initialData,
         });
     }
 
     /**@deprecated */
     public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        const store = this.createJsonStore<T>(name);
+        const store = this.createJsonStore<T>(name, {} as T);
         this.exposeJsonStore(store);
 
         return store;
@@ -51,6 +66,10 @@ export class StorageManager {
     /**@deprecated */
     public getExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> | null {
         return this.exposedJsonStores[name] || null;
+    }
+
+    public getState<T extends Record<string, any>>(name: string): State<T> | null {
+        return this.states[name] || null;
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {

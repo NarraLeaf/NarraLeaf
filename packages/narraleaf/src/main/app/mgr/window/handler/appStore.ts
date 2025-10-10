@@ -3,30 +3,30 @@ import { IPCHandler, IPCHandlerProps } from "./IPCHandler";
 import { IPCMessageType } from "@shared/types/ipc";
 import { AppWindow } from "../appWindow";
 
-export class AppGetJsonStoreHandler extends IPCHandler<IPCEventType.appGetJsonStore> {
-    readonly name = IPCEventType.appGetJsonStore;
+export class AppGetStateHandler extends IPCHandler<IPCEventType.appGetState> {
+    readonly name = IPCEventType.appGetState;
     readonly type = IPCMessageType.request;
 
-    public async handle(window: AppWindow, {name}: IPCHandlerProps<IPCEventType.appGetJsonStore>) {
-        const store = window.app.storageManager.getExposedJsonStore(name);
-        if (!store) {
-            return this.failed("Json store not found");
+    public async handle(window: AppWindow, {name}: IPCHandlerProps<IPCEventType.appGetState>) {
+        const state = window.app.storageManager.getState(name);
+        if (!state) {
+            return this.failed(`State with name "${name}" not found. All states need to be exposed using the \`app.createState\` method.`);
         }
 
-        return this.tryUse(async () => await store.read() as Record<string, any>);
+        return this.tryUse(async () => await state.read());
     }
 }
 
-export class AppSaveJsonStoreHandler extends IPCHandler<IPCEventType.appSaveJsonStore> {
-    readonly name = IPCEventType.appSaveJsonStore;
+export class AppSaveStateHandler extends IPCHandler<IPCEventType.appSaveState> {
+    readonly name = IPCEventType.appSaveState;
     readonly type = IPCMessageType.request;
 
-    public async handle(window: AppWindow, {name, data}: IPCHandlerProps<IPCEventType.appSaveJsonStore>) {
-        const store = window.app.storageManager.getExposedJsonStore(name);
-        if (!store) {
-            return this.failed("Json store not found");
+    public async handle(window: AppWindow, {name, data}: IPCHandlerProps<IPCEventType.appSaveState>) {
+        const state = window.app.storageManager.getState(name);
+        if (!state) {
+            return this.failed(`State with name "${name}" not found. All states need to be exposed using the \`app.createState\` method.`);
         }
 
-        return this.tryUse(async () => await store.write(data));
+        return this.tryUse(async () => await state.write(data));
     }
 }

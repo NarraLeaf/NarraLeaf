@@ -37,17 +37,17 @@ import { CrashManager, DevToolManager, MenuManager, ProtocolManager, StorageMana
 import type { AppEventToken } from "./types";
 import type { AppConfig } from "@/main/app/config";
 import type { AppWindow, WindowConfig } from "@/main/app/mgr/window/appWindow";
+import { State } from "./mgr/storage/state";
 
 type AppEvents = {
     "ready": [];
 };
 
-
-
 export enum AppDataNamespace {
     save = "msg_storage",
     flags = "app_flags",
     json = "json_storage",
+    state = "state_storage",
 }
 
 export enum HookEvents {
@@ -249,17 +249,12 @@ export class App {
     }
 
     /* Json Store */
-
-    public createJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        return this.storageManager.createJsonStore<T>(name);
+    public createJsonStore<T extends Record<string, any>>(name: string, initialData: T): JsonStore<T> {
+        return this.storageManager.createJsonStore<T>(name, initialData);
     }
 
-    public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        return this.storageManager.createExposedJsonStore<T>(name);
-    }
-
-    public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
-        this.storageManager.exposeJsonStore(store);
+    public createState<T extends Record<string, any>>(name: string, initialData: T, dir?: string): State<T> {
+        return this.storageManager.createState<T>(name, initialData, dir);
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
