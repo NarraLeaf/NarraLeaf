@@ -1,4 +1,4 @@
-import {Fs} from "@shared/nodejs/fs";
+import {Fs} from "@shared/nodejs/fs/queue";
 import path from "path";
 
 export interface JsonStoreConfig<T> {
@@ -49,6 +49,8 @@ export class JsonStore<T extends Record<string, any>> {
 
         const isExists = await Fs.isFileExists(this.getPath());
         if (!isExists.ok) {
+            throw new Error(isExists.error);
+        } else if (!isExists.data) {
             await this.writeDistorted(this.toRaw(this.config.initialData));
         }
     }

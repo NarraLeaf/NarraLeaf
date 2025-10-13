@@ -1,7 +1,7 @@
-import { HookChain, HookFn } from "@/main/utils/data";
+import { HookChain, HookFn, Hooks } from "@/main/utils/data";
 import { JsonStore } from "@/main/utils/jsonStore";
-import { AppEventToken } from "../../types";
 import { StringKeyof } from "@/shared/utils/types";
+import { AppEventToken } from "../../types";
 
 interface StateConfig<T extends Record<string, any>> {
     jsonStore: JsonStore<T>;
@@ -11,13 +11,22 @@ type StateEvents<T extends Record<string, any>> = {
     "change": T;
 };
 
+enum StateHookType {
+    Update = "update",
+}
+
 export class State<T extends Record<string, any>> {
+    public static HookType = StateHookType;
+
     private config: StateConfig<T>;
     private hookChain: HookChain<StateEvents<T>>;
+
+    public hooks: Hooks;
 
     constructor(config: StateConfig<T>) {
         this.config = config;
         this.hookChain = new HookChain<StateEvents<T>>();
+        this.hooks = new Hooks();
     }
 
     /**
@@ -46,7 +55,7 @@ export class State<T extends Record<string, any>> {
      *
      * @param event - Event whose callback list should be cleared.
      */
-    public clearState<K extends StringKeyof<StateEvents<T>>>(event: K): void {
+    public clearEvents<K extends StringKeyof<StateEvents<T>>>(event: K): void {
         this.hookChain.clear(event);
     }
 
@@ -106,16 +115,30 @@ export class State<T extends Record<string, any>> {
      *
      * Before the write occurs, all "change" hooks are executed. If any hook
      * rejects, the write is aborted and an error is thrown.
+     * 
+     * @example Write a new state
+     * ```ts
+     * await state.write({ username: "John" });
+     * ```
+     * 
+     * @example Write a new state using a function
+     * ```ts
+     * await state.write((prev) => ({ ...prev, username: "John" }));
+     * ```
      *
-     * @param data - New state to be written.
+     * @param arg - New state to be written or a function that returns a new state.
      * @throws Error if any "change" hook rejects.
      */
-    public async write(data: T): Promise<void> {
+    public async write(arg: T | ((prev: T) => T | Promise<T>)): Promise<void> {
+        const data = typeof arg === "function" ? await arg(await this.read()) : arg;
+
         const { rejected, message } = await this.hookChain.run("change", data);
         if (rejected) {
             throw new Error(message);
         }
 
         await this.config.jsonStore.write(data);
+
+        await this.hooks.triggerAsync(StateHookType.Update);
     }
 }

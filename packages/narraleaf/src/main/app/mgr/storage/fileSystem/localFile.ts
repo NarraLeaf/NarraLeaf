@@ -1,5 +1,5 @@
 import path from "path";
-import { Fs } from "@shared/nodejs/fs";
+import { Fs } from "@shared/nodejs/fs/queue";
 import { Metadata } from "@/main/app/mgr/storage/fileSystem/localFileMetadata";
 import { StoreProvider } from "@main/app/mgr/storage/storeProvider";
 import { SavedGameMeta, SavedGameResult, SaveType } from "@shared/types/save";

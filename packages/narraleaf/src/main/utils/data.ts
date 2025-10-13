@@ -81,6 +81,20 @@ export class Hooks {
         }
     }
 
+    async triggerAsync(name: string): Promise<void> {
+        const callbacks = this.hooks.get(name);
+        if (callbacks) {
+            return void Promise.all(Array.from(callbacks).map(callback => callback()));
+        }
+
+        const onceCallbacks = this.onceHooks.get(name);
+        if (onceCallbacks) {
+            return void Promise.all(Array.from(onceCallbacks).map(callback => callback()));
+        }
+
+        return Promise.resolve();
+    }
+
     /**
      * Check if a hook exists
      * @param name Hook name

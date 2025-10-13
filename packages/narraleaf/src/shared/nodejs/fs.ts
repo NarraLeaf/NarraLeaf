@@ -37,12 +37,30 @@ export class Fs {
         return this.wrap(fs.mkdir(path, {recursive: true}));
     }
 
-    public static isFileExists(path: string): Promise<FsResult<void>> {
-        return this.wrap(new Promise<void>((resolve, reject) => {
-            fs.access(path)
-                .then(() => resolve())
-                .catch((reason) => reject(reason));
-        }));
+    public static isFileExists(path: string): Promise<FsResult<boolean>> {
+        return (async () => {
+            try {
+                await fs.access(path);
+                return {
+                    ok: true as const,
+                    data: true,
+                } satisfies FsResult<boolean, true>;
+            } catch (error) {
+                // File does not exist → ok: true, data: false
+                if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+                    return {
+                        ok: true as const,
+                        data: false,
+                    } satisfies FsResult<boolean, true>;
+                }
+
+                // Other errors (permission denied, IO, etc.) → ok: false
+                return {
+                    ok: false,
+                    error: this.errorToString(error),
+                } satisfies FsResult<boolean, false>;
+            }
+        })();
     }
 
     public static appendSync(path: string, data: string, encoding: BufferEncoding = "utf-8"): FsResult<void> {
@@ -191,7 +209,7 @@ export class ProjectFs {
         const paths = typeof pathsRaw === "string" ? [pathsRaw] : pathsRaw;
         return this.retry(
             paths,
-            (path) => this.isFileExists(path).then(result => result.ok ? {ok: true, data: path} : result),
+            (path) => this.isFileExists(path).then(result => (result.ok && result.data) ? {ok: true, data: path} : {ok: false, error: "file not exist"}),
             this.toRetryStack(paths, "files are not found")
         );
     }
@@ -206,7 +224,7 @@ export class ProjectFs {
     /**
      * This method will fail if the file doesn't exist
      */
-    public isFileExists(path: string): Promise<FsResult<void>> {
+    public isFileExists(path: string): Promise<FsResult<boolean>> {
         return Fs.isFileExists(this.resolve(path));
     }
 

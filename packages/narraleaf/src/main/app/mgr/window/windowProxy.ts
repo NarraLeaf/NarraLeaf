@@ -4,6 +4,7 @@ import { WindowEventManager } from "./windowEvents";
 import { WindowInstance } from "./windowInstance";
 import { WindowIPC } from "./windowIPC";
 import { WindowUserHandlers } from "./windowUserHandlers";
+import { IPCEventType, IPCEvents } from "@/shared/types/ipcEvents";
 
 export class WindowProxy implements IPCWindow {
     constructor(
@@ -54,5 +55,9 @@ export class WindowProxy implements IPCWindow {
 
     public offUserEvent(event: string): void {
         this.getUserHandlers().off(event);
+    }
+
+    public sendIpcEvent<T extends IPCEventType>(event: T, data: IPCEvents[T]["data"]): void {
+        this.ipc.getIPCHost().send(this, event, data);
     }
 } 

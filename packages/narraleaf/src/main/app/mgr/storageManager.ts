@@ -7,11 +7,10 @@ import { AppDataNamespace } from "../app";
 import { JsonStore } from "@main/utils/jsonStore";
 import type { SavedGame } from "narraleaf-react";
 import { State } from "./storage/state";
+import { IPCEventType } from "@/shared/types/ipcEvents";
 
 export class StorageManager {
     private saveStorage: StoreProvider;
-    /**@deprecated */
-    private exposedJsonStores: Record<string, JsonStore<any>> = {};
     private states: Record<string, State<any>> = {};
 
     constructor(private app: App) {
@@ -32,9 +31,9 @@ export class StorageManager {
             name,
             initialData,
         });
-        return new State<T>({
+        return this.setupStateHooks(name, new State<T>({
             jsonStore,
-        });
+        }));
     }
 
     public createJsonStore<T extends Record<string, any>>(name: string, initialData: T): JsonStore<T> {
@@ -43,29 +42,6 @@ export class StorageManager {
             name,
             initialData,
         });
-    }
-
-    /**@deprecated */
-    public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
-        const store = this.createJsonStore<T>(name, {} as T);
-        this.exposeJsonStore(store);
-
-        return store;
-    }
-
-    /**@deprecated */
-    public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
-        const name = store.config.name;
-        if (this.exposedJsonStores[name]) {
-            this.app.logger.warn(`Json store ${name} already exposed. Exposing again will override the existing store.`);
-        }
-
-        this.exposedJsonStores[name] = store;
-    }
-
-    /**@deprecated */
-    public getExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> | null {
-        return this.exposedJsonStores[name] || null;
     }
 
     public getState<T extends Record<string, any>>(name: string): State<T> | null {
@@ -96,5 +72,16 @@ export class StorageManager {
             type,
             capture: preview,
         };
+    }
+
+    private setupStateHooks<T extends Record<string, any>>(name: string, state: State<T>): State<T> {
+        state.hooks.hook(State.HookType.Update, async () => {
+            this.app.windowManager.getMainWindow()?.sendIpcEvent(IPCEventType.appAnnouceState, {
+                name,
+                data: await state.read(),
+            });
+        });
+
+        return state;
     }
 } 
