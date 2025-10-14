@@ -5,6 +5,7 @@ import {NarraLeaf, QuickSaveId} from "@narraleaf/shared";
 import {SaveType} from "@shared/types/save";
 import {generateId} from "@shared/utils/string";
 import { AppInfo } from "@shared/types/global";
+import { AppEventToken } from "../app/types";
 
 type Response<K extends keyof IPCEvents> = RequestStatus<IPCEvents[K]["response"]>;
 
@@ -53,6 +54,15 @@ const APIs: Window["NarraLeaf"] = {
                 return ipcClient.invoke(IPCEventType.gameListGame, {});
             },
         },
+        state: {
+            listen(key: string, listener: (data: Record<string, any>) => void): AppEventToken {
+                return ipcClient.onMessage(IPCEventType.appAnnouceState, ({ name, data }) => {
+                    if (name === key) {
+                        listener(data);
+                    }
+                });
+            },
+        }
     },
 };
 

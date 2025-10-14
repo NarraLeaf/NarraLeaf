@@ -1,6 +1,7 @@
 import { NarraLeaf } from "@narraleaf/shared";
 import { SavedGame } from "narraleaf-react";
 import { SavedGameMeta } from "./app.types";
+import { AppEventToken } from "@/main/app/types";
 
 export class GameAPI {
     constructor(
@@ -23,6 +24,10 @@ export class AppAPI extends GameAPI {
 
     public quit() {
         this.api.app.terminate(null);
+    }
+
+    public onStateChange(key: string, listener: (data: Record<string, any>) => void): AppEventToken {
+        return this.api.game.state.listen(key, listener);
     }
 }
 

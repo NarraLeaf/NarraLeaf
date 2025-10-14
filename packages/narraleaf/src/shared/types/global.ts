@@ -1,7 +1,8 @@
-import { PlatformInfo } from "@shared/utils/os";
+import { AppEventToken } from "@/main/app/types";
 import { RequestStatus } from "@shared/types/ipcEvents";
-import { SavedGameResult, SavedGameMeta } from "@shared/types/save";
 import { CrashReport } from "@shared/types/managers";
+import { SavedGameMeta, SavedGameResult } from "@shared/types/save";
+import { PlatformInfo } from "@shared/utils/os";
 import { SavedGame } from "narraleaf-react";
 
 export interface ClientAppConfiguration {
@@ -33,9 +34,13 @@ declare global {
                     read(id: string): Promise<RequestStatus<SavedGameResult | null>>;
                     list(): Promise<RequestStatus<SavedGameMeta[]>>;
                 };
+                state: {
+                    listen(key: string, listener: (data: Record<string, any>) => void): AppEventToken;
+                };
             };
         }
     }
 }
 
-export {};
+export { };
+
