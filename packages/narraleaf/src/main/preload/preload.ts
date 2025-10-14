@@ -55,6 +55,12 @@ const APIs: Window["NarraLeaf"] = {
             },
         },
         state: {
+            get(key: string): Promise<Response<IPCEventType.appGetState>> {
+                return ipcClient.invoke(IPCEventType.appGetState, {name: key});
+            },
+            set(key: string, data: Record<string, any>): Promise<Response<IPCEventType.appSetState>> {
+                return ipcClient.invoke(IPCEventType.appSetState, {name: key, data});
+            },
             listen(key: string, listener: (data: Record<string, any>) => void): AppEventToken {
                 return ipcClient.onMessage(IPCEventType.appAnnouceState, ({ name, data }) => {
                     if (name === key) {

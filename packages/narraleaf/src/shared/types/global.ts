@@ -35,6 +35,8 @@ declare global {
                     list(): Promise<RequestStatus<SavedGameMeta[]>>;
                 };
                 state: {
+                    get(key: string): Promise<RequestStatus<Record<string, any>>>;
+                    set(key: string, data: Record<string, any>): Promise<RequestStatus<void>>;
                     listen(key: string, listener: (data: Record<string, any>) => void): AppEventToken;
                 };
             };

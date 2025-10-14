@@ -11,7 +11,7 @@ export enum IPCEventType {
     appTerminate = "app.terminate",
     appRequestMainEvent = "app.event.requestMain",
     appGetState = "app.state.get",
-    appSaveState = "app.state.save",
+    appSetState = "app.state.save",
     appAnnouceState = "app.state.announce",
     gameSaveGame = "game.save.save",
     gameReadGame = "game.save.read",
@@ -66,7 +66,7 @@ export type IPCEvents = {
         response: Record<string, any>;
     };
 
-    [IPCEventType.appSaveState]: {
+    [IPCEventType.appSetState]: {
         type: IPCMessageType.request,
         consumer: IPCType.Host,
         data: {

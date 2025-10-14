@@ -17,11 +17,11 @@ export class AppGetStateHandler extends IPCHandler<IPCEventType.appGetState> {
     }
 }
 
-export class AppSaveStateHandler extends IPCHandler<IPCEventType.appSaveState> {
-    readonly name = IPCEventType.appSaveState;
+export class AppSaveStateHandler extends IPCHandler<IPCEventType.appSetState> {
+    readonly name = IPCEventType.appSetState;
     readonly type = IPCMessageType.request;
 
-    public async handle(window: AppWindow, {name, data}: IPCHandlerProps<IPCEventType.appSaveState>) {
+    public async handle(window: AppWindow, {name, data}: IPCHandlerProps<IPCEventType.appSetState>) {
         const state = window.app.storageManager.getState(name);
         if (!state) {
             return this.failed(`State with name "${name}" not found. All states need to be exposed using the \`app.createState\` method.`);
