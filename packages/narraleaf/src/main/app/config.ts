@@ -6,8 +6,14 @@ import { MainPlatform } from "@narraleaf/shared";
 
 export interface BaseAppConfig {
     forceSandbox: boolean;
+    /**
+     * @deprecated
+     */
     recoveryCreationInterval: number;
     appErrorHandling: "terminate" | "raw" | "restart";
+    /**
+     * @deprecated
+     */
     deleteCorruptedSaves: boolean;
     store?: StoreProvider;
 }

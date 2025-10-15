@@ -31,9 +31,13 @@ export class StorageManager {
             name,
             initialData,
         });
-        return this.setupStateHooks(name, new State<T>({
+
+        const state = new State<T>({
             jsonStore,
-        }));
+        });
+        this.states[name] = state;
+
+        return this.setupStateHooks(name, state);
     }
 
     public createJsonStore<T extends Record<string, any>>(name: string, initialData: T): JsonStore<T> {

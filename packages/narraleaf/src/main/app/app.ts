@@ -136,6 +136,31 @@ export class App {
         };
     }
 
+    /**
+     * Wait until the app is ready
+     * 
+     * @example
+     * ```ts
+     * app.whenReady().then(() => {
+     *     console.log("App is ready");
+     * });
+     * ```
+     */
+    public whenReady(): Promise<void> {
+        return new Promise((resolve) => {
+            this.events.once(App.Events.Ready, () => {
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Alias for whenReady
+     */
+    public untilReady(): Promise<void> {
+        return this.whenReady();
+    }
+
     getConfig() {
         return this.config.getConfig(this.platform);
     }
