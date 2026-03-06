@@ -1,12 +1,10 @@
+import { Logger } from "@/shared/utils/logger";
 import { Fs } from "@shared/nodejs/fs";
 import { getMimeType } from "@shared/nodejs/os";
 import { normalizePath } from "@shared/nodejs/string";
-import { createReadStream } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { AssetResolved, AssetResolver, ProtocolHandler, ProtocolResponse, ProtocolRule, ProtocolScheme } from "./types";
-import { Logger } from "@/shared/utils/logger";
-import { App } from "../../app";
 
 export class FileSystemHandler implements ProtocolHandler, AssetResolver {
     private rules: ProtocolRule[] = [];
