@@ -6,6 +6,8 @@
 
 # NarraLeaf
 
+<p>English | <a href="./docs/README-zh.md">简体中文</a></p>
+
 A new definition of Visual Novel Engine.
 
 > [!WARNING]
