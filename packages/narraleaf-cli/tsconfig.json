@@ -3,7 +3,8 @@
     "jsx": "react-jsx",
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
@@ -18,5 +19,5 @@
       "../../node_modules/@types"
     ]
   },
-  "include": ["src", "../shared/src/targets", "../shared/src/target.ts"],
+  "include": ["src"],
 }

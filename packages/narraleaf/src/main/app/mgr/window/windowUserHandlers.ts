@@ -20,11 +20,18 @@ export class WindowUserHandlers {
         delete this.handlers[event];
     }
 
-    public async invoke<Request = any, Response = any>(event: string, data: Request): Promise<Response> {
-        if (!this.handlers[event]) {
+    /**
+     * Looks up and invokes the handler in one step (avoids check-then-invoke races with `off()`).
+     */
+    public async invoke<Request = any, Response = any>(
+        event: string,
+        payload: Request
+    ): Promise<{ ok: true; data: Response } | { ok: false; reason: "not_registered" }> {
+        const handler = this.handlers[event];
+        if (!handler) {
             this.logger.error(`Handler for event ${event} not found`);
-            return null as Response;
+            return { ok: false, reason: "not_registered" };
         }
-        return this.handlers[event](data);
+        return { ok: true, data: await handler(payload) };
     }
 }

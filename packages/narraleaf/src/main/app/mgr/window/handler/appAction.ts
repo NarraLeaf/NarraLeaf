@@ -25,14 +25,15 @@ export class AppRequestMainEventHandler extends IPCHandler<IPCEventType.appReque
     readonly type = IPCMessageType.request;
 
     public async handle(window: AppWindow, {event, payload}: IPCHandlerProps<IPCEventType.appRequestMainEvent>) {
-        if (window.isUserEventHandled(event)) {
-            try {
-                return this.success(await window.invokeUserEvent(event, payload));
-            } catch (error) {
-                return this.failed(error);
+        try {
+            const outcome = await window.invokeUserEvent(event, payload);
+            if (!outcome.ok) {
+                return this.failed(`Event ${event} not found`);
             }
+            return this.success(outcome.data);
+        } catch (error) {
+            return this.failed(error);
         }
-        return this.failed(`Event ${event} not found`);
     }
 }
 

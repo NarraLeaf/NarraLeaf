@@ -1,6 +1,6 @@
 import { useFlush } from "@renderer/components/lib/utils/flush";
 import { LiveGame, SavedGame, useGame } from "narraleaf-react";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { NarraLeaf, QuickSaveId } from "@narraleaf/shared";
 import { safeClone } from "@shared/utils/object";
 import { SavedGameMeta } from "@shared/types/save";
@@ -16,7 +16,7 @@ export type UseSavedGameResult = {
     results: SavedGameMeta[] | [],
     error: Error | null,
     isLoading: boolean,
-    refetch: () => void,
+    refetch: () => Promise<void>,
 };
 
 export function useCurrentSaved(): SavedGame | null {
@@ -86,7 +86,10 @@ export function useSaveAction(): UseSaveActionResult {
         } catch (e) {
             console.error(e);
         }
-        await window[NarraLeaf].game.save.save(data, name, preview);
+        const res = await window[NarraLeaf].game.save.save(data, name, preview);
+        if (!res.success) {
+            throw new Error(res.error ?? "Save failed");
+        }
     }
 
     async function read(id: string): Promise<SavedGame | null> {
@@ -102,13 +105,16 @@ export function useSaveAction(): UseSaveActionResult {
 
     async function quickSave(): Promise<void> {
         const data = game.getLiveGame().serialize();
-        await window[NarraLeaf].game.save.quickSave(data);
+        const res = await window[NarraLeaf].game.save.quickSave(data);
+        if (!res.success) {
+            throw new Error(res.error ?? "Quick save failed");
+        }
     }
 
     async function quickRead(): Promise<SavedGame | null> {
         const res = await window[NarraLeaf].game.save.read(QuickSaveId);
         if (!res.success) {
-            return null;
+            throw new Error(res.error ?? "Quick read failed");
         }
         if (!res.data || !("savedGame" in res.data)) {
             return null;
@@ -131,7 +137,7 @@ export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResu
 
     const taskRef = React.useRef<Promise<void> | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -144,19 +150,22 @@ export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResu
 
         setResults(res.data);
         setLoading(false);
-    };
+    }, []);
 
-    const refetch = () => {
-        const currentTask = taskRef.current ?? Promise.resolve();
-        const nextTask = currentTask.then(() => load());
-
-        taskRef.current = nextTask;
-        return nextTask;
-    };
+    const refetch = useCallback((): Promise<void> => {
+        const previous = taskRef.current ?? Promise.resolve();
+        const next = previous
+            .catch(() => {
+                /* Serialized refetch must survive a failed load. */
+            })
+            .then(() => load());
+        taskRef.current = next;
+        return next;
+    }, [load]);
 
     React.useEffect(() => {
-        refetch()
-    }, deps);
+        void refetch();
+    }, [...deps, refetch]);
 
     return {
         results,

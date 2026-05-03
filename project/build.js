@@ -14,15 +14,13 @@ function detectManager() {
 
 const mgr = detectManager();
 const sharedFirstCmd = {
-  yarn: "yarn workspace @narraleaf/shared build:dev",
-  pnpm: "pnpm --filter @narraleaf/shared run build:dev",
-  npm:  "npm run build:dev --workspace=@narraleaf/shared",
+  yarn: isDev ? "yarn workspace @narraleaf/shared build:dev" : "yarn workspace @narraleaf/shared build",
+  pnpm: isDev ? "pnpm --filter @narraleaf/shared run build:dev" : "pnpm --filter @narraleaf/shared run build",
+  npm: isDev ? "npm run build:dev --workspace=@narraleaf/shared" : "npm run build --workspace=@narraleaf/shared",
 };
 
-// Build shared first in dev mode
-if (isDev) {
-  execSync(sharedFirstCmd[mgr], { stdio: "inherit", shell: true });
-}
+// Other workspaces import @narraleaf/shared; build it first (types + JS) and keep it out of the parallel graph.
+execSync(sharedFirstCmd[mgr], { stdio: "inherit", shell: true });
 
 const cmdMap = {
   yarn: `yarn workspaces foreach -A -p --topological-dev --exclude @narraleaf/shared run ${isDev ? "build:dev" : "build"}`,

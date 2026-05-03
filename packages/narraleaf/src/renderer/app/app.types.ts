@@ -4,15 +4,18 @@ import * as NLReact from "narraleaf-react";
 import { Game } from "narraleaf-react";
 import React from "react";
 
-type EventToken = {
+/** Cancellation handle returned by preference/state subscriptions (internal renderer use). */
+export type EventToken = {
     cancel(): void;
 };
-interface AppConfig {
+
+/** Runtime wiring for {@link App}; not part of the stable `narraleaf/renderer` public type bundle. */
+export interface AppConfig {
     appInfo: AppInfo;
     router: ReturnType<typeof NLReact["useRouter"]>;
     game: Game;
     api: typeof window[typeof NarraLeaf];
-};
+}
 
 export type LayoutModule = {
     default: React.FunctionComponent<{
@@ -36,7 +39,7 @@ export type PageModuleData = {
     module: PageModule;
 };
 
-type LayoutModuleDir = {
+export type LayoutModuleDir = {
     name: string;
     path: string;
     isSlug?: boolean;
@@ -45,14 +48,14 @@ type LayoutModuleDir = {
     children: (LayoutModuleDir | PageModuleData)[];
 };
 
-type AppRouterModuleData = {
+export type AppRouterModuleData = {
     root: LayoutModuleDir;
     rootPath: string;
     errorHandler?: PageModuleData | null;
 };
 
 // Production types without any path information
-type ProductionPageModuleData = {
+export type ProductionPageModuleData = {
     name: string;
     module: PageModule;
 };
@@ -63,7 +66,7 @@ type ProductionLayoutModuleData = {
     module: LayoutModule;
 };
 
-type ProductionLayoutModuleDir = {
+export type ProductionLayoutModuleDir = {
     name: string;
     isSlug?: boolean;
     layout?: ProductionLayoutModuleData | null;
@@ -71,23 +74,7 @@ type ProductionLayoutModuleDir = {
     children: (ProductionLayoutModuleDir | ProductionPageModuleData)[];
 };
 
-type ProductionAppRouterModuleData = {
+export type ProductionAppRouterModuleData = {
     root: ProductionLayoutModuleDir;
     errorHandler?: ProductionPageModuleData | null;
 };
-
-export {
-    type NLReact,
-};
-export type {
-    AppRouterModuleData,
-    ProductionAppRouterModuleData,
-    ProductionLayoutModuleDir,
-    ProductionPageModuleData,
-    LayoutModuleDir,
-    EventToken,
-    AppConfig,
-};
-export type { SavedGameMetaData } from "narraleaf-react";
-export type { UseSaveActionResult, UseSavedGameResult } from "./game/save/gameSaveHooks";
-export type { SavedGameMeta } from "@shared/types/save";

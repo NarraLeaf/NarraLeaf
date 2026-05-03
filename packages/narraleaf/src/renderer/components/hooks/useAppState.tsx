@@ -12,9 +12,10 @@ export function useAppState<K extends StringKeyof<AppStates>>(key: K): [
     const [flush] = useFlush()
 
     useEffect(() => {
-        app.state.onChange(key, () => {
+        const token = app.state.onChange(key, () => {
             flush();
         });
+        return () => token.cancel();
     }, [app, key, flush]);
 
     return [app.state.get(key), (value: AppStates[K] | ((prev: AppStates[K]) => AppStates[K])) => {

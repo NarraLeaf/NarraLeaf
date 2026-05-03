@@ -44,8 +44,14 @@ export class WindowProxy implements IPCWindow {
         this.getUserHandlers().handle(event, handler);
     }
 
-    public invokeUserEvent<Request, Response>(event: string, payload: Request): Promise<Response> | Response {
-        return this.getUserHandlers().invoke(event, payload);
+    /**
+     * Atomically dispatches a user-registered main event (single lookup + invoke).
+     */
+    public invokeUserEvent<Request, Response>(
+        event: string,
+        payload: Request
+    ): Promise<{ ok: true; data: Response } | { ok: false; reason: "not_registered" }> {
+        return this.getUserHandlers().invoke<Request, Response>(event, payload);
     }
 
     public isUserEventHandled(event: string): boolean {

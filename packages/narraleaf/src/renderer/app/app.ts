@@ -95,7 +95,7 @@ export class App extends AppAPI {
             return null;
         }
 
-        this.loadGame(latestSave.id);
+        await this.loadGame(latestSave.id);
         return true;
     }
 }

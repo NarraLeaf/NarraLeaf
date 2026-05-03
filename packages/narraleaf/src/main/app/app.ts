@@ -6,8 +6,8 @@ import path from "path";
 import { app } from "electron";
 
 // NarraLeaf-React
-import type { StringKeyOf } from "narraleaf-react/dist/util/data";
 import type { SavedGame } from "narraleaf-react";
+import type { StringKeyOf } from "@shared/types/utilityTypes";
 
 // Core modules
 import {
@@ -25,6 +25,7 @@ import { Platform, PlatformInfo, safeExecuteFn } from "@shared/utils/os";
 import { reverseDirectoryLevels } from "@shared/utils/string";
 import { JsonStore } from "@/main/utils/jsonStore";
 import { HookCallback, Hooks } from "@/main/utils/data";
+import { assertSafeStorageKey } from "@/main/utils/safeStorageKey";
 import { Logger } from "@/shared/utils/logger";
 import { CriticalMainProcessError } from "@shared/utils/error";
 import { CrashReport } from "@/main/app/mgr/crashManager";
@@ -263,10 +264,12 @@ export class App {
     }
 
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
+        assertSafeStorageKey(id, "Save id");
         return this.storageManager.saveGameData(data, type, id, preview);
     }
 
     public async readGameData(id: string): Promise<SavedGameResult | null> {
+        assertSafeStorageKey(id, "Save id");
         return this.storageManager.readGameData(id);
     }
 
@@ -275,6 +278,7 @@ export class App {
     }
 
     public async deleteGameData(id: string): Promise<void> {
+        assertSafeStorageKey(id, "Save id");
         return this.storageManager.deleteGameData(id);
     }
 

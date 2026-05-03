@@ -1,6 +1,6 @@
 import { NarraLeaf } from "@narraleaf/shared";
 import { SavedGame } from "narraleaf-react";
-import { SavedGameMeta } from "./app.types";
+import { SavedGameMeta } from "@shared/types/save";
 
 export class GameAPI {
     constructor(
@@ -18,7 +18,10 @@ export class GameAPI {
 
 export class AppAPI extends GameAPI {
     async createRecovery(savedGame: SavedGame) {
-        await this.api.game.save.createRecovery(savedGame);
+        const res = await this.api.game.save.createRecovery(savedGame);
+        if (!res.success) {
+            throw new Error(res.error ?? "Failed to create recovery save");
+        }
     }
 
     public quit() {

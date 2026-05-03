@@ -3,12 +3,18 @@ import { IPCEventType } from "@shared/types/ipcEvents";
 import { SavedGame } from "narraleaf-react";
 import { AppWindow } from "../appWindow";
 import { IPCHandler, IPCHandlerProps } from "./IPCHandler";
+import { assertSafeStorageKey } from "@/main/utils/safeStorageKey";
 
 export class GameSaveGameHandler extends IPCHandler<IPCEventType.gameSaveGame> {
     readonly name = IPCEventType.gameSaveGame;
     readonly type = IPCMessageType.request;
 
     public async handle(window: AppWindow, {gameData, type, id, preview}: IPCHandlerProps<IPCEventType.gameSaveGame>) {
+        try {
+            assertSafeStorageKey(id, "Save id");
+        } catch (error) {
+            return this.failed(error);
+        }
         return this.tryUse(() => window.app.saveGameData(gameData as SavedGame, type, id, preview));
     }
 }
@@ -18,6 +24,11 @@ export class GameReadGameHandler extends IPCHandler<IPCEventType.gameReadGame> {
     readonly type = IPCMessageType.request;
 
     public async handle(window: AppWindow, {id}: IPCHandlerProps<IPCEventType.gameReadGame>) {
+        try {
+            assertSafeStorageKey(id, "Save id");
+        } catch (error) {
+            return this.failed(error);
+        }
         return this.tryUse(() => window.app.readGameData(id));
     }
 }
@@ -36,6 +47,11 @@ export class GameDeleteGameHandler extends IPCHandler<IPCEventType.gameDeleteGam
     readonly type = IPCMessageType.request;
 
     public async handle(window: AppWindow, {id}: IPCHandlerProps<IPCEventType.gameDeleteGame>) {
+        try {
+            assertSafeStorageKey(id, "Save id");
+        } catch (error) {
+            return this.failed(error);
+        }
         return this.tryUse(() => window.app.deleteGameData(id));
     }
 }

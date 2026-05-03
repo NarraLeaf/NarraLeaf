@@ -48,6 +48,7 @@ export async function render(config: RendererAppRootProps): Promise<void> {
     const {ok, data, error} = await requestAppInfo();
     if (!ok || !data) {
         window[NarraLeaf].app.terminate(error || null);
+        return;
     }
 
     const ErrorFallbackComponent = config.appRouterData.errorHandler?.module?.default || BaseAppErrorFallback;

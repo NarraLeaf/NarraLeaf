@@ -1,12 +1,10 @@
 import { Fs } from "@shared/nodejs/fs";
 import { getMimeType } from "@shared/nodejs/os";
 import { normalizePath } from "@shared/nodejs/string";
-import { createReadStream } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { AssetResolved, AssetResolver, ProtocolHandler, ProtocolResponse, ProtocolRule, ProtocolScheme } from "./types";
 import { Logger } from "@/shared/utils/logger";
-import { App } from "../../app";
 
 export class FileSystemHandler implements ProtocolHandler, AssetResolver {
     private rules: ProtocolRule[] = [];
@@ -93,7 +91,28 @@ export class FileSystemHandler implements ProtocolHandler, AssetResolver {
 
     public formatFileUrl(requested: string): string {
         const url = new URL(requested);
-        return `file://${normalizePath(path.join(this.getBaseDir(), url.pathname))}`;
+        const segments = url.pathname
+            .split("/")
+            .filter(Boolean)
+            .map((segment) => {
+                try {
+                    return decodeURIComponent(segment);
+                } catch {
+                    throw new Error("Invalid URL encoding in path segment");
+                }
+            });
+        for (const segment of segments) {
+            if (segment === "." || segment === "..") {
+                throw new Error("Unsafe URL path segment");
+            }
+        }
+        const baseDir = path.resolve(this.getBaseDir());
+        const fsPath = path.resolve(baseDir, ...segments);
+        const relative = path.relative(baseDir, fsPath);
+        if (relative.startsWith("..") || path.isAbsolute(relative)) {
+            throw new Error("URL path escapes base directory");
+        }
+        return `file://${normalizePath(fsPath)}`;
     }
 
     private async readFile(filePath: string): Promise<{ data: Buffer; mimeType: string }> {
