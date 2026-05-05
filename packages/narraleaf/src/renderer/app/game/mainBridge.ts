@@ -14,11 +14,15 @@ export interface MainProcessEventEntry<P = unknown, R = unknown> {
  * Extend via TypeScript declaration merging in your project or plugin package.
  *
  * @example
+ * ```ts
+ * import type { MainProcessEventEntry } from "narraleaf/renderer";
+ *
  * declare module "narraleaf/renderer" {
  *   interface MainProcessEventMap {
  *     "my-plugin:ping": MainProcessEventEntry<{ id: string }, { ok: boolean }>;
  *   }
  * }
+ * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MainProcessEventMap {}
@@ -26,6 +30,13 @@ export interface MainProcessEventMap {}
 /**
  * Type-safe wrapper around {@link requestMain} for events declared on {@link MainProcessEventMap}.
  * Until you augment the map, no keys are valid — use {@link requestMain} for ad-hoc RPC instead.
+ *
+ * @throws {Error} Propagates IPC failures the same way as {@link requestMain}.
+ *
+ * @example
+ * ```ts
+ * await invokeMainEvent("my-plugin:ping", { id: "x" });
+ * ```
  */
 export async function invokeMainEvent<E extends keyof MainProcessEventMap>(
     event: E,

@@ -9,11 +9,13 @@ import { AppState } from "./utils/appState";
 import { SaveType } from "@shared/types/save";
 
 type AppEvents = {};
+/** Renderer preference keys exposed through {@link useAppState} (currently only `isPlaying`). */
 export type AppStates = {
     isPlaying: boolean;
 };
 
 
+/** Renderer `App` shell: wires preload APIs, router, and live game lifecycle helpers used by {@link useApp}. */
 export class App extends AppAPI {
     static DefaultAppStates: AppStates = {
         isPlaying: false,

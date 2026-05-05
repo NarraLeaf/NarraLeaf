@@ -4,6 +4,7 @@ import {PlatformInfo, PlatformSystem} from "@shared/utils/os";
 import {StoreProvider} from "@/main/app/mgr/storage/storeProvider";
 import { MainPlatform } from "@narraleaf/shared";
 
+/** Cross-platform knobs merged into {@link AppConfig} and ultimately consumed by {@link App}. */
 export interface BaseAppConfig {
     forceSandbox: boolean;
     recoveryCreationInterval: number;
@@ -45,6 +46,9 @@ type PlatformConfigMap = {
     [MainPlatform.Mac]: IMacConfig;
 };
 
+/**
+ * Mutable configuration builder for {@link App}: deep-merges base + per-OS slices, then {@link AppConfig#create}.
+ */
 export class AppConfig {
     public static readonly DefaultBaseConfig: BaseAppConfig = {
         forceSandbox: false,
@@ -70,69 +74,53 @@ export class AppConfig {
     }
 
     /**
-     * Configures platform-specific settings for the application.
-     * Merges the provided configuration with existing platform settings using deep merge.
-     * 
-     * @param platform - The target platform to configure
-     * @param config - Partial configuration object to merge with existing settings
-     * @returns This instance for method chaining
+     * Deep-merges `config` into the stored settings for `platform` (chainable).
      */
     public configure(platform: MainPlatform, config: Partial<PlatformConfigMap[MainPlatform]>): this {
         this.platformConfigs[platform] = defaultsDeep(config, this.platformConfigs[platform]);
         return this;
     }
 
-    /**
-     * Configures Windows-specific application settings.
-     * Convenience method for configuring Windows platform settings.
-     * 
-     * @param config - Partial Windows configuration object
-     * @returns This instance for method chaining
-     */
+    /** @see {@link configure} */
     public configWindows(config: Partial<IWindowsConfig>): this {
         return this.configure(MainPlatform.Windows, config);
     }
 
-    /**
-     * Configures Linux-specific application settings.
-     * Convenience method for configuring Linux platform settings.
-     * 
-     * @param config - Partial Linux configuration object
-     * @returns This instance for method chaining
-     */
+    /** @see {@link configure} */
     public configLinux(config: Partial<ILinuxConfig>): this {
         return this.configure(MainPlatform.Linux, config);
     }
 
-    /**
-     * Configures macOS-specific application settings.
-     * Convenience method for configuring macOS platform settings.
-     * 
-     * @param config - Partial macOS configuration object
-     * @returns This instance for method chaining
-     */
+    /** @see {@link configure} */
     public configMac(config: Partial<IMacConfig>): this {
         return this.configure(MainPlatform.Mac, config);
     }
 
     /**
-     * Creates and returns a new App instance using this configuration.
-     * Initializes the application with the configured settings.
-     * 
-     * @returns A new App instance configured with this AppConfig
+     * Builds a main-process {@link App} from this configuration.
+     *
+     * Prefer this over calling {@link App.create} directly so construction stays tied to the merged `AppConfig`.
+     *
+     * @returns A new {@link App} ready for {@link App.onReady} / lifecycle wiring.
+     *
+     * @example
+     * ```ts
+     * import { AppConfig } from "narraleaf";
+     *
+     * const app = new AppConfig({ appErrorHandling: "restart" })
+     *   .configWindows({ appIcon: "build/icon.ico" })
+     *   .create();
+     *
+     * app.onReady(() => {
+     *   void app.launchApp();
+     * });
+     * ```
      */
     public create(): App {
         return App.create(this);
     }
 
-    /**
-     * Maps platform information to the corresponding MainPlatform enum value.
-     * Converts detailed platform info to simplified platform categories.
-     * 
-     * @param platform - Platform information object containing system details
-     * @returns The corresponding MainPlatform enum value
-     * @throws Error if the platform system is not supported
-     */
+    /** Maps detailed {@link PlatformInfo} to a {@link MainPlatform} bucket. */
     getMainPlatform(platform: PlatformInfo): MainPlatform {
         switch (platform.system) {
             case PlatformSystem.win32:
@@ -146,13 +134,7 @@ export class AppConfig {
         }
     }
 
-    /**
-     * Retrieves the complete configuration for a specific platform.
-     * Merges base configuration with platform-specific settings.
-     * 
-     * @param platform - Platform information to get configuration for
-     * @returns Merged configuration object containing both base and platform-specific settings
-     */
+    /** Merged {@link BaseAppConfig} plus the resolved per-OS slice for `platform`. */
     getConfig(platform: PlatformInfo): BaseAppConfig & PlatformConfigMap[MainPlatform] {
         const mainPlatform = this.getMainPlatform(platform);
         return defaultsDeep(this.baseConfig, this.platformConfigs[mainPlatform]);

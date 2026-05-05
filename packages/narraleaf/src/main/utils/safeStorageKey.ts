@@ -1,11 +1,25 @@
 import path from "path";
 
-/** Maximum length for a storage key used as a single path segment (save id, json store file name). */
+/** Maximum length for an opaque storage key used as a single path segment (save id, JSON store name). */
 export const MAX_STORAGE_KEY_LENGTH = 200;
 
 /**
- * Validates a key that must become a single path segment (no directories, no traversal).
- * Allowed characters: letters, digits, underscore, hyphen, dot (for names like "app.settings").
+ * Ensures `key` is safe to use as a single filesystem segment (game save id, JSON store file name,
+ * or any host-provided id that lands under user data).
+ *
+ * Rules: non-empty, length ≤ {@link MAX_STORAGE_KEY_LENGTH}, no path separators or `..`,
+ * characters limited to `^[a-zA-Z0-9_.-]+$`.
+ *
+ * @param key - Proposed opaque id or file stem.
+ * @param fieldLabel - Label for thrown errors (default: `"Storage key"`).
+ * @throws {Error} When the key violates the rules above.
+ *
+ * @example
+ * ```ts
+ * import { assertSafeStorageKey } from "narraleaf";
+ *
+ * assertSafeStorageKey("slot_01", "Save id");
+ * ```
  */
 export function assertSafeStorageKey(key: string, fieldLabel: string = "Storage key"): void {
     if (typeof key !== "string" || key.length === 0) {
@@ -28,7 +42,7 @@ export function assertSafeStorageKey(key: string, fieldLabel: string = "Storage 
 }
 
 /**
- * Resolves baseDir/fileNameExt and ensures the result stays inside baseDir (after normalization).
+ * Resolves `baseDir/fileNameExt` and ensures the result stays inside `baseDir` after normalization.
  */
 export function resolveContainedFilePath(
     baseDir: string,

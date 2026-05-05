@@ -45,12 +45,14 @@ type AppEvents = {
 
 
 
+/** Logical subdirectories under Electron `userData` used by built-in persistence layers. */
 export enum AppDataNamespace {
     save = "msg_storage",
     flags = "app_flags",
     json = "json_storage",
 }
 
+/** Lightweight lifecycle hook bus names (distinct from DOM/Electron events). */
 export enum HookEvents {
     AfterReady = "afterReady",
     AfterMainWindowClose = "afterMainWindowClose",
@@ -67,6 +69,11 @@ export interface AppDependecy {
     translationManager: TranslationManager;
 }
 
+/**
+ * Electron main-process host: lifecycle, hooks, paths, storage façade, and window launch.
+ *
+ * Construct with {@link AppConfig#create}; do not call {@link App.create} from host code.
+ */
 export class App {
     public static Constants = {
         AppLifeCycleViolationTimeout: 5000 as const,
@@ -124,6 +131,12 @@ export class App {
         this.prepare();
     }
 
+    /**
+     * Registers a one-shot listener fired after Electron is ready, managers are initialized, and
+     * crash recovery metadata is loaded (dev metadata fetch runs when not packaged).
+     *
+     * @returns A token whose {@link AppEventToken.cancel} removes the listener.
+     */
     public onReady(fn: (...args: AppEvents["ready"]) => void): AppEventToken {
         const handler = () => {
             safeExecuteFn(fn);
@@ -137,14 +150,19 @@ export class App {
         };
     }
 
+    /** Effective merged configuration for the current {@link App.platform}. */
     getConfig() {
         return this.config.getConfig(this.platform);
     }
 
+    /** Latest crash metadata retained by {@link CrashManager}, if any. */
     public getCrashReport(): CrashReport | null {
         return this.crashManager.getCrashReport();
     }
 
+    /**
+     * Absolute path to the preload bundle for this environment (packaged vs dev tree).
+     */
     public getPreloadScript(): string {
         const appDir = this.electronApp.getAppPath();
 
@@ -153,6 +171,9 @@ export class App {
             : path.resolve(appDir, PreloadFileName);
     }
 
+    /**
+     * Renderer entry: packaged HTML path, dev disk path, or HTTP dev-server URL when HTTP mode is enabled.
+     */
     public getEntryFile(): string {
         // If HTTP mode is enabled, return localhost URL
         if (this.isHttpDevServerMode()) {
@@ -173,6 +194,9 @@ export class App {
         return filePath;
     }
 
+    /**
+     * Public/static asset directory (`public` under the build root), honoring dev-server overrides when present.
+     */
     public getPublicDir(): string {
         const metadata = this.devToolManager.tryGetMetadata();
         const appDir = this.getAppPath();
@@ -198,6 +222,9 @@ export class App {
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild));
     }
 
+    /**
+     * Directory containing built renderer assets (`renderer-build` under the build root).
+     */
     public getRendererBuildDir(): string {
         const appDir = this.electronApp.getAppPath();
 
@@ -206,29 +233,38 @@ export class App {
             : path.resolve(appDir, reverseDirectoryLevels(DevTempNamespace.MainBuild), DevTempNamespace.RendererBuild);
     }
 
-    /**
-     * Check if HTTP dev server mode is enabled
-     */
+    /** `true` when the dev-tool metadata enables loading the renderer over HTTP instead of `file:`. */
     public isHttpDevServerMode(): boolean {
         return this.devToolManager.tryGetMetadata()?.httpMode?.enabled ?? false;
     }
 
-    /**
-     * Quit the app without any error
-     */
+    /** Normal Electron quit (no synthetic crash report). */
     public quit(): void {
         this.electronApp.quit();
     }
 
     /**
-     * Quit the app and create a crash report
+     * Records a crash and routes through {@link CrashManager} (recovery UX depends on configuration).
      *
-     * If the reason is not provided, the crash will be considered critical
+     * @param reason - Optional human-readable reason; omit for a critical default classification.
+     * @param disableRecovery - When `true`, skips recovery-oriented handling where applicable.
      */
     public crash(reason?: string, {disableRecovery = false}: {disableRecovery?: boolean} = {}): void {
         this.crashManager.crash(reason, {disableRecovery});
     }
 
+    /**
+     * Creates the primary {@link AppWindow} via {@link WindowManager.launchMainWindow}.
+     *
+     * @throws When called before ready, or when a main window already exists.
+     *
+     * @example
+     * ```ts
+     * app.onReady(() => {
+     *   void app.launchApp({ isolated: true });
+     * });
+     * ```
+     */
     public async launchApp(config: Partial<WindowConfig> = {}): Promise<AppWindow> {
         if (!this.initialized) {
             throw new Error("App is not initialized");
@@ -241,42 +277,60 @@ export class App {
         return await this.windowManager.launchMainWindow(config);
     }
 
+    /** Mirrors `electron.app.isPackaged`. */
     public isPackaged(): boolean {
         return this.electronApp.isPackaged;
     }
 
+    /** Electron `userData` path (dev builds redirect under the build root). */
     public getUserDataDir(): string {
         return app.getPath("userData");
     }
 
     /* Json Store */
 
+    /**
+     * File-backed JSON document under the app `AppDataNamespace.json` area. `name` must satisfy {@link assertSafeStorageKey}.
+     */
     public createJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
         return this.storageManager.createJsonStore<T>(name);
     }
 
+    /**
+     * @deprecated Prefer domain-specific IPC or explicit stores; this pattern exposes whole-document JSON over IPC.
+     */
     public createExposedJsonStore<T extends Record<string, any>>(name: string): JsonStore<T> {
         return this.storageManager.createExposedJsonStore<T>(name);
     }
 
+    /**
+     * @deprecated Prefer domain-specific IPC; registers a store for `app.store.*` IPC helpers.
+     */
     public exposeJsonStore<T extends Record<string, any>>(store: JsonStore<T>): void {
         this.storageManager.exposeJsonStore(store);
     }
 
+    /**
+     * Persists serialized game data through {@link StorageManager} / {@link StoreProvider}.
+     * `id` is validated with {@link assertSafeStorageKey}.
+     */
     public async saveGameData(data: SavedGame, type: SaveType, id: string, preview?: string): Promise<void> {
         assertSafeStorageKey(id, "Save id");
         return this.storageManager.saveGameData(data, type, id, preview);
     }
 
+    /** Loads a save by `id` (validated) or returns `null` when missing. */
     public async readGameData(id: string): Promise<SavedGameResult | null> {
         assertSafeStorageKey(id, "Save id");
         return this.storageManager.readGameData(id);
     }
 
+    /** Lists save metadata from the active {@link StoreProvider}. */
     public async listGameData(): Promise<SavedGameMeta[]> {
         return await this.storageManager.listGameData();
     }
 
+    /** Deletes a save by `id` (validated). */
     public async deleteGameData(id: string): Promise<void> {
         assertSafeStorageKey(id, "Save id");
         return this.storageManager.deleteGameData(id);
@@ -312,18 +366,22 @@ export class App {
         });
     }
 
+    /** Subscribe to a {@link HookEvents} lifecycle hook (see also {@link onceHook}). */
     public hook(event: HookEvents, fn: HookCallback): AppEventToken {
         return this.hooks.hook(event, fn);
     }
 
+    /** Subscribe once; token cancels before the first fire. */
     public onceHook(event: HookEvents, fn: HookCallback): AppEventToken {
         return this.hooks.onceHook(event, fn);
     }
 
+    /** Removes a previously registered hook callback. */
     public unhook(event: HookEvents, fn: HookCallback): void {
         this.hooks.unhook(event, fn);
     }
 
+    /** Synchronously emits a hook bus event to all subscribers. */
     public emitHook(event: HookEvents): void {
         this.hooks.trigger(event);
     }

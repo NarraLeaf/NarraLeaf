@@ -40,12 +40,18 @@ export class WindowProxy implements IPCWindow {
         return this.instance.getWebContents();
     }
 
+    /**
+     * Registers a string-keyed handler invoked from renderer `app.event.requestMain` for this window.
+     * Prefer {@link invokeUserEvent} on the send path to avoid check-then-invoke races with {@link offUserEvent}.
+     */
     public handleUserEvent<Request, Response>(event: string, handler: (payload: Request) => Promise<Response> | Response): void {
         this.getUserHandlers().handle(event, handler);
     }
 
     /**
      * Atomically dispatches a user-registered main event (single lookup + invoke).
+     *
+     * @returns `ok: true` with handler data, or `ok: false` with `reason: "not_registered"` when absent.
      */
     public invokeUserEvent<Request, Response>(
         event: string,

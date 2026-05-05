@@ -10,16 +10,23 @@ import { WindowProxy } from "./windowProxy";
 import { WindowUserHandlers } from "./windowUserHandlers";
 import { AppEventToken } from "../../types";
 
+/** `BrowserWindow` construction options merged with NarraLeaf defaults when launching a window. */
 export interface WindowConfig {
     isolated: boolean;
     autoFocus: boolean;
     options?: Electron.BrowserWindowConstructorOptions;
 }
 
+/** Immutable inputs required to wire IPC preload into a window instance. */
 export interface AppWindowConfig {
     preload: string;
 }
 
+/**
+ * Main `BrowserWindow` wrapper: IPC registration, user-event dispatch, and thin Electron operation helpers.
+ *
+ * Obtained from {@link App.launchApp} (or internal window manager paths); not constructed directly by hosts.
+ */
 export class AppWindow extends WindowProxy {
     public static readonly DefaultConfig: WindowConfig = {
         isolated: true,
@@ -47,6 +54,9 @@ export class AppWindow extends WindowProxy {
     }
 
     // Window Event Handling
+    /**
+     * Registers a typed {@link IPCHandler} for this window's IPC namespace.
+     */
     public registerIPCHandler<T extends IPCEventType>(handler: IPCHandler<T>): void {
         this.getIPC().registerHandler(this, handler);
     }
@@ -136,6 +146,7 @@ export class AppWindow extends WindowProxy {
         return this.getInstance().getTitle();
     }
 
+    /** Subset of {@link App} configuration intentionally mirrored to the renderer process. */
     public getClientAppConfig(): ClientAppConfiguration {
         const config = this.getApp().getConfig();
         return {

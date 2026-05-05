@@ -5,6 +5,7 @@ import { NarraLeaf, QuickSaveId } from "@narraleaf/shared";
 import { safeClone } from "@shared/utils/object";
 import { SavedGameMeta } from "@shared/types/save";
 
+/** Return shape of {@link useSaveAction}: imperative save/load helpers backed by preload IPC. */
 export type UseSaveActionResult = {
     save: (id: string) => Promise<void>;
     read: (id: string) => Promise<SavedGame | null>;
@@ -12,6 +13,7 @@ export type UseSaveActionResult = {
     quickRead: () => Promise<SavedGame | null>;
 };
 
+/** Return shape of {@link useSavedGames}: async list state with serialized `refetch`. */
 export type UseSavedGameResult = {
     results: SavedGameMeta[] | [],
     error: Error | null,
@@ -19,6 +21,9 @@ export type UseSavedGameResult = {
     refetch: () => Promise<void>,
 };
 
+/**
+ * Serializes the current {@link LiveGame} snapshot for menus / previews. Returns `null` when serialization fails.
+ */
 export function useCurrentSaved(): SavedGame | null {
     const [flush] = useFlush();
     const game = useGame();
@@ -47,6 +52,9 @@ export function useCurrentSaved(): SavedGame | null {
     return getSavedGame();
 }
 
+/**
+ * Like {@link useCurrentSaved}, but keeps the latest snapshot in a ref (useful for callbacks without re-rendering).
+ */
 export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
     const game = useGame();
     const liveGame = game.getLiveGame();
@@ -74,6 +82,17 @@ export function useCurrentSavedRef(): React.RefObject<SavedGame | null> {
     return ref;
 }
 
+/**
+ * Imperative save/load helpers for the active game session.
+ *
+ * **Errors:** `save`, `quickSave`, and bridge failures **throw** (they do not return soft failures).
+ *
+ * @example
+ * ```ts
+ * const { save, read, quickSave } = useSaveAction();
+ * await save("chapter-2");
+ * ```
+ */
 export function useSaveAction(): UseSaveActionResult {
     const game = useGame();
 
@@ -130,6 +149,11 @@ export function useSaveAction(): UseSaveActionResult {
     };
 }
 
+/**
+ * Lists save metadata from the main process with loading/error state.
+ *
+ * `refetch` is serialized: failures do not block later refreshes, and the returned promise always settles.
+ */
 export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResult {
     const [results, setResults] = React.useState<SavedGameMeta[]>([]);
     const [error, setError] = React.useState<Error | null>(null);
@@ -175,6 +199,9 @@ export function useSavedGames(deps: React.DependencyList = []): UseSavedGameResu
     }
 }
 
+/**
+ * Non-hook read helper for a save slot by `id` (throws on IPC failure; returns `null` when missing/corrupt).
+ */
 export async function readGame(id: string): Promise<SavedGame | null> {
     const res = await window[NarraLeaf].game.save.read(id);
     if (!res.success) {

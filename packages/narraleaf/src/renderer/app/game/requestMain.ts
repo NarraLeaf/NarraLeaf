@@ -3,11 +3,16 @@ import { NarraLeaf } from "@narraleaf/shared";
 const api = window[NarraLeaf];
 
 /**
- * Request a main event from the main process.
- * @param event - The event to request.
- * @param payload - The payload to send to the main process.
- * @returns The response from the main process.
- * @throws An error if the request fails.
+ * Escape-hatch RPC to the main process (`app.event.requestMain`): string event name + loosely typed payload/response.
+ *
+ * Prefer {@link invokeMainEvent} once events are registered on {@link MainProcessEventMap}.
+ *
+ * @throws {Error} When the IPC layer reports `success: false`.
+ *
+ * @example
+ * ```ts
+ * const value = await requestMain<{ id: string }, string>("legacy:lookup", { id: "x" });
+ * ```
  */
 export const requestMain = async <Request, Response>(event: string, ...args: Response extends void ? [payload?: Request] : [payload: Request]): Promise<Response> => {
     const response = await api.app.requestMain<Request, Response>(event, ...args);

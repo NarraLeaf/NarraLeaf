@@ -1,7 +1,6 @@
 /**
- * Stable type surface for `narraleaf/renderer` consumers (generated renderer entries,
- * extensions, and documentation). Implementation-only types stay in module-local imports
- * (e.g. `@renderer/app/app.types`) and are not re-exported from the package root.
+ * Stable type-only surface for `narraleaf/renderer` consumers (generated renderer entries, extensions, docs).
+ * Runtime hooks/components are exported from the same package entry via `export *` chains.
  */
 export type {
     LayoutModule,

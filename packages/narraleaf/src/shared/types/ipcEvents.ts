@@ -5,6 +5,10 @@ import type { SavedGameMeta, SaveType } from "@shared/types/save";
 import type { IPCMessageType, IPCType } from "@shared/types/ipc";
 import type { ClientAppConfiguration } from "@shared/types/global";
 
+/**
+ * Logical IPC event keys for the default `Namespace.NarraLeaf` surface.
+ * Each member's string value is the channel suffix (see IPC naming helpers in `ipc.ts`).
+ */
 export enum IPCEventType {
     getPlatform = "getPlatform",
     appReload = "app.reload",
@@ -19,6 +23,10 @@ export enum IPCEventType {
 }
 
 export type VoidRequestStatus = RequestStatus<void>;
+
+/**
+ * Uniform IPC outcome for request-style handlers: success carries `data`, failure carries `error`.
+ */
 export type RequestStatus<T> = {
     success: true;
     data: T;
@@ -29,6 +37,10 @@ export type RequestStatus<T> = {
     error?: string;
 };
 
+/**
+ * Typed map of default NarraLeaf IPC channels: payload `data` and `response` shapes per {@link IPCEventType}.
+ * Host handlers and preload clients should stay aligned with this contract across semver.
+ */
 export type IPCEvents = {
     [IPCEventType.getPlatform]: {
         type: IPCMessageType.request,
@@ -118,6 +130,7 @@ export type IPCEvents = {
     };
 };
 
+/** IPC namespace segment prepended to request/reply channel names (default: `"narraleaf"`). */
 export enum Namespace {
     NarraLeaf = "narraleaf",
 }

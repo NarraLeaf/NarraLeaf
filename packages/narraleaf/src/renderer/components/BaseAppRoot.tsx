@@ -34,6 +34,30 @@ async function requestAppInfo(): Promise<{ok: boolean, data: AppInfo | null, err
     }
 }
 
+/**
+ * Mounts the NarraLeaf renderer root under React 19 using the provided `renderer` adapter
+ * (typically `createRoot` from `react-dom/client`).
+ *
+ * Validates `window.NarraLeaf`, document presence, `metadata.story`, and React major version.
+ * Fetches {@link AppInfo} via preload; on failure terminates the host process and **returns without mounting**.
+ *
+ * @param config - Root props: renderer bridge, user shell, router data, story metadata.
+ *
+ * @example
+ * ```ts
+ * import { createRoot } from "react-dom/client";
+ * import { render } from "narraleaf/renderer";
+ * import { App } from "./App";
+ *
+ * const root = createRoot(document.getElementById("root")!);
+ * await render({
+ *   renderer: { render: (el) => root.render(el), unmount: () => root.unmount() },
+ *   App,
+ *   appRouterData,
+ *   metadata: { story },
+ * });
+ * ```
+ */
 export async function render(config: RendererAppRootProps): Promise<void> {
     const {
         renderer,
